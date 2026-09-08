@@ -1,0 +1,11 @@
+Model Information:
+* title:	Corsair 4000D  PC case
+* source:	https://sketchfab.com/3d-models/corsair-4000d-pc-case-bc15e007d6634579bc0e8ffdf238e665
+* author:	SzaBa (https://sketchfab.com/SzaBa)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Corsair 4000D  PC case" (https://sketchfab.com/3d-models/corsair-4000d-pc-case-bc15e007d6634579bc0e8ffdf238e665) by SzaBa (https://sketchfab.com/SzaBa) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

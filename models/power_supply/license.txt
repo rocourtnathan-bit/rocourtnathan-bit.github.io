@@ -1,0 +1,11 @@
+Model Information:
+* title:	Power supply Aerocool KCAS 500W ATX
+* source:	https://sketchfab.com/3d-models/power-supply-aerocool-kcas-500w-atx-bfb1f77fffb0410f9ee0d0be6fb5fc88
+* author:	nofurion (https://sketchfab.com/nofurion)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Power supply Aerocool KCAS 500W ATX" (https://sketchfab.com/3d-models/power-supply-aerocool-kcas-500w-atx-bfb1f77fffb0410f9ee0d0be6fb5fc88) by nofurion (https://sketchfab.com/nofurion) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

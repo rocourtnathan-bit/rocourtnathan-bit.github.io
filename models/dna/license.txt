@@ -1,0 +1,11 @@
+Model Information:
+* title:	DNA
+* source:	https://sketchfab.com/3d-models/dna-23dc6502085c4c0e83771a4e4088bce8
+* author:	Hartoto (https://sketchfab.com/hartoto)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "DNA" (https://sketchfab.com/3d-models/dna-23dc6502085c4c0e83771a4e4088bce8) by Hartoto (https://sketchfab.com/hartoto) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

@@ -1,0 +1,11 @@
+Model Information:
+* title:	Web shooter Fanmade
+* source:	https://sketchfab.com/3d-models/web-shooter-fanmade-3b7dc76f0d8b4c7b900de581d3014904
+* author:	K_LewisCreates (https://sketchfab.com/TurboTurtle212)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Web shooter Fanmade" (https://sketchfab.com/3d-models/web-shooter-fanmade-3b7dc76f0d8b4c7b900de581d3014904) by K_LewisCreates (https://sketchfab.com/TurboTurtle212) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
