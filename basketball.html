@@ -458,6 +458,28 @@ const HEAD_GEO = (()=>{
   }
   g.computeVertexNormals(); return g;
 })();
+function tankTexture(skinHex, jerseyHex){
+  const W = 512, H = 256, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
+  const hex = n => '#'+n.toString(16).padStart(6,'0');
+  const Y = y => (1-(y-.97)/(1.685-.97))*H, X = u => u*W;
+  x.fillStyle = hex(skinHex); x.fillRect(0,0,W,H);
+  x.fillStyle = hex(jerseyHex); x.fillRect(0, Y(1.42), W, H-Y(1.42));
+  x.strokeStyle = '#ffffff'; x.lineWidth = 7; x.lineJoin = 'round';
+  const panel = (cu, scoop)=>{
+    x.beginPath();
+    x.moveTo(X(cu-.16),Y(1.42)); x.quadraticCurveTo(X(cu-.168),Y(1.55),X(cu-.118),Y(1.64)); x.lineTo(X(cu-.1),Y(1.685)); x.lineTo(X(cu-.058),Y(1.685));
+    x.quadraticCurveTo(X(cu-.06),Y(scoop),X(cu),Y(scoop)); x.quadraticCurveTo(X(cu+.06),Y(scoop),X(cu+.058),Y(1.685));
+    x.lineTo(X(cu+.1),Y(1.685)); x.lineTo(X(cu+.118),Y(1.64)); x.quadraticCurveTo(X(cu+.168),Y(1.55),X(cu+.16),Y(1.42));
+    x.fillStyle = hex(jerseyHex); x.lineTo(X(cu+.16),Y(1.3)); x.lineTo(X(cu-.16),Y(1.3)); x.closePath(); x.fill();
+    x.beginPath();                                                 // white trim along armholes + neckline
+    x.moveTo(X(cu-.16),Y(1.42)); x.quadraticCurveTo(X(cu-.168),Y(1.55),X(cu-.118),Y(1.64)); x.lineTo(X(cu-.1),Y(1.685));
+    x.moveTo(X(cu-.058),Y(1.685)); x.quadraticCurveTo(X(cu-.06),Y(scoop),X(cu),Y(scoop)); x.quadraticCurveTo(X(cu+.06),Y(scoop),X(cu+.058),Y(1.685));
+    x.moveTo(X(cu+.1),Y(1.685)); x.lineTo(X(cu+.118),Y(1.64)); x.quadraticCurveTo(X(cu+.168),Y(1.55),X(cu+.16),Y(1.42)); x.stroke();
+  };
+  panel(.5, 1.52); panel(0, 1.62); panel(1, 1.62);
+  x.fillStyle = '#ffffff'; x.fillRect(0, Y(.995), W, H-Y(.995));   // hem band
+  const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 8; return t;
+}
 function makeAvatar(ch, team, name, parent){
   const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
   const SM = (c,r,e)=>new THREE.MeshStandardMaterial({color:c, roughness:r == null ? .6 : r, emissive:e||0x000000});
@@ -467,7 +489,7 @@ function makeAvatar(ch, team, name, parent){
   const jc = new THREE.Color(JERSEYS[ch.jersey]);
   const jer = SM(jc.getHex(), .55); jer.side = THREE.DoubleSide;
   const trim = SM(0xf4f4f4, .5), dark = SM(0x16161c, .5), white = SM(0xffffff, .3), accent = SM(jc.clone().multiplyScalar(.8).getHex(), .5);
-  const shortsM = SM(jc.clone().multiplyScalar(.85).getHex(), .6); shortsM.side = THREE.DoubleSide;
+  const shortsM = SM(jc.clone().multiplyScalar(.55).getHex(), .6); shortsM.side = THREE.DoubleSide;
   const hairM = new THREE.MeshStandardMaterial({color:HAIR_COLS[ch.hcol], roughness:.5, map:HAIR_TEX});
   const iris = SM([0x3b2314,0x1b1b1b,0x2d5a3a,0x35506b][hash(name)%4], .3);
   const Ld = (pts,seg,mat)=>{ const m = new THREE.Mesh(new THREE.LatheGeometry(pts.slice().reverse().map(q=>new THREE.Vector2(q[0],q[1])), seg||18), mat); m.castShadow = true; return m; };   // pts listed top -> bottom
@@ -480,14 +502,16 @@ function makeAvatar(ch, team, name, parent){
   const bw = [.92,1,1.12][ch.build], bh = [1.04,1,.97][ch.build];
   body.scale.set(bw, bh, bw);
   // torso (skin) + tank top + shorts
-  const tk = put(Lu([[0,.98],[.14,.99],[.158,1.08],[.172,1.2],[.19,1.34],[.205,1.46],[.215,1.54],[.2,1.61],[.13,1.655],[.06,1.68],[0,1.685]],28,skin), 0,0,0); tk.scale.z = .58;
-  const tj = put(Lu([[0,1.03],[.178,1.03],[.19,1.12],[.2,1.3],[.218,1.46],[.227,1.55],[.205,1.588],[.15,1.588]],28,jer), 0,0,0); tj.scale.z = .64;
-  [-1,1].forEach(sd=>{ const st = put(B(.07,.045,.15,jer), sd*.105,1.6,0); st.rotation.z = -sd*.28; });
-  const nt = put(Tr(.172,.011,trim), 0,1.585,0); nt.rotation.x = Math.PI/2; nt.scale.y = .64;
-  const hm = put(Tr(.18,.012,trim), 0,1.035,0); hm.rotation.x = Math.PI/2; hm.scale.y = .64;
+  const keysY = [[.97,.19],[1.04,.176],[1.12,.168],[1.2,.176],[1.34,.195],[1.46,.208],[1.54,.215],[1.6,.2],[1.64,.14],[1.665,.08],[1.685,0]];
+  const prof = []; for(let i=0;i<=36;i++){ const y = .97 + (1.685-.97)*i/36; let r = 0;
+    for(let k=0;k<keysY.length-1;k++){ const a0 = keysY[k], a1 = keysY[k+1]; if(y >= a0[0] && y <= a1[0]){ r = a0[1] + (a1[1]-a0[1])*(y-a0[0])/(a1[0]-a0[0]); break; } }
+    prof.push([r,y]); }
+  const torsoM = new THREE.MeshStandardMaterial({map:tankTexture(skinC.getHex(), jc.getHex()), roughness:.6});
+  const tk = new THREE.Mesh(new THREE.LatheGeometry(prof.map(q=>new THREE.Vector2(q[0],q[1])), 36, -Math.PI, Math.PI*2), torsoM); tk.castShadow = true; tk.scale.z = .64; body.add(tk);
   const num = String(ch.num), back = numberDecal(num), front = numberDecal(num);
-  back.position.set(0,1.38,-.147); back.rotation.y = Math.PI; front.position.set(0,1.28,.147); front.scale.set(.55,.55,.55); body.add(back, front);
-  const pel = put(Lu([[0,.83],[.16,.85],[.19,.93],[.196,1.0],[.172,1.06],[.165,1.08]],26,shortsM), 0,0,0); pel.scale.z = .66;
+  back.position.set(0,1.36,-.136); back.rotation.y = Math.PI; front.position.set(0,1.27,.14); front.scale.set(.55,.55,.55); body.add(back, front);
+  const pel = put(Lu([[0,.83],[.16,.85],[.19,.93],[.198,.99],[.172,1.05]],26,shortsM), 0,0,0); pel.scale.z = .66;
+  [-1,1].forEach(sd=>{ put(B(.014,.2,.1,trim), sd*.196,.92,0); });
   // neck + head
   put(Cy(.052,.06,.1,skin,14), 0,1.7,0);
   const hg = new THREE.Group(); hg.position.y = 1.855; hg.scale.setScalar(1.18); body.add(hg);
@@ -723,7 +747,7 @@ function openSettings(v){ settingsOpen = v; capturing = null; $('settings').clas
 /* ---------- game state / input ---------- */
 const DURATION = 180000, FILL_TIME = .7;
 const DIFF = [{acc:.36,speed:3.5,block:.18,steal:3.6},{acc:.5,speed:4.2,block:.38,steal:2.6},{acc:.66,speed:4.9,block:.58,steal:1.8}];
-let soloKind = null, diffIdx = 1;
+let soloKind = null, diffIdx = 1, dbgLoad = null, dbgCam = null;
 const keys = {};
 let phase = 'menu';            // menu | lobby | play | over | solo
 let charging = false, chargeT = 0, tAcc = 0, localEnd = 0, camShake = 0;
@@ -1130,10 +1154,12 @@ function animateActor(a, dt){
   const L = av.legL, Rg = av.legR;
   const cr = (fl&8) ? 1 : 0;
   L.hip.rotation.z = Rg.hip.rotation.z = 0;
-  L.hip.rotation.x = sw - load*.5 - (step?.25:0) - cr*.32; Rg.hip.rotation.x = -sw - load*.5 - (step?.25:0) - cr*.32;
-  L.knee.rotation.x = Math.max(0,-sw)*1.05 + load*.95 + (step?.55:0) + cr*.62; Rg.knee.rotation.x = Math.max(0,sw)*1.05 + load*.95 + (step?.55:0) + cr*.62;
-  if(a.jump > .08 && !a.bot && a.fallK < .1 && !step){ L.knee.rotation.x = Rg.knee.rotation.x = .55; L.hip.rotation.x = -.25; Rg.hip.rotation.x = .1; }
-  av.body.position.y = Math.abs(Math.sin(a.rp))*.045*mv - load*.2 - (step?.06:0) - cr*.1;
+  const kb = load < .45 ? load/.45*.95 : .95*(1 - (load-.45)/.55*.78);       // sink into the shot, then drive up through it
+  L.hip.rotation.x = sw - kb*.55 - (step?.25:0) - cr*.32; Rg.hip.rotation.x = -sw - kb*.55 - (step?.25:0) - cr*.32;
+  L.knee.rotation.x = Math.max(0,-sw)*1.05 + kb + (step?.55:0) + cr*.62; Rg.knee.rotation.x = Math.max(0,sw)*1.05 + kb + (step?.55:0) + cr*.62;
+  if(a.state === 'flying' && a.shot && a.shot.kind !== 'dunk' && a.fallK < .1){ L.knee.rotation.x = .16; Rg.knee.rotation.x = .26; L.hip.rotation.x = -.06; Rg.hip.rotation.x = .1; }       // legs extended, toes down
+  else if(a.jump > .08 && !a.bot && a.fallK < .1 && !step){ L.knee.rotation.x = Rg.knee.rotation.x = .55; L.hip.rotation.x = -.25; Rg.hip.rotation.x = .1; }
+  av.body.position.y = Math.abs(Math.sin(a.rp))*.045*mv - kb*.2 - (step?.06:0) - cr*.1;
   // crossover body language: dip toward the fake, then drive the other way
   const lean = (fl&8) ? -cs*.04*Math.sin(Math.PI*clamp01(ce/.5)) : 0;                  // barely any tilt: the move is in the legs, hips and ball
   const twist = (fl&8) ? -cs*.16*Math.sin(Math.PI*clamp01(ce/.5)) : 0;
@@ -1146,10 +1172,18 @@ function animateActor(a, dt){
   const k = Math.abs(Math.sin(tAcc*7 + a.phase));
   const handArm = h => h > 0 ? av.armR : av.armL, offArm = h => h > 0 ? av.armL : av.armR;
   if(fl&1){ pose(av.armL,-3.0,-.05); pose(av.armR,-3.0,-.05); }
-  else if(a.state === 'flying'){ pose(av.armR,-2.9,-.05); pose(av.armL,-2.6,-.15); }
+  else if(a.state === 'flying'){                                   // release + follow-through: wrist flick, 'goose neck', guide hand falls away
+    const ft = a.shot ? a.shot.t : 0;
+    pose(av.armR, -2.85 + .3*clamp01((ft-.2)/.6), -.05 - .55*clamp01(ft/.14));
+    pose(av.armL, -2.1 + 1.6*clamp01(ft/.3), -.7 + .4*clamp01(ft/.3));
+  }
   else if(a.driving){ pose(av.armR,-2.8,-.1); pose(av.armL,-2.5,-.2); }
   else if(stun){ pose(av.armR,.4,.3); pose(av.armL,.4,.3); }
-  else if(load > .05){ pose(av.armR, -.5 - load*2.2, -1.1 + load*.9); pose(av.armL, -.5 - load*1.9, -1.0 + load*.5); }
+  else if(load > .05){                                              // gather to the shot pocket, then rise to the set point
+    const e = v => v*v*(3-2*v), s1 = clamp01(load/.35), s2 = e(clamp01((load-.35)/.65));
+    pose(av.armR, -.35 - .35*s1 - 1.85*s2, -.9 - .8*s1 + 1.35*s2);
+    pose(av.armL, -.5 - .8*s1 - .9*s2, -1.0 - .5*s1 + .6*s2);
+  }
   else if(fl&16){ const q = a.swipe ? Math.sin(Math.PI*(1-a.swipe/.3)) : Math.abs(Math.sin(tAcc*11)); pose(av.armR, -.1 - q*1.9, -.1); pose(av.armL, .3, -.5); }
   else if(a.state === 'none'){ const f = Math.sin(t*3)*.12; pose(av.armR, -.9+f, -.9); pose(av.armL, -.9-f, -.9); }       // defensive stance: hands up
   else if(fl&8){
@@ -1171,7 +1205,9 @@ function animateActor(a, dt){
     const fx = Math.sin(a.yaw), fz = Math.cos(a.yaw), lx = Math.cos(a.yaw), lz = -Math.sin(a.yaw);
     a.ball.visible = !a.bot || a.cpu;
     if(load > .05){
-      a.ball.position.set(a.x + fx*.25, 1.2 + load*1.1 + a.jump, a.z + fz*.25);
+      const e = v => v*v*(3-2*v), s1 = clamp01(load/.35), s2 = e(clamp01((load-.35)/.65));
+      const lat = .3*a.hand + (.17-.3*a.hand)*s1 + (.09-.17)*s2, fw = .28 + (.3-.28)*s1 + (.2-.3)*s2, yy = .9 + (1.2-.9)*s1 + (2.25-1.2)*s2;
+      a.ball.position.set(a.x + lx*lat + fx*fw, yy + a.jump, a.z + lz*lat + fz*fw);
     } else if(a.jump > .08 || a.driving){
       a.ball.position.set(a.x + fx*.25, 1.9 + a.jump, a.z + fz*.25);
     } else if(stun){
@@ -1251,6 +1287,7 @@ function updateLocal(dt){
     placeZone(); placeMeter();
     if(p >= 1) endCharge();
   } else a.load = 0;
+  if(dbgLoad != null) a.load = dbgLoad;
   const off = a.team === poss, b = basis(a), three = b.d >= 7.24 || Math.abs(a.x) > 6.7;
   $('dist').style.visibility = off ? 'visible' : 'hidden';
   $('dVal').textContent = (b.d*FT).toFixed(1);
@@ -1317,6 +1354,7 @@ function cpuAI(b, dt){
 let camYaw = 0;
 const camPos = new THREE.Vector3(0,4,3), camLook = new THREE.Vector3(), _t = new THREE.Vector3(), _l = new THREE.Vector3();
 function updateCamera(dt){
+  if(dbgCam){ camera.position.set(dbgCam[0],dbgCam[1],dbgCam[2]); camera.lookAt(dbgCam[3],dbgCam[4],dbgCam[5]); return; }
   if(!me || !playing()){
     camPos.set(Math.sin(tAcc*.15)*13, 6.5, Math.cos(tAcc*.15)*13);
     camera.position.copy(camPos); camera.lookAt(0,1.5,0); camLook.set(0,1.5,0); return;
@@ -1767,7 +1805,7 @@ $('load').style.display = 'none';
 requestAnimationFrame(frame);
 
 // debug / test hook
-window.__ballr = {previewChar:(c,yaw)=>{ pv.freeze = true; Object.assign(myChar,c); pv.yaw = yaw; rebuildPreview(); pv.r.render(pv.scene, pv.cam); }, stats, beginCharge, endCharge, setCharge:v=>{chargeT=v*FILL_TIME;}, net, actors, handleAct, sendAct, doReset, possChange,
+window.__ballr = {setLoad:v=>{ dbgLoad = v; }, setCam:c=>{ dbgCam = c; }, previewChar:(c,yaw)=>{ pv.freeze = true; Object.assign(myChar,c); pv.yaw = yaw; rebuildPreview(); pv.r.render(pv.scene, pv.cam); }, stats, beginCharge, endCharge, setCharge:v=>{chargeT=v*FILL_TIME;}, net, actors, handleAct, sendAct, doReset, possChange,
   get me(){return me;}, get zone(){return zone;}, get state(){return me&&me.state;}, get phase(){return phase;}, get poss(){return poss;}, get inReset(){return inReset;}, binds};
 })();
 </script>
