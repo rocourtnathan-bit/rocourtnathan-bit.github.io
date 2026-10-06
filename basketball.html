@@ -461,8 +461,7 @@ const HEAD_GEO = (()=>{
 })();
 function tankTexture(skinHex, jerseyHex){
   const W = 512, H = 256, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
-  const enc = n => { const c = new THREE.Color(n), f = v => Math.round(Math.pow(v,1/2.2)*255); return `rgb(${f(c.r)},${f(c.g)},${f(c.b)})`; };   // match material colours
-  const hex = enc;
+  const hex = n => '#'+n.toString(16).padStart(6,'0');
   const Y = y => (1-(y-.97)/(1.685-.97))*H, X = u => u*W;
   x.fillStyle = hex(skinHex); x.fillRect(0,0,W,H);
   x.fillStyle = hex(jerseyHex); x.fillRect(0, Y(1.42), W, H-Y(1.42));
@@ -479,12 +478,12 @@ function tankTexture(skinHex, jerseyHex){
     x.moveTo(X(cu+.1),Y(1.685)); x.lineTo(X(cu+.118),Y(1.64)); x.quadraticCurveTo(X(cu+.168),Y(1.55),X(cu+.16),Y(1.42)); x.stroke();
   };
   panel(.5, 1.52); panel(0, 1.62); panel(1, 1.62);
-  x.fillStyle = '#ffffff'; x.fillRect(0, Y(.995), W, H-Y(.995));   // hem band
+  x.fillStyle = '#ffffff'; x.fillRect(0, Y(.985), W, H-Y(.985));   // hem band
   const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 8; return t;
 }
 function makeAvatar(ch, team, name, parent){
   const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
-  const SM = (c,r,e)=>new THREE.MeshStandardMaterial({color:c, roughness:r == null ? .6 : r, emissive:e||0x000000});
+  const SM = (c,r,e)=>new THREE.MeshStandardMaterial({color:new THREE.Color(c).convertSRGBToLinear(), roughness:r == null ? .6 : r, emissive:e||0x000000});   // colours are sRGB hex
   const skinC = new THREE.Color(CHAR_SKINS[ch.skin]);
   const skin = SM(skinC.getHex(), .6, skinC.clone().multiplyScalar(.05).getHex());
   const lipM = SM(skinC.clone().lerp(new THREE.Color(0xa04545),.4).multiplyScalar(.85).getHex(), .5);
@@ -492,7 +491,7 @@ function makeAvatar(ch, team, name, parent){
   const jer = SM(jc.getHex(), .55); jer.side = THREE.DoubleSide;
   const trim = SM(0xf4f4f4, .5), dark = SM(0x16161c, .5), white = SM(0xffffff, .3), accent = SM(jc.clone().multiplyScalar(.8).getHex(), .5);
   const shortsM = SM(jc.clone().multiplyScalar(.55).getHex(), .6); shortsM.side = THREE.DoubleSide;
-  const hairM = new THREE.MeshStandardMaterial({color:HAIR_COLS[ch.hcol], roughness:.5, map:HAIR_TEX});
+  const hairM = new THREE.MeshStandardMaterial({color:new THREE.Color(HAIR_COLS[ch.hcol]).convertSRGBToLinear(), roughness:.5, map:HAIR_TEX});
   const iris = SM([0x3b2314,0x1b1b1b,0x2d5a3a,0x35506b][hash(name)%4], .3);
   const Ld = (pts,seg,mat)=>{ const m = new THREE.Mesh(new THREE.LatheGeometry(pts.slice().reverse().map(q=>new THREE.Vector2(q[0],q[1])), seg||18), mat); m.castShadow = true; return m; };   // pts listed top -> bottom
   const Lu = (pts,seg,mat)=>{ const m = new THREE.Mesh(new THREE.LatheGeometry(pts.map(q=>new THREE.Vector2(q[0],q[1])), seg||28), mat); m.castShadow = true; return m; };           // pts listed bottom -> top
