@@ -1610,7 +1610,7 @@ function joinParty(name, code){
   const peer = new Peer(undefined, peerOpts); net.peer = peer;
   let done = false;
   const fail = t=>{ if(done) return; done = true; setStatus(t, true); leaveParty(true); };
-  const to = setTimeout(()=>fail('Could not reach that party. Check the code (some networks block peer-to-peer).'), 12000);
+  const to = setTimeout(()=>fail('Could not reach that party. Check the code (some networks block peer-to-peer).'), 25000);
   peer.on('error', e=>{ clearTimeout(to); fail(e.type === 'peer-unavailable' ? 'No party with that code (it may have closed).' : 'Connection error: '+(e.type||e.message)); });
   peer.on('open', ()=>{
     const conn = peer.connect('ballr-'+code, {reliable:true});
