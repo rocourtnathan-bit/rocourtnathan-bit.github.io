@@ -359,7 +359,7 @@ function release(p){
   const nx = fx/d, nz = fz/d;
   const start = new THREE.Vector3(player.x+nx*.25, 2.25 + Math.max(0,player.jump), player.z+nz*.25);
   const dx = HOOP.x - start.x, dz = HOOP.z - start.z, hd = Math.max(0.6, Math.hypot(dx,dz));
-  const h = HOOP.y - start.y, th = 56*Math.PI/180;
+  const h = HOOP.y - start.y, th = 63*Math.PI/180;
   let denom = 2*Math.cos(th)**2*(hd*Math.tan(th)-h);
   if(denom < .05) denom = .05;
   let v = Math.sqrt(G*hd*hd/denom);
@@ -431,7 +431,7 @@ function stepBall(dt){
   if(Math.abs(p.y-RIM_Y) < .3){
     for(const rp of rimPts){
       tmp.copy(p).sub(rp);
-      const dist = tmp.length(), min = R + .022;
+      const dist = tmp.length(), min = R + .014;
       if(dist < min && dist > 1e-5){
         tmp.divideScalar(dist);
         p.copy(rp).addScaledVector(tmp, min);
@@ -585,7 +585,7 @@ $('load').style.display = 'none';
 requestAnimationFrame(frame);
 
 // debug / test hook
-window.__ballr = {player, stats, release, beginCharge, endCharge, get zone(){return zone;}, get state(){return bstate;}, setCharge:v=>{chargeT=v*FILL_TIME;}, hoopDist};
+window.__ballr = {ball, bvel, player, stats, release, beginCharge, endCharge, get zone(){return zone;}, get state(){return bstate;}, setCharge:v=>{chargeT=v*FILL_TIME;}, hoopDist};
 })();
 </script>
 </body>
