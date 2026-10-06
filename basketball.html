@@ -437,7 +437,7 @@ function makeLabel(text, team){
   x.fillStyle = TEAM_CSS[team]; x.fillRect(128-w/2, 50, w, 4);
   x.fillStyle = '#fff'; x.fillText(text, 128, 31, 230);
   const s = new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c), depthTest:false, transparent:true}));
-  s.scale.set(1.5,.375,1); s.position.y = 2.45; s.renderOrder = 10; return s;
+  s.scale.set(1.5,.375,1); s.position.y = 2.5; s.renderOrder = 10; return s;
 }
 // human-proportioned, smooth-shaded players (lathe bodies, shaped head with face, several hair styles)
 const HAIR_TEX = (()=>{
@@ -462,7 +462,7 @@ function makeAvatar(ch, team, name, parent){
   const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
   const SM = (c,r,e)=>new THREE.MeshStandardMaterial({color:c, roughness:r == null ? .6 : r, emissive:e||0x000000});
   const skinC = new THREE.Color(CHAR_SKINS[ch.skin]);
-  const skin = SM(skinC.getHex(), .58, skinC.clone().multiplyScalar(.1).getHex());
+  const skin = SM(skinC.getHex(), .6, skinC.clone().multiplyScalar(.05).getHex());
   const lipM = SM(skinC.clone().lerp(new THREE.Color(0xa04545),.4).multiplyScalar(.85).getHex(), .5);
   const jc = new THREE.Color(JERSEYS[ch.jersey]);
   const jer = SM(jc.getHex(), .55); jer.side = THREE.DoubleSide;
@@ -481,17 +481,16 @@ function makeAvatar(ch, team, name, parent){
   body.scale.set(bw, bh, bw);
   // torso (skin) + tank top + shorts
   const tk = put(Lu([[0,.98],[.14,.99],[.158,1.08],[.172,1.2],[.19,1.34],[.205,1.46],[.215,1.54],[.2,1.61],[.13,1.655],[.06,1.68],[0,1.685]],28,skin), 0,0,0); tk.scale.z = .58;
-  const tj = put(Lu([[0,1.0],[.152,1.0],[.17,1.08],[.184,1.2],[.2,1.34],[.218,1.46],[.227,1.55],[.205,1.588],[.15,1.588]],28,jer), 0,0,0); tj.scale.z = .64;
+  const tj = put(Lu([[0,1.03],[.178,1.03],[.19,1.12],[.2,1.3],[.218,1.46],[.227,1.55],[.205,1.588],[.15,1.588]],28,jer), 0,0,0); tj.scale.z = .64;
   [-1,1].forEach(sd=>{ const st = put(B(.07,.045,.15,jer), sd*.105,1.6,0); st.rotation.z = -sd*.28; });
   const nt = put(Tr(.172,.011,trim), 0,1.585,0); nt.rotation.x = Math.PI/2; nt.scale.y = .64;
-  const hm = put(Tr(.19,.012,trim), 0,1.0,0); hm.rotation.x = Math.PI/2; hm.scale.y = .64;
+  const hm = put(Tr(.18,.012,trim), 0,1.035,0); hm.rotation.x = Math.PI/2; hm.scale.y = .64;
   const num = String(ch.num), back = numberDecal(num), front = numberDecal(num);
   back.position.set(0,1.38,-.147); back.rotation.y = Math.PI; front.position.set(0,1.28,.147); front.scale.set(.55,.55,.55); body.add(back, front);
-  const pel = put(Lu([[0,.83],[.16,.85],[.19,.93],[.2,1.02],[.185,1.1],[.165,1.125]],26,shortsM), 0,0,0); pel.scale.z = .66;
-  const wb = put(Tr(.176,.014,trim), 0,1.115,0); wb.rotation.x = Math.PI/2; wb.scale.y = .66;
+  const pel = put(Lu([[0,.83],[.16,.85],[.19,.93],[.196,1.0],[.172,1.06],[.165,1.08]],26,shortsM), 0,0,0); pel.scale.z = .66;
   // neck + head
   put(Cy(.052,.06,.1,skin,14), 0,1.7,0);
-  const hg = new THREE.Group(); hg.position.y = 1.84; body.add(hg);
+  const hg = new THREE.Group(); hg.position.y = 1.855; hg.scale.setScalar(1.18); body.add(hg);
   const head = new THREE.Mesh(HEAD_GEO, skin); head.castShadow = true; hg.add(head);
   [-1,1].forEach(sd=>{
     put(S(.0145,white,1.15,.8,.7,12), sd*.037,.016,.097,hg);
@@ -639,10 +638,10 @@ function placeGroup(list, z, hasBall){
     const a = actors.get(p.id); if(!a) return;
     a.x = a.tx = (i-(list.length-1)/2)*2.4; a.z = a.tz = z; a.vx = a.vz = a.m = 0; a.load = 0; a.jump = a.jumpV = 0;
     a.stun = a.imm = a.blockT = a.swipe = a.crossT = a.fallT = a.boost = a.stepT = 0; a.cross = null; a.fallK = 0; a.driving = null;
-    a.cchg = false; a.shot = null; a.vel.set(0,0,0); a.cooldown = .25; a.resetTimer = 0; a.didBlock = false; a.wasOff = false; a.aiWait = .8 + Math.random()*.6; a.blocked.clear();
+    a.cchg = false; a.driveCharge = false; a.shot = null; a.vel.set(0,0,0); a.cooldown = .25; a.resetTimer = 0; a.didBlock = false; a.wasOff = false; a.aiWait = .8 + Math.random()*.6; a.blocked.clear();
     a.state = hasBall ? 'held' : 'none'; a.ball.visible = hasBall && (!a.bot || a.cpu);
     const H = hoops[poss].pos; a.yaw = Math.atan2(H.x-a.x, H.z-a.z) + (hasBall ? 0 : Math.PI);
-    if(a === me){ charging = false; $('meterWrap').classList.remove('on'); camPos.set(a.x - Math.sin(a.yaw)*5.4, 3.1, a.z - Math.cos(a.yaw)*5.4); camLook.set(a.x + Math.sin(a.yaw)*3, 2, a.z + Math.cos(a.yaw)*3); }
+    if(a === me){ charging = false; $('meterWrap').classList.remove('on'); camPos.set(a.x - Math.sin(a.yaw)*6.6, 5.1, a.z - Math.cos(a.yaw)*6.6); camLook.set(a.x + Math.sin(a.yaw)*3, 2, a.z + Math.cos(a.yaw)*3); }
   });
 }
 function doReset(team){
@@ -689,7 +688,7 @@ const sfx = {
 
 /* ---------- key bindings ---------- */
 const DEFAULT_BINDS = {up:'KeyW', down:'KeyS', left:'KeyA', right:'KeyD', sprint:'ShiftLeft', shoot:'Space', cross:'KeyC', step:'KeyX', steal:'KeyE', block:'KeyQ', chat:'Enter'};
-const BIND_NAMES = {up:'Move forward', down:'Move back', left:'Move left', right:'Move right', sprint:'Sprint', shoot:'Shoot (+ sprint near rim = drive)', cross:'Crossover (offense)', step:'Step-back (offense)', steal:'Steal (defense)', block:'Block (defense)', chat:'Open chat'};
+const BIND_NAMES = {up:'Move forward', down:'Move back', left:'Move left', right:'Move right', sprint:'Sprint', shoot:'Shoot (sprint to the rim = drive)', cross:'Crossover (offense)', step:'Step-back (offense)', steal:'Steal (defense)', block:'Block (defense)', chat:'Open chat'};
 let binds = (()=>{ try{ return Object.assign({}, DEFAULT_BINDS, JSON.parse(localStorage.getItem('ballrBinds')||'{}')); }catch(e){ return Object.assign({}, DEFAULT_BINDS); } })();
 const norm = c => c === 'ShiftRight' ? 'ShiftLeft' : c === 'ControlRight' ? 'ControlLeft' : c === 'AltRight' ? 'AltLeft' : c;
 const actionOf = code => { for(const k in binds) if(binds[k] === code) return k; return null; };
@@ -714,10 +713,10 @@ function renderBinds(){
 }
 function renderKeyHints(){
   const K = a=>keyName(binds[a]);
-  const sk = [['sprint',K('sprint'),'Sprint'],['shoot',K('sprint')+'+'+K('shoot'),'Drive'],['cross',K('cross'),'Cross'],['step',K('step'),'Step-back'],['steal',K('steal'),'Steal'],['block',K('block'),'Block']];
+  const sk = [['sprint',K('sprint'),'Sprint'],['cross',K('cross'),'Cross'],['step',K('step'),'Step-back'],['steal',K('steal'),'Steal'],['block',K('block'),'Block']];
   $('skills').innerHTML = sk.map(s=>`<div class="sk"><b>${s[1]}</b><span>${s[2]}</span><i></i></div>`).join('');
   $('help').innerHTML = `<kbd>${K('up')}</kbd><kbd>${K('left')}</kbd><kbd>${K('down')}</kbd><kbd>${K('right')}</kbd> move · hold <kbd>${K('shoot')}</kbd> shoot, release in <b style="color:#35ff7a">green</b> · <kbd>${K('chat')}</kbd> chat · <kbd>ESC</kbd> controls`;
-  $('menuKeys').innerHTML = `<span><kbd>${K('up')}${K('left')}${K('down')}${K('right')}</kbd> move</span><span><kbd>${K('sprint')}</kbd> sprint</span><span><kbd>${K('shoot')}</kbd> hold &amp; release in green to shoot</span><span><kbd>${K('sprint')}+${K('shoot')}</kbd> near rim = drive / dunk</span><span><kbd>${K('cross')}</kbd> crossover</span><span><kbd>${K('step')}</kbd> step-back</span><span><kbd>${K('steal')}</kbd> steal</span><span><kbd>${K('block')}</kbd> block</span><span><kbd>${K('chat')}</kbd> chat</span><span>Offense: shoot, drive, cross, step-back. Defense: steal, block.</span>`;
+  $('menuKeys').innerHTML = `<span><kbd>${K('up')}${K('left')}${K('down')}${K('right')}</kbd> move</span><span><kbd>${K('sprint')}</kbd> sprint</span><span><kbd>${K('shoot')}</kbd> hold &amp; release in green to shoot</span><span>sprint to the rim, then <kbd>${K('shoot')}</kbd> = drive (still timed)</span><span><kbd>${K('cross')}</kbd> crossover</span><span><kbd>${K('step')}</kbd> step-back</span><span><kbd>${K('steal')}</kbd> steal</span><span><kbd>${K('block')}</kbd> block</span><span><kbd>${K('chat')}</kbd> chat</span><span>Offense: shoot, drive, cross, step-back. Defense: steal, block.</span>`;
 }
 function openSettings(v){ settingsOpen = v; capturing = null; $('settings').classList.toggle('hidden', !v); if(v){ for(const k in keys) keys[k] = false; renderBinds(); } }
 
@@ -808,11 +807,12 @@ function placeMeter(){
 }
 function shootOrDrive(){
   if(!me || !offense(me) || me.stun > 0 || me.driving || me.state !== 'held' || me.cooldown > 0) return;
-  const d = basis(me).d;
-  if(me.sprint && d < 5.6 && d > 1.4) startDrive(); else beginCharge();
+  beginCharge();
 }
 function beginCharge(){
   if(!me || charging || !offense(me) || me.state !== 'held' || me.cooldown > 0 || me.stun > 0 || me.driving) return;
+  const dd = basis(me).d;
+  me.driveCharge = me.sprint && dd < 5.6 && dd > 1.3;       // sprinting at the rim = drive, but the meter still decides it
   charging = true; chargeT = 0; placeZone(); placeMeter();
   $('fill').style.height = '0%'; $('tick').style.bottom = '0%';
   $('meterWrap').classList.add('on');
@@ -856,8 +856,14 @@ function release(p, a){
   const over = dead ? 0 : (Math.abs(err)-zn.hw), sgn = Math.sign(err);
   const start = new THREE.Vector3(a.x+b.fx*.25, 2.25 + Math.max(0,a.jump), a.z+b.fz*.25);
   const vel = aimVel(start, H, 1 + sgn*over*0.55, (Math.random()-.5)*2*over*0.35);
-  launch(a, start, vel, b.d >= 7.24 || Math.abs(a.x) > 6.7, a.boost > 0 ? 'step' : 'jump');
-  a.jumpV = 3.2;
+  if(isMe && a.driveCharge){                                                  // layup / dunk: still timed
+    if(dead && b.d < 2.7){ launch(a, new THREE.Vector3(H.x, H.y+.34, H.z), new THREE.Vector3(0,-7,0), false, 'dunk'); a.hoop.netKick = 1; camShake = .5; sfx.dunk(); a.jumpV = 5.4; }
+    else { const st = new THREE.Vector3(a.x+b.fx*.3, 2.3+Math.max(0,a.jump), a.z+b.fz*.3); launch(a, st, aimVel(st, H, 1 + sgn*over*0.55, (Math.random()-.5)*2*over*0.35), false, 'layup'); a.jumpV = 4.6; }
+  } else {
+    launch(a, start, vel, b.d >= 7.24 || Math.abs(a.x) > 6.7, a.boost > 0 ? 'step' : 'jump');
+    a.jumpV = 3.4;
+  }
+  a.driveCharge = false;
   if(!isMe) return;
   $('meterWrap').classList.remove('on');
   if(dead){ say('GREEN!', '#35ff7a'); sfx.green(); }
@@ -912,9 +918,14 @@ function doSteal(){
   a.lunge = {x:dx, z:dz}; a.lungeT = .22;                      // step into the ball handler and swipe
   if(t) sendAct('steal', t[0].id); else a.cd.steal = 2;
 }
+function startBlockJump(a){
+  a.blockT = .85; a.jumpV = 4.9; a.blocked.clear();
+  if(a.m < 1.5){ const lk = look(a); a.vx = lk.fx*1.8; a.vz = lk.fz*1.8; }      // standing: hop into the shooter
+  else { a.vx *= 1.12; a.vz *= 1.12; }                                           // running: you go up carrying your run
+}
 function doBlock(){
   const a = me; if(!defense(a) || a.state !== 'none' || a.cd.block > 0 || a.stun > 0 || a.blockT > 0 || a.swipe > 0) return;
-  a.blockT = .65; a.cd.block = CD.block; a.blocked.clear(); sfx.whoosh();
+  a.cd.block = CD.block; sfx.whoosh(); startBlockJump(a);
 }
 function startDrive(a){
   a = a || me; const b = basis(a), H = a.hoop.pos;
@@ -1079,25 +1090,23 @@ function tickCtrl(a, dt){
   if(a.crossT <= 0) a.cross = null;
   if(a.blockT > 0){
     a.blockT = Math.max(0, a.blockT-dt);
-    a.jump = .95*Math.sin(Math.PI*(1-a.blockT/.65));
-    if(a.blockT <= 0) a.jump = 0;
-    { const lk = look(a); a.x = Math.max(-7.2, Math.min(7.2, a.x + lk.fx*1.8*dt)); a.z = Math.max(-13.5, Math.min(13.5, a.z + lk.fz*1.8*dt)); }   // hang toward the shooter
-    if(a.jump > .55) oppsNear(a, 2.2).forEach(([o])=>{
+    if(a.jump > .45) oppsNear(a, 2.3).forEach(([o])=>{
       if(a.blocked.has(o.id)) return;
       if((o.state === 'flying' && o.shot && o.shot.t < .45) || (o.state === 'held' && o.jump > .3)){ a.blocked.add(o.id); if(a === me) sendAct('block', o.id); else routeAct({t:'act', k:'block', to:o.id, from:a.id}); }
     });
-  } else if(a.driving){
+  }
+  if(a.driving){
     const d = a.driving; d.t += dt;
     const p = Math.min(1, d.t/d.T), e = p*p*(3-2*p);
     a.x = d.sx + (d.tx-d.sx)*e; a.z = d.sz + (d.tz-d.sz)*e; a.vx = a.vz = 0;
     a.jump = (d.kind === 'dunk' ? 1.15 : .8)*Math.sin(Math.PI*Math.min(1, p*1.04));
     if(!d.released && p >= .72) releaseDrive(a);
     if(p >= 1){ a.driving = null; a.jump = 0; }
-  } else if(a.stepT > 0){
+  } else if(a.stepT > 0 && a.jumpV === 0){
     a.jump = .13*Math.sin(Math.PI*(1-a.stepT/.34));            // small hop back
   } else if(a.jumpV !== 0 || a.jump > 0){
-    a.jump += a.jumpV*dt; a.jumpV -= 14*dt;
-    if(a.jump <= 0){ a.jump = 0; a.jumpV = 0; }
+    a.jump += a.jumpV*dt; a.jumpV -= 14*dt;                    // ballistic jump (shared by shots and blocks)
+    if(a.jump <= 0){ a.jump = 0; a.jumpV = 0; if(a.blockT > 0 && a.blockT < .8) a.blockT = 0; }
   }
   a.fl = (a.blockT>0?1:0) | (a.stun>0?(a.stumble?2:2|32):0) | (a.sprint?4:0) | (a.crossT>0?8:0) | (a.swipe>0?16:0) | (a.fallT>0?64:0) | (a.cxFrom>0?128:0) | (a.stepT>0?256:0);
 }
@@ -1115,23 +1124,25 @@ function animateActor(a, dt){
   if(fl&8){ if(!a._cx){ a._cx = tAcc; a.cxFrom = (fl&128) ? 1 : -1; } ce = tAcc - a._cx; }
   else if(a._cx){ a._cx = 0; a.hand = -a.cxFrom; }
   const cs = a.cxFrom;                                    // hand the ball started in; cut goes the other way
-  const mv = Math.min(1, a.m/3.2), run = (fl&4) ? 14 : 10, step = fl&256, load = a.load;
-  const sw = step ? Math.sin(t*20)*.35 : Math.sin(t*run)*mv*(.8 + ((fl&4)?.35:0));
+  a.rp = (a.rp||0) + dt*(3.2 + a.m*1.45);                 // stride phase follows actual speed
+  const mv = Math.min(1, a.m/3.2), step = fl&256, load = a.load;
+  const sw = step ? Math.sin(t*20)*.3 : Math.sin(a.rp)*mv*(.72 + Math.min(.45, a.m/15));
   const L = av.legL, Rg = av.legR;
-  L.hip.rotation.x = sw - load*.5 - (step?.25:0); Rg.hip.rotation.x = -sw - load*.5 - (step?.25:0);
-  L.knee.rotation.x = Math.max(0,-sw)*1.0 + load*.95 + (step?.55:0); Rg.knee.rotation.x = Math.max(0,sw)*1.0 + load*.95 + (step?.55:0);
+  const cr = (fl&8) ? 1 : 0;
+  L.hip.rotation.z = Rg.hip.rotation.z = 0;
+  L.hip.rotation.x = sw - load*.5 - (step?.25:0) - cr*.32; Rg.hip.rotation.x = -sw - load*.5 - (step?.25:0) - cr*.32;
+  L.knee.rotation.x = Math.max(0,-sw)*1.05 + load*.95 + (step?.55:0) + cr*.62; Rg.knee.rotation.x = Math.max(0,sw)*1.05 + load*.95 + (step?.55:0) + cr*.62;
   if(a.jump > .08 && !a.bot && a.fallK < .1 && !step){ L.knee.rotation.x = Rg.knee.rotation.x = .55; L.hip.rotation.x = -.25; Rg.hip.rotation.x = .1; }
-  av.body.position.y = Math.abs(Math.sin(t*run))*.04*mv - load*.2 - (step?.06:0);
+  av.body.position.y = Math.abs(Math.sin(a.rp))*.045*mv - load*.2 - (step?.06:0) - cr*.1;
   // crossover body language: dip toward the fake, then drive the other way
-  let lean = 0;
-  if(fl&8){ lean = ce < .16 ? cs*.28*Math.sin(Math.PI*clamp01(ce/.16)) : -cs*.34*Math.sin(Math.PI*clamp01((ce-.16)/.4)); }
-  const twist = (fl&8) ? -cs*.4*Math.sin(Math.PI*clamp01(ce/.5)) : 0;
-  av.body.rotation.set(((fl&4)?.28:0) + (stun?.45:0) + (step?-.16:0) + ((fl&8)?.1:0) + ((fl&16)?.32:0) + ((fl&1)?.12:0), twist, lean + (stun&&a.stumble?.5:0));
+  const lean = (fl&8) ? -cs*.04*Math.sin(Math.PI*clamp01(ce/.5)) : 0;                  // barely any tilt: the move is in the legs, hips and ball
+  const twist = (fl&8) ? -cs*.16*Math.sin(Math.PI*clamp01(ce/.5)) : 0;
+  av.body.rotation.set(Math.min(.3, a.m/24) + (stun?.45:0) + (step?-.16:0) + ((fl&8)?.14:0) + ((fl&16)?.32:0) + ((fl&1)?.1:0), twist, lean + (stun&&a.stumble?.5:0));
   a.fallK += ((fl&64 ? 1 : 0) - a.fallK)*Math.min(1, dt*9);
-  if(a.fallK > .02){ av.body.rotation.set(-1.5*a.fallK,0,0); av.body.position.y = .16*a.fallK; }
-  av.label.position.y = 2.4 - 1.75*a.fallK;
+  if(a.fallK > .02){ av.body.position.y = -.66*a.fallK; av.body.rotation.set(.42*a.fallK, 0, .16*a.fallK); }   // drop into a seat, torso leaning on a hand
+  av.label.position.y = 2.5 - 1.2*a.fallK;
   // arms
-  const pose = (arm,up,el)=>{ arm.sh.rotation.x = up; arm.el.rotation.x = el; };
+  const pose = (arm,up,el)=>{ arm.sh.rotation.x = up; arm.sh.rotation.z = 0; arm.el.rotation.x = el; };
   const k = Math.abs(Math.sin(tAcc*7 + a.phase));
   const handArm = h => h > 0 ? av.armR : av.armL, offArm = h => h > 0 ? av.armL : av.armR;
   if(fl&1){ pose(av.armL,-3.0,-.05); pose(av.armR,-3.0,-.05); }
@@ -1147,6 +1158,13 @@ function animateActor(a, dt){
   }
   else { pose(handArm(a.hand), -.15 - k*.45, -.6 - k*.55); pose(offArm(a.hand), -.35 + sw*.5, -.7); }
 
+  if(a.fallK > .02){                                          // ankles broken: sitting on the floor, one leg out, one folded, a hand down
+    const fk = a.fallK, bl = (o,k,v)=>{ o[k] += (v-o[k])*fk; };
+    bl(L.hip.rotation,'x',-1.5); bl(L.hip.rotation,'z',.5); bl(L.knee.rotation,'x',.1);
+    bl(Rg.hip.rotation,'x',-1.15); bl(Rg.hip.rotation,'z',-.3); bl(Rg.knee.rotation,'x',2.15);
+    bl(av.armR.sh.rotation,'x',-.45); bl(av.armR.el.rotation,'x',-.05);
+    bl(av.armL.sh.rotation,'x',-.6); bl(av.armL.sh.rotation,'z',-.9); bl(av.armL.el.rotation,'x',-.25);
+  }
   // ball
   if(a.state === 'none'){ a.ball.visible = false; }
   else if(a.state === 'held'){
@@ -1196,17 +1214,26 @@ function updateLocal(dt){
   const il = Math.hypot(ix,iz); if(il>0){ ix/=il; iz/=il; }
   a.sprint = !!K('sprint') && il > 0 && a.stam > .03 && !charging && !locked && a.crossT <= 0 && a.stepT <= 0;
   a.stam = Math.max(0, Math.min(1, a.stam + (a.sprint ? -.3 : .18)*dt));
-  const speed = charging ? 0 : (a.sprint ? 6.8 : 4.6), k = Math.min(1, dt*10);
-  if(a.cross && a.crossT > 0){                      // fake one way, then burst the other and slow down out of the cut
+  const air = a.jump > .03 || a.jumpV > 0;
+  const steer = (tx,tz,acc)=>{ const dx = tx-a.vx, dz = tz-a.vz, l = Math.hypot(dx,dz); if(l < 1e-4) return; const m = Math.min(l, acc*dt); a.vx += dx/l*m; a.vz += dz/l*m; };
+  if(a.cross && a.crossT > 0){                      // plant toward the fake, then a short shift the way you're going
     const e = .55 - a.crossT;
-    if(e < .14){ a.vx = -a.cross.sx*.8; a.vz = -a.cross.sz*.8; }                 // tiny plant toward the fake
-    else { const q = Math.max(0, 1 - (e-.14)/.41); a.vx = a.cross.x*(1.6 + 4.4*q*q); a.vz = a.cross.z*(1.6 + 4.4*q*q); }   // short shift the way you're going
+    if(e < .14){ a.vx = -a.cross.sx*.8; a.vz = -a.cross.sz*.8; }
+    else { const q = Math.max(0, 1 - (e-.14)/.41); a.vx = a.cross.x*(1.6 + 4.4*q*q); a.vz = a.cross.z*(1.6 + 4.4*q*q); }
   } else if(a.lungeT > 0 && a.lunge){
     const q = a.lungeT/.22; a.vx = a.lunge.x*(1.5 + 4.5*q); a.vz = a.lunge.z*(1.5 + 4.5*q);
   } else if(a.stepT > 0){                           // just step backward, still facing the rim
     const b = basis(a), q = a.stepT/.34, sp = 1.2 + 4.4*q;
     a.vx = -b.fx*sp; a.vz = -b.fz*sp;
-  } else if(!a.driving){ a.vx += ((cb.rx*ix + cb.fx*iz)*speed - a.vx)*k; a.vz += ((cb.rz*ix + cb.fz*iz)*speed - a.vz)*k; }
+  } else if(a.driving){ /* scripted (CPU) */ }
+  else if(air){ a.vx *= 1 - .3*dt; a.vz *= 1 - .3*dt; }       // real momentum: you leave the floor going the way you were running
+  else if(charging){
+    if(a.driveCharge){ const b = basis(a), p = Math.min(1, chargeT/FILL_TIME), sp = b.d > 1.5 ? Math.max(3.4, 6.4*(1-p*.45)) : 0; steer(b.fx*sp, b.fz*sp, 38); }
+    else steer(0, 0, 9);                                       // a running jumper slides a little before you leave the floor
+  } else {
+    const tv = a.sprint ? 6.8 : 4.6;
+    steer((cb.rx*ix + cb.fx*iz)*tv, (cb.rz*ix + cb.fz*iz)*tv, il > 0 ? (a.sprint ? 19 : 26) : 34);
+  }
   if(!a.driving){
     a.x = Math.max(-7.2, Math.min(7.2, a.x + a.vx*dt));
     a.z = Math.max(-13.5, Math.min(13.5, a.z + a.vz*dt));
@@ -1231,10 +1258,9 @@ function updateLocal(dt){
   if(!charging) placeZone();
   const sk = $('skills').children;
   const setCd = (i, v, mx)=>{ sk[i].lastElementChild.style.height = (v > 0 ? Math.min(100, v/mx*100) : 0)+'%'; };
-  setCd(0, 1-a.stam, 1); setCd(2, a.cd.cross, CD.cross); setCd(3, a.cd.step, CD.step); setCd(4, a.cd.steal, CD.steal); setCd(5, a.cd.block, CD.block);
+  setCd(0, 1-a.stam, 1); setCd(1, a.cd.cross, CD.cross); setCd(2, a.cd.step, CD.step); setCd(3, a.cd.steal, CD.steal); setCd(4, a.cd.block, CD.block);
   const onO = off && !inReset, onD = !off && !inReset;
-  [1,2,3].forEach(i=>sk[i].classList.toggle('off', !onO)); [4,5].forEach(i=>sk[i].classList.toggle('off', !onD));
-  sk[1].classList.toggle('ready', onO && a.sprint && b.d < 5.6 && b.d > 1.4);
+  [1,2].forEach(i=>sk[i].classList.toggle('off', !onO)); [3,4].forEach(i=>sk[i].classList.toggle('off', !onD));
 }
 
 /* ---------- practice defender / CPU opponent ---------- */
@@ -1254,11 +1280,12 @@ function botDefend(b, dt, D){
   const d = Math.hypot(me.x-b.x, me.z-b.z);
   b.aiT -= dt;
   if(b.aiT <= 0){ b.aiT = D.steal + Math.random()*1.5; if(d < 1.7 && me.state === 'held' && me.load < .05){ b.swipe = .3; routeAct({t:'act', k:'steal', to:me.id, from:b.id}); } }
-  if(me.state === 'flying' && me.shot && me.shot.t < .15 && d < 2.5 && !b.didBlock && Math.random() < D.block){ b.blockT = .65; b.blocked.clear(); b.didBlock = true; }
+  if(me.state === 'flying' && me.shot && me.shot.t < .15 && d < 2.5 && !b.didBlock && Math.random() < D.block){ startBlockJump(b); b.didBlock = true; }
   if(me.state !== 'flying') b.didBlock = false;
 }
 function botAI(b, dt){
-  if(!me || b.stun > 0 || b.driving || inReset || b.blockT > 0){ b.vx *= .8; b.vz *= .8; b.m = Math.hypot(b.vx,b.vz); return; }
+  if(b.blockT > 0){ b.x = Math.max(-7.2, Math.min(7.2, b.x + b.vx*dt)); b.z = Math.max(-13.5, Math.min(13.5, b.z + b.vz*dt)); b.vx *= 1 - .3*dt; b.vz *= 1 - .3*dt; b.m = Math.hypot(b.vx,b.vz); return; }
+  if(!me || b.stun > 0 || b.driving || inReset){ b.vx *= .8; b.vz *= .8; b.m = Math.hypot(b.vx,b.vz); return; }
   if(b.cpu) return cpuAI(b, dt);
   botDefend(b, dt, {speed:4.3, steal:2.4, block:.5});
 }
@@ -1295,8 +1322,8 @@ function updateCamera(dt){
     camera.position.copy(camPos); camera.lookAt(0,1.5,0); camLook.set(0,1.5,0); return;
   }
   const lk = look(me), b = basis(me), off = me.team === poss;
-  _t.set(me.x - lk.fx*5.4, 3.1 + me.jump*.5, me.z - lk.fz*5.4);
-  _l.set(me.x + lk.fx*3.2, 2.0, me.z + lk.fz*3.2);
+  _t.set(me.x - lk.fx*6.6, 5.1 + me.jump*.4, me.z - lk.fz*6.6);
+  _l.set(me.x + lk.fx*3.4, 1.2, me.z + lk.fz*3.4);
   if(off) _l.lerp(me.hoop.pos, Math.min(.45, Math.max(0, (b.d-4)/14)));
   camPos.lerp(_t, Math.min(1, dt*5));
   camLook.lerp(_l, Math.min(1, dt*6));
@@ -1670,9 +1697,9 @@ function initPreview(){
     pv.r = new THREE.WebGLRenderer({canvas:cv, antialias:true, alpha:true}); pv.r.setPixelRatio(Math.min(devicePixelRatio,2)); pv.r.setSize(170,230,false);
     pv.r.outputEncoding = THREE.sRGBEncoding;
     pv.scene = new THREE.Scene();
-    pv.scene.add(new THREE.HemisphereLight(0xdfe8ff, 0x4a3a2a, 1.0));
-    const dl = new THREE.DirectionalLight(0xffffff, 1.1); dl.position.set(2,4,3); pv.scene.add(dl);
-    const fill = new THREE.DirectionalLight(0xfff0e0, .7); fill.position.set(-2,1,4); pv.scene.add(fill);
+    pv.scene.add(new THREE.HemisphereLight(0xdfe8ff, 0x4a3a2a, .55));
+    const dl = new THREE.DirectionalLight(0xffffff, .75); dl.position.set(2,4,3); pv.scene.add(dl);
+    const fill = new THREE.DirectionalLight(0xfff0e0, .3); fill.position.set(-2,1,4); pv.scene.add(fill);
     pv.cam = new THREE.PerspectiveCamera(30, 170/230, .1, 30); pv.cam.position.set(0,1.1,5.1); pv.cam.lookAt(0,1.1,0);
     rebuildPreview();
   }catch(e){ pv.r = null; }
