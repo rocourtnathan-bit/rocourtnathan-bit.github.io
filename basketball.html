@@ -461,7 +461,8 @@ const HEAD_GEO = (()=>{
 })();
 function tankTexture(skinHex, jerseyHex){
   const W = 512, H = 256, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
-  const hex = n => '#'+n.toString(16).padStart(6,'0');
+  const enc = n => { const c = new THREE.Color(n), f = v => Math.round(Math.pow(v,1/2.2)*255); return `rgb(${f(c.r)},${f(c.g)},${f(c.b)})`; };   // match material colours
+  const hex = enc;
   const Y = y => (1-(y-.97)/(1.685-.97))*H, X = u => u*W;
   x.fillStyle = hex(skinHex); x.fillRect(0,0,W,H);
   x.fillStyle = hex(jerseyHex); x.fillRect(0, Y(1.42), W, H-Y(1.42));
@@ -503,7 +504,7 @@ function makeAvatar(ch, team, name, parent){
   const bw = [.92,1,1.12][ch.build], bh = [1.04,1,.97][ch.build];
   body.scale.set(bw, bh, bw);
   // torso (skin) + tank top + shorts
-  const keysY = [[.97,.2],[1.04,.186],[1.12,.178],[1.22,.2],[1.36,.232],[1.47,.252],[1.55,.258],[1.6,.236],[1.64,.165],[1.665,.092],[1.685,0]];
+  const keysY = [[.97,.236],[1.04,.218],[1.12,.2],[1.22,.206],[1.36,.232],[1.47,.252],[1.55,.258],[1.6,.236],[1.64,.165],[1.665,.092],[1.685,0]];
   const prof = []; for(let i=0;i<=36;i++){ const y = .97 + (1.685-.97)*i/36; let r = 0;
     for(let k=0;k<keysY.length-1;k++){ const a0 = keysY[k], a1 = keysY[k+1]; if(y >= a0[0] && y <= a1[0]){ r = a0[1] + (a1[1]-a0[1])*(y-a0[0])/(a1[0]-a0[0]); break; } }
     prof.push([r,y]); }
@@ -514,32 +515,32 @@ function makeAvatar(ch, team, name, parent){
   const pel = put(Lu([[0,.83],[.18,.85],[.215,.93],[.225,.99],[.195,1.05]],26,shortsM), 0,0,0); pel.scale.z = .68;
   [-1,1].forEach(sd=>{ put(B(.014,.2,.11,trim), sd*.222,.93,0); });
   // neck + head
-  put(Cy(.062,.076,.13,skin,18), 0,1.69,0);
+  put(Cy(.05,.062,.12,skin,18), 0,1.69,0);
   const hg = new THREE.Group(); hg.position.y = 1.865; hg.scale.setScalar(1.12); body.add(hg);
   const head = new THREE.Mesh(HEAD_GEO, skin); head.castShadow = true; hg.add(head);
   [-1,1].forEach(sd=>{
-    put(S(.019,white,1.3,.78,.7,14), sd*.038,.016,.096,hg);                       // eye white
-    put(S(.0105,iris,1,1,.5,12), sd*.038,.016,.1055,hg);                          // iris
-    put(S(.0052,dark,1,1,.5,8), sd*.038,.016,.1085,hg);                           // pupil
-    put(S(.021,skin,1.35,.42,.75,12), sd*.038,.031,.098,hg);                       // upper eyelid
-    put(S(.019,skin,1.3,.26,.7,10), sd*.038,.0,.099,hg);                           // lower lid
+    put(S(.0155,white,1.3,.78,.7,14), sd*.039,.016,.0965,hg);                       // eye white
+    put(S(.0085,iris,1,1,.5,12), sd*.039,.016,.1055,hg);                          // iris
+    put(S(.0042,dark,1,1,.5,8), sd*.039,.016,.1078,hg);                           // pupil
+    put(S(.0175,skin,1.35,.42,.75,12), sd*.039,.0295,.0985,hg);                       // upper eyelid
+    put(S(.0155,skin,1.3,.26,.7,10), sd*.039,.0005,.0985,hg);                           // lower lid
     const br = put(B(.054,.0115,.011,hairM), sd*.038,.047,.1,hg); br.rotation.z = sd*-.16;   // thick brow
     put(S(.02,skin,.45,1.2,.8,10), sd*.093,.0,-.005,hg);
     put(S(.0095,skin,1,.9,.9,8), sd*.0135,-.021,.111,hg);
   });
-  put(S(.0135,skin,.95,2.6,.9,10), 0,.004,.108,hg);                                // nose bridge
-  put(S(.0185,skin,1.05,.95,1.15,12), 0,-.019,.118,hg);                            // nose tip
+  put(S(.0105,skin,.9,2.7,.9,10), 0,.004,.108,hg);                                // nose bridge
+  put(S(.0135,skin,1.05,.95,1.15,12), 0,-.019,.117,hg);                            // nose tip
   put(S(.021,lipM,1.75,.45,.7,14), 0,-.047,.103,hg);                               // upper lip
   put(S(.02,lipM,1.7,.55,.7,14), 0,-.06,.101,hg);                                  // lower lip
   put(B(.036,.003,.004,dark), 0,-.0535,.108,hg);                                   // mouth line
-  [-1,1].forEach(sd=>put(S(.03,skin,1,.8,.55,10), sd*.058,-.018,.086,hg));           // cheeks
+  [-1,1].forEach(sd=>put(S(.02,skin,1,.7,.45,10), sd*.056,-.022,.09,hg));           // cheeks
   // hair
   const cap = (rx,ry,rz,tl)=>{ const m = new THREE.Mesh(new THREE.SphereGeometry(1,32,20,0,Math.PI*2,0,Math.PI*tl), hairM); m.scale.set(rx,ry,rz); m.castShadow = true; return m; };
   const fade = ()=>{ put(cap(.099,.128,.115,.43), 0,.0,-.004,hg); put(cap(.1,.126,.114,.66), 0,-.012,-.036,hg); };
   const hs = ch.hair;
   if(hs === 0) fade();
   else if(hs === 1){                                                       // afro (lumpy sphere)
-    const ag = new THREE.IcosahedronGeometry(1,4), ap = ag.attributes.position;
+    const ag = new THREE.SphereGeometry(1,48,32), ap = ag.attributes.position;
     for(let i=0;i<ap.count;i++){ const x=ap.getX(i),y=ap.getY(i),z=ap.getZ(i), n = 1 + .07*Math.sin(x*9+1)*Math.sin(y*8+2)*Math.sin(z*9+3); ap.setXYZ(i,x*n,y*n,z*n); }
     ag.computeVertexNormals();
     const af = new THREE.Mesh(ag, hairM); af.scale.set(.15,.135,.145); af.castShadow = true; put(af, 0,.078,-.03,hg);
@@ -589,7 +590,7 @@ function makeAvatar(ch, team, name, parent){
     legs.push({hip,knee});
     const sho = new THREE.Group(); sho.position.set(sd*.335,1.585,0); body.add(sho);
     put(S(.088,skin,1,1.2,1,18), 0,-.01,0,sho);
-    put(Ld([[0,0],[.074,0],[.08,-.05],[.074,-.16],[.057,-.3]],16,skin), 0,0,0,sho);
+    put(Ld([[0,0],[.068,0],[.074,-.05],[.067,-.16],[.052,-.3]],16,skin), 0,0,0,sho);
     const el = new THREE.Group(); el.position.y = -.3; sho.add(el);
     put(S(.057,skin,1,1,1,14), 0,0,0,el);
     put(Ld([[0,0],[.06,0],[.066,-.05],[.057,-.15],[.04,-.26]],16,skin), 0,0,0,el);
