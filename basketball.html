@@ -451,8 +451,9 @@ const HEAD_GEO = (()=>{
   const g = new THREE.SphereGeometry(1,40,30), p = g.attributes.position;
   for(let i=0;i<p.count;i++){
     let x = p.getX(i), y = p.getY(i), z = p.getZ(i);
-    if(y < 0){ const k = 1 + y*.34; x *= k; z *= (1 + y*.1); }          // jaw tapers
-    if(y < -.6 && z > 0) z += (-.6-y)*.18;                              // chin
+    if(y < 0){ const k = 1 + y*.22; x *= k; z *= (1 + y*.08); }          // jaw tapers gently (square-ish)
+    if(y < -.62 && z > 0) z += (-.62-y)*.12;                             // chin
+    if(y > -.55 && y < .15){ x *= 1 + .05*Math.sin((y+.55)/.7*Math.PI); }   // cheekbones
     if(y > .3) x *= 1 - (y-.3)*.1;                                      // crown a bit narrower
     p.setXYZ(i, x*.094, y*.118, z*.108);
   }
@@ -502,31 +503,36 @@ function makeAvatar(ch, team, name, parent){
   const bw = [.92,1,1.12][ch.build], bh = [1.04,1,.97][ch.build];
   body.scale.set(bw, bh, bw);
   // torso (skin) + tank top + shorts
-  const keysY = [[.97,.19],[1.04,.176],[1.12,.168],[1.2,.176],[1.34,.195],[1.46,.208],[1.54,.215],[1.6,.2],[1.64,.14],[1.665,.08],[1.685,0]];
+  const keysY = [[.97,.2],[1.04,.186],[1.12,.178],[1.22,.2],[1.36,.232],[1.47,.252],[1.55,.258],[1.6,.236],[1.64,.165],[1.665,.092],[1.685,0]];
   const prof = []; for(let i=0;i<=36;i++){ const y = .97 + (1.685-.97)*i/36; let r = 0;
     for(let k=0;k<keysY.length-1;k++){ const a0 = keysY[k], a1 = keysY[k+1]; if(y >= a0[0] && y <= a1[0]){ r = a0[1] + (a1[1]-a0[1])*(y-a0[0])/(a1[0]-a0[0]); break; } }
     prof.push([r,y]); }
   const torsoM = new THREE.MeshStandardMaterial({map:tankTexture(skinC.getHex(), jc.getHex()), roughness:.6});
   const tk = new THREE.Mesh(new THREE.LatheGeometry(prof.map(q=>new THREE.Vector2(q[0],q[1])), 36, -Math.PI, Math.PI*2), torsoM); tk.castShadow = true; tk.scale.z = .64; body.add(tk);
   const num = String(ch.num), back = numberDecal(num), front = numberDecal(num);
-  back.position.set(0,1.36,-.136); back.rotation.y = Math.PI; front.position.set(0,1.27,.14); front.scale.set(.55,.55,.55); body.add(back, front);
-  const pel = put(Lu([[0,.83],[.16,.85],[.19,.93],[.198,.99],[.172,1.05]],26,shortsM), 0,0,0); pel.scale.z = .66;
-  [-1,1].forEach(sd=>{ put(B(.014,.2,.1,trim), sd*.196,.92,0); });
+  back.position.set(0,1.37,-.152); back.rotation.y = Math.PI; front.position.set(0,1.27,.15); front.scale.set(.55,.55,.55); body.add(back, front);
+  const pel = put(Lu([[0,.83],[.18,.85],[.215,.93],[.225,.99],[.195,1.05]],26,shortsM), 0,0,0); pel.scale.z = .68;
+  [-1,1].forEach(sd=>{ put(B(.014,.2,.11,trim), sd*.222,.93,0); });
   // neck + head
-  put(Cy(.052,.06,.1,skin,14), 0,1.7,0);
-  const hg = new THREE.Group(); hg.position.y = 1.855; hg.scale.setScalar(1.18); body.add(hg);
+  put(Cy(.062,.076,.13,skin,18), 0,1.69,0);
+  const hg = new THREE.Group(); hg.position.y = 1.865; hg.scale.setScalar(1.12); body.add(hg);
   const head = new THREE.Mesh(HEAD_GEO, skin); head.castShadow = true; hg.add(head);
   [-1,1].forEach(sd=>{
-    put(S(.0145,white,1.15,.8,.7,12), sd*.037,.016,.097,hg);
-    put(S(.0085,iris,1,1,.5,10), sd*.037,.016,.1065,hg);
-    const br = put(B(.043,.0085,.009,hairM), sd*.038,.044,.1,hg); br.rotation.z = sd*-.12;
+    put(S(.019,white,1.3,.78,.7,14), sd*.038,.016,.096,hg);                       // eye white
+    put(S(.0105,iris,1,1,.5,12), sd*.038,.016,.1055,hg);                          // iris
+    put(S(.0052,dark,1,1,.5,8), sd*.038,.016,.1085,hg);                           // pupil
+    put(S(.021,skin,1.35,.42,.75,12), sd*.038,.031,.098,hg);                       // upper eyelid
+    put(S(.019,skin,1.3,.26,.7,10), sd*.038,.0,.099,hg);                           // lower lid
+    const br = put(B(.054,.0115,.011,hairM), sd*.038,.047,.1,hg); br.rotation.z = sd*-.16;   // thick brow
     put(S(.02,skin,.45,1.2,.8,10), sd*.093,.0,-.005,hg);
-    put(S(.008,skin,1,.9,.9,8), sd*.012,-.02,.112,hg);
+    put(S(.0095,skin,1,.9,.9,8), sd*.0135,-.021,.111,hg);
   });
-  put(S(.011,skin,.9,2.4,.9,10), 0,.005,.107,hg);
-  put(S(.0145,skin,1,.9,1.1,12), 0,-.018,.117,hg);
-  put(S(.0185,lipM,1.7,.42,.65,12), 0,-.046,.103,hg);
-  put(S(.017,lipM,1.6,.5,.65,12), 0,-.059,.101,hg);
+  put(S(.0135,skin,.95,2.6,.9,10), 0,.004,.108,hg);                                // nose bridge
+  put(S(.0185,skin,1.05,.95,1.15,12), 0,-.019,.118,hg);                            // nose tip
+  put(S(.021,lipM,1.75,.45,.7,14), 0,-.047,.103,hg);                               // upper lip
+  put(S(.02,lipM,1.7,.55,.7,14), 0,-.06,.101,hg);                                  // lower lip
+  put(B(.036,.003,.004,dark), 0,-.0535,.108,hg);                                   // mouth line
+  [-1,1].forEach(sd=>put(S(.03,skin,1,.8,.55,10), sd*.058,-.018,.086,hg));           // cheeks
   // hair
   const cap = (rx,ry,rz,tl)=>{ const m = new THREE.Mesh(new THREE.SphereGeometry(1,32,20,0,Math.PI*2,0,Math.PI*tl), hairM); m.scale.set(rx,ry,rz); m.castShadow = true; return m; };
   const fade = ()=>{ put(cap(.099,.128,.115,.43), 0,.0,-.004,hg); put(cap(.1,.126,.114,.66), 0,-.012,-.036,hg); };
@@ -566,31 +572,31 @@ function makeAvatar(ch, team, name, parent){
   // legs
   const legs = [], arms = [];
   [-1,1].forEach(sd=>{
-    const hip = new THREE.Group(); hip.position.set(sd*.105,.93,0); body.add(hip);
-    put(Ld([[0,0],[.075,0],[.088,-.06],[.09,-.18],[.074,-.34],[.056,-.42]],18,skin), 0,0,0,hip);
-    put(Ld([[.1,0],[.116,-.12],[.126,-.26]],20,shortsM), 0,0,0,hip);
-    const hr = put(Tr(.126,.01,trim), 0,-.258,0,hip); hr.rotation.x = Math.PI/2;
+    const hip = new THREE.Group(); hip.position.set(sd*.118,.93,0); body.add(hip);
+    put(Ld([[0,0],[.1,0],[.118,-.06],[.122,-.18],[.098,-.34],[.07,-.42]],20,skin), 0,0,0,hip);
+    put(Ld([[.125,0],[.143,-.12],[.155,-.27]],22,shortsM), 0,0,0,hip);
+    const hr = put(Tr(.155,.011,trim), 0,-.268,0,hip); hr.rotation.x = Math.PI/2;
     const knee = new THREE.Group(); knee.position.y = -.42; hip.add(knee);
-    put(S(.057,skin,1,1,1,14), 0,0,0,knee);
-    put(Ld([[0,0],[.055,0],[.054,-.06],[.052,-.14],[.04,-.28],[.032,-.4]],16,skin), 0,0,0,knee);
-    put(S(.05,skin,1,1.8,.95,12), 0,-.12,-.02,knee);
-    put(Cy(.047,.04,.2,trim,14), 0,-.3,0,knee);
-    put(Cy(.05,.05,.028,accent,14), 0,-.2,0,knee);
-    put(S(.07,white,1,.62,2.2,16), 0,-.43,.06,knee);
-    put(S(.075,dark,1.04,.2,2.3,14), 0,-.468,.065,knee);
-    put(B(.046,.012,.09,trim), 0,-.402,.05,knee);
-    put(S(.03,accent,1.1,.5,1,10), 0,-.43,.15,knee);
+    put(S(.07,skin,1,1,1,14), 0,0,0,knee);
+    put(Ld([[0,0],[.07,0],[.07,-.06],[.066,-.14],[.05,-.28],[.04,-.4]],18,skin), 0,0,0,knee);
+    put(S(.062,skin,1,1.8,.95,14), 0,-.12,-.026,knee);
+    put(Cy(.056,.047,.2,trim,16), 0,-.3,0,knee);
+    put(Cy(.059,.059,.03,accent,16), 0,-.2,0,knee);
+    put(S(.082,white,1,.62,2.25,16), 0,-.43,.065,knee);
+    put(S(.088,dark,1.04,.2,2.35,14), 0,-.47,.07,knee);
+    put(B(.055,.014,.1,trim), 0,-.4,.055,knee);
+    put(S(.036,accent,1.1,.5,1,10), 0,-.43,.165,knee);
     legs.push({hip,knee});
-    const sho = new THREE.Group(); sho.position.set(sd*.29,1.6,0); body.add(sho);
-    put(S(.07,skin,1,1.15,1,16), 0,0,0,sho);
-    put(Ld([[0,0],[.057,0],[.061,-.05],[.053,-.16],[.043,-.3]],14,skin), 0,0,0,sho);
+    const sho = new THREE.Group(); sho.position.set(sd*.335,1.585,0); body.add(sho);
+    put(S(.088,skin,1,1.2,1,18), 0,-.01,0,sho);
+    put(Ld([[0,0],[.074,0],[.08,-.05],[.074,-.16],[.057,-.3]],16,skin), 0,0,0,sho);
     const el = new THREE.Group(); el.position.y = -.3; sho.add(el);
-    put(S(.043,skin,1,1,1,12), 0,0,0,el);
-    put(Ld([[0,0],[.046,0],[.05,-.05],[.044,-.15],[.032,-.26]],14,skin), 0,0,0,el);
-    put(Cy(.036,.036,.03,accent,12), 0,-.235,0,el);
-    put(S(.04,skin,1,1.3,.55,12), 0,-.31,0,el);
-    [-1.5,-.5,.5,1.5].forEach((f,i)=>{ const fg = put(Cy(.0085,.007,.058-(i===0||i===3?.008:0),skin,6), f*.0125,-.365,.004,el); fg.rotation.z = -f*.05; });
-    const th = put(Cy(.009,.007,.05,skin,6), -sd*.034,-.325,.012,el); th.rotation.z = -sd*.7; th.rotation.x = -.3;
+    put(S(.057,skin,1,1,1,14), 0,0,0,el);
+    put(Ld([[0,0],[.06,0],[.066,-.05],[.057,-.15],[.04,-.26]],16,skin), 0,0,0,el);
+    put(Cy(.045,.045,.032,accent,14), 0,-.235,0,el);
+    put(S(.05,skin,1,1.3,.58,14), 0,-.315,0,el);
+    [-1.5,-.5,.5,1.5].forEach((f,i)=>{ const fg = put(Cy(.0105,.0085,.07-(i===0||i===3?.009:0),skin,6), f*.0155,-.375,.004,el); fg.rotation.z = -f*.05; });
+    const th = put(Cy(.011,.0085,.06,skin,6), -sd*.043,-.33,.014,el); th.rotation.z = -sd*.7; th.rotation.x = -.3;
     arms.push({sh:sho, el});
   });
   // team ring on the floor so teams stay readable whatever jersey you pick
@@ -1805,7 +1811,7 @@ $('load').style.display = 'none';
 requestAnimationFrame(frame);
 
 // debug / test hook
-window.__ballr = {setLoad:v=>{ dbgLoad = v; }, setCam:c=>{ dbgCam = c; }, previewChar:(c,yaw)=>{ pv.freeze = true; Object.assign(myChar,c); pv.yaw = yaw; rebuildPreview(); pv.r.render(pv.scene, pv.cam); }, stats, beginCharge, endCharge, setCharge:v=>{chargeT=v*FILL_TIME;}, net, actors, handleAct, sendAct, doReset, possChange,
+window.__ballr = {setLoad:v=>{ dbgLoad = v; }, setCam:c=>{ dbgCam = c; }, previewChar:(c,yaw,cam)=>{ pv.freeze = true; Object.assign(myChar,c); pv.yaw = yaw; if(cam){ pv.cam.position.set(...cam.pos); pv.cam.lookAt(...cam.look); } rebuildPreview(); pv.r.render(pv.scene, pv.cam); }, stats, beginCharge, endCharge, setCharge:v=>{chargeT=v*FILL_TIME;}, net, actors, handleAct, sendAct, doReset, possChange,
   get me(){return me;}, get zone(){return zone;}, get state(){return me&&me.state;}, get phase(){return phase;}, get poss(){return poss;}, get inReset(){return inReset;}, binds};
 })();
 </script>
