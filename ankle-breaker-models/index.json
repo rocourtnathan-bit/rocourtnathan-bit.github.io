@@ -1,0 +1,4 @@
+{"models":[
+ {"name":"Hulk","dir":"hulk","size":1.35,"credit":"“Hulk (Brand New Day) – Marvel Future Fight” by Kabiidev, CC-BY 4.0","files":["scene.gltf","scene.bin","textures/hero_hulk01_S09_01_baseColor.png","textures/hero_hulk01_S09_02_baseColor.png","textures/hero_hulk01_S09_03_baseColor.png","textures/hero_hulk01_S09_04_baseColor.png","textures/kingpin_wp03_baseColor.png"]},
+ {"name":"Skeleton","dir":"skeleton","size":1,"credit":"“Skeleton” by Diego Luján García, CC-BY 4.0","files":["scene.gltf","scene.bin"]}
+]}
