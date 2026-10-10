@@ -1,4 +1,65 @@
-{"models":[
- {"name":"Hulk","dir":"hulk","size":1.35,"credit":"“Hulk (Brand New Day) – Marvel Future Fight” by Kabiidev, CC-BY 4.0","files":["scene.gltf","scene.bin","textures/hero_hulk01_S09_01_baseColor.png","textures/hero_hulk01_S09_02_baseColor.png","textures/hero_hulk01_S09_03_baseColor.png","textures/hero_hulk01_S09_04_baseColor.png","textures/kingpin_wp03_baseColor.png"]},
- {"name":"Skeleton","dir":"skeleton","size":1,"credit":"“Skeleton” by Diego Luján García, CC-BY 4.0","files":["scene.gltf","scene.bin"]}
-]}
+{
+ "models": [
+  {
+   "name": "Hulk",
+   "dir": "hulk",
+   "size": 1.35,
+   "credit": "\u201cHulk (Brand New Day) \u2013 Marvel Future Fight\u201d by Kabiidev, CC-BY 4.0",
+   "files": [
+    "scene.gltf",
+    "scene.bin",
+    "textures/hero_hulk01_S09_01_baseColor.png",
+    "textures/hero_hulk01_S09_02_baseColor.png",
+    "textures/hero_hulk01_S09_03_baseColor.png",
+    "textures/hero_hulk01_S09_04_baseColor.png",
+    "textures/kingpin_wp03_baseColor.png"
+   ]
+  },
+  {
+   "name": "Skeleton",
+   "dir": "skeleton",
+   "size": 1,
+   "credit": "\u201cSkeleton\u201d by Diego Luj\u00e1n Garc\u00eda, CC-BY 4.0",
+   "files": [
+    "scene.gltf",
+    "scene.bin"
+   ]
+  },
+  {
+   "name": "Fox",
+   "dir": "fox",
+   "size": 0.5,
+   "credit": "\u201cFox\u201d by tomkranis, glTF by Asobo Studio & scurest, CC-BY 4.0",
+   "files": [
+    "Fox.glb"
+   ]
+  },
+  {
+   "name": "Cesium Man",
+   "dir": "cesiumman",
+   "size": 1,
+   "credit": "\u201cCesium Man\u201d \u00a9 Cesium, CC-BY 4.0",
+   "files": [
+    "CesiumMan.glb"
+   ]
+  },
+  {
+   "name": "Rigged Figure",
+   "dir": "riggedfigure",
+   "size": 1,
+   "credit": "\u201cRigged Figure\u201d \u00a9 Cesium, CC-BY 4.0",
+   "files": [
+    "RiggedFigure.glb"
+   ]
+  },
+  {
+   "name": "Robot",
+   "dir": "robot",
+   "size": 1,
+   "credit": "\u201cRobot Expressive\u201d by Tom\u00e1s Laulh\u00e9, CC0",
+   "files": [
+    "RobotExpressive.glb"
+   ]
+  }
+ ]
+}

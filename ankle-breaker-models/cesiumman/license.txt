@@ -1,0 +1,4 @@
+Cesium Man
+CC-BY 4.0: (c) 2017 Cesium.
+Source: https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/CesiumMan
+https://creativecommons.org/licenses/by/4.0/

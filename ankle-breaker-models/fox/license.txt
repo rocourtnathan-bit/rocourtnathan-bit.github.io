@@ -1,0 +1,4 @@
+Fox
+CC-BY 4.0: (c) 2014 tomkranis (model); (c) 2017 @AsoboStudio and @scurest (glTF conversion).
+Source: https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/Fox
+https://creativecommons.org/licenses/by/4.0/

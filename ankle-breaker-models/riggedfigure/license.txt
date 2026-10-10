@@ -1,0 +1,4 @@
+Rigged Figure
+CC-BY 4.0: (c) 2017 Cesium.
+Source: https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/RiggedFigure
+https://creativecommons.org/licenses/by/4.0/
