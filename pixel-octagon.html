@@ -2663,7 +2663,7 @@ const nameOf = (id) => (id === 'P' ? (activeFighter() || {}).name : (ROSTER.find
 /* =====================================================================
    UI — menus, creator, training, HUD, results
    ===================================================================== */
-const KEYCAP = { light: 'J', medium: 'K', heavy: 'L', block: 'I', counter: 'O', super: 'SPACE', dodge: 'SPACE ×2', finisher: 'F' };
+const KEYCAP = { light: 'J', medium: 'K', heavy: 'L', block: 'I', counter: 'O', super: 'U', dodge: 'SPACE ×2', finisher: 'F' };
 const SLOT_LABEL = { light: 'Light', medium: 'Medium', heavy: 'Heavy', block: 'Block', counter: 'Counter', super: 'Super', dodge: 'Dodge', finisher: 'Finisher' };
 const UI = {
   el: null, screen: 'title', draft: null, editId: null, confirm: null, sel: {}, hudEls: null,
@@ -2840,7 +2840,7 @@ const SCREENS = {
         <button class="btn" data-act="go" data-to="fighters">My Fighters <small>Train stats, evolve, customize</small></button>
         <div class="row"><button class="btn" data-act="go" data-to="howto">How to Play</button><button class="btn" data-act="go" data-to="settings">Settings</button></div>
       </div>
-      <p class="small muted">Move <span class="kbd">WASD</span> Attack <span class="kbd">J</span><span class="kbd">K</span><span class="kbd">L</span> Block <span class="kbd">I</span> Counter <span class="kbd">O</span> Super <span class="kbd">SPACE</span> Dodge <span class="kbd">SPACE ×2</span></p>
+      <p class="small muted">Move <span class="kbd">WASD</span> Attack <span class="kbd">J</span><span class="kbd">K</span><span class="kbd">L</span> Block <span class="kbd">I</span> Counter <span class="kbd">O</span> Super <span class="kbd">U</span> Dodge <span class="kbd">SPACE ×2</span></p>
     </div>`;
   },
   fighters() {
@@ -2972,7 +2972,7 @@ const SCREENS = {
           <b>Heavy</b><span><span class="kbd">L</span> or <span class="kbd">C</span></span>
           <b>Block</b><span>hold <span class="kbd">I</span> or <span class="kbd">SHIFT</span></span>
           <b>Counter</b><span><span class="kbd">O</span> or <span class="kbd">V</span>, timed right before their hit lands</span>
-          <b>Super</b><span>tap <span class="kbd">SPACE</span> when the meter is full</span>
+          <b>Super</b><span><span class="kbd">U</span> when the meter is full</span>
           <b>Dodge</b><span>double-tap <span class="kbd">SPACE</span>. Quick slip in the direction you're holding (back if none). Brief invincibility, costs stamina.</span>
           <b>Finisher</b><span><span class="kbd">F</span> (evolved fighters only)</span>
           <b>Pause</b><span><span class="kbd">ESC</span> or <span class="kbd">P</span></span></div></div>
@@ -3005,7 +3005,7 @@ const SCREENS = {
     return `<div class="panel" style="margin:auto"><h2>Paused</h2>
       <button class="btn primary" data-act="resume">Resume</button>
       ${prac ? `<button class="btn" data-act="pexit">Finish session (keep ${m.practiceXP} XP)</button>` : `<button class="btn" data-act="quitFight">Quit fight <small>Counts as nothing. No XP.</small></button>`}
-      <p class="small muted">Move <span class="kbd">WASD</span> · <span class="kbd">J</span><span class="kbd">K</span><span class="kbd">L</span> attacks · <span class="kbd">I</span> block · <span class="kbd">O</span> counter · <span class="kbd">SPACE</span> super · <span class="kbd">SPACE ×2</span> dodge${activeFighter() && activeFighter().evolved ? ' · <span class="kbd">F</span> finisher' : ''}</p></div>`;
+      <p class="small muted">Move <span class="kbd">WASD</span> · <span class="kbd">J</span><span class="kbd">K</span><span class="kbd">L</span> attacks · <span class="kbd">I</span> block · <span class="kbd">O</span> counter · <span class="kbd">U</span> super · <span class="kbd">SPACE ×2</span> dodge${activeFighter() && activeFighter().evolved ? ' · <span class="kbd">F</span> finisher' : ''}</p></div>`;
   },
   results(d) {
     const { r, lines, total, ups, lvBefore, prof, mode, extra } = d;
@@ -3275,7 +3275,7 @@ UI.go = function (name, arg) {
 const KEYS = {};
 const lastTap = {};
 let dashReq = null, dodgeReq = false, spaceAt = 0;
-const ATTACK_KEYS = { KeyJ: 'light', KeyZ: 'light', KeyK: 'medium', KeyX: 'medium', KeyL: 'heavy', KeyC: 'heavy', KeyO: 'counter', KeyV: 'counter', Space: 'super', KeyF: 'finisher', KeyB: 'finisher' };
+const ATTACK_KEYS = { KeyJ: 'light', KeyZ: 'light', KeyK: 'medium', KeyX: 'medium', KeyL: 'heavy', KeyC: 'heavy', KeyO: 'counter', KeyV: 'counter', KeyU: 'super', KeyF: 'finisher', KeyB: 'finisher' };
 const GAME_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyI', 'ShiftLeft', 'ShiftRight', ...Object.keys(ATTACK_KEYS)]);
 function keyDown(code, repeat) {
   Sound.init();
@@ -3285,7 +3285,7 @@ function keyDown(code, repeat) {
   if (Game.mode !== 'fight' || !M) return;
   if (code === 'Escape' || code === 'KeyP') { if (!M.over) togglePause(!Game.paused); return; }
   if (Game.paused || M.over) return;
-  if (code === 'Space') { // tap = super, double-tap = dodge
+  if (code === 'Space') { // double-tap = dodge
     const now = performance.now();
     if (spaceAt && now - spaceAt < 260) { dodgeReq = true; spaceAt = 0; } else spaceAt = now;
     return;
@@ -3321,7 +3321,6 @@ function playerIntent(P) {
   const f = P.dirTo(), s = new THREE.Vector2(-f.y, f.x);
   I.fwd = want.dot(f); I.side = want.dot(s);
   I.block = !!(KEYS.KeyI || KEYS.ShiftLeft || KEYS.ShiftRight);
-  if (spaceAt && performance.now() - spaceAt >= 260) { spaceAt = 0; P.queued = { slot: 'super', t: Game.time }; }
   if (dodgeReq) { dodgeReq = false; I.dodge = want.lengthSq() > 0.01 ? want.clone() : new THREE.Vector2(); }
   if (dashReq) {
     const dir = dashReq === 'KeyD' || dashReq === 'ArrowRight' ? 1 : -1;
