@@ -168,6 +168,8 @@ input[type=range]{width:100%;accent-color:var(--gold)}
 #lb[hidden]{display:none}
 #lb span{position:absolute;left:max(20px,env(safe-area-inset-left,0px));top:-8vh;font-family:var(--f-display);font-size:14px;color:var(--red);animation:pulse .6s infinite alternate}
 #lb small{position:absolute;right:max(20px,env(safe-area-inset-right,0px));bottom:-7vh;font-family:var(--f-name);font-size:18px;letter-spacing:2px;color:var(--dim);text-transform:uppercase}
+#witch{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:0;transition:opacity .15s;background:radial-gradient(ellipse at center,transparent 45%,rgba(70,150,255,.38));box-shadow:inset 0 0 0 3px rgba(127,227,255,.5)}
+#witch.on{opacity:1}
 #prac{position:fixed;right:max(16px,env(safe-area-inset-right,0px));top:120px;z-index:5;display:flex;flex-direction:column;gap:6px;width:200px;background:rgba(10,12,18,.85);border:2px solid var(--line);padding:10px}
 #prac[hidden]{display:none}
 #prac .opt button{font-size:16px;padding:4px 7px}
@@ -193,6 +195,7 @@ input[type=range]{width:100%;accent-color:var(--gold)}
 <div class="vign"></div>
 <div class="scan"></div>
 <div class="flash" id="flash"></div>
+<div id="witch"></div>
 
 <div id="hud" hidden>
   <div class="top">
@@ -555,6 +558,9 @@ Object.assign(MOVES, {
   duckDouble:  cc('doubleLeg', { name: 'Duck-Under Takedown', events: [[1.0, 12, 'slam']], lunge: 0.8, tol: 0.4, desc: 'Duck under the punch and shoot the double-leg.' }),
 });
 for (const id of ['stepCross', 'sprawlUpper', 'parryElbow', 'stopKick']) MOVES[id].cat = MOVES[id].cat || 'punch';
+// light attack on a downed opponent (any style): punches only, like real MMA rules
+MOVES.groundPunchR = { name: 'Ground Punch', kind: 'strike', cat: 'punch', anim: 'gpR', hits: [0.2], dmg: [4], stam: 3, cd: 0.4, ideal: 0.6, lunge: 2.6, tol: 0.35, tgt: 'head', react: 'head', stun: 0, kb: 0, cancel: 0.3, ground: true, desc: 'Lean over and punch down at a downed opponent.' };
+MOVES.groundPunchL = { ...MOVES.groundPunchR, anim: 'gpL' };
 const BOSSES = [
   { id: 'hollis', name: 'Hollis Crane', nick: 'Gravedigger', style: 'wrestling', rank: 21, trait: 'Iron Body', traitDesc: 'Takes 20% less damage.', look: L(0, 'bald', 0, 'full', 2, 2, 'heavy', 'tall'), quote: 'I dig the holes. You fill them.', mods: { armor: 0.8 } },
   { id: 'thep', name: 'Thep Rattana', nick: 'The Monk', style: 'muaythai', rank: 22, trait: 'Iron Shins', traitDesc: 'Kicks hit 25% harder, endless gas.', look: L(2, 'bald', 0, 'none', 4, 2, 'lean'), quote: 'Ten thousand kicks. One for you.', mods: { kickMul: 1.25, regenMul: 1.4 } },
@@ -1268,6 +1274,13 @@ const PARRY_POSES = {
       def('bk' + nm + '_' + s, 0.42, [[0.06, pose, 'out'], [0.24, pose, 'lin'], [0.42, bp, 'io']]);
   }
 }
+// ground punches: kneel over a downed opponent and punch down
+{
+  const base = { hips: [0, -0.2, 0], spine: [0.85, 0, 0], chest: [0.25, 0, 0], neck: [0.45, 0, 0], lHip: [-1.1, 0.3, 0.2], lKnee: 1.5, rHip: [-0.35, -0.2, -0.2], rKnee: 1.6, rAnk: 0.7,
+    lH: [0.15, 1.15, 0.45], lP: [0.6, -1, 0], rH: [-0.15, 1.2, 0.4], rP: [-0.6, -1, 0] };
+  def('gpR', 0.42, [[0.1, { ...base, rH: [-0.2, 1.5, 0.15], rP: [-1, 0.3, -0.4], spine: [0.75, -0.2, 0] }, 'out'], [0.2, { ...base, spine: [1.0, 0.25, 0], rH: [0, 0.3, 0.7], rP: [-1, 0.3, 0], aimR: 'head' }, 'snap'], [0.3, base, 'io'], [0.42, {}, 'io']]);
+  def('gpL', 0.42, [[0.1, { ...base, lH: [0.2, 1.5, 0.15], lP: [1, 0.3, -0.4], spine: [0.75, 0.2, 0] }, 'out'], [0.2, { ...base, spine: [1.0, -0.25, 0], lH: [0, 0.3, 0.7], lP: [1, 0.3, 0], aimL: 'head' }, 'snap'], [0.3, base, 'io'], [0.42, {}, 'io']]);
+}
 // in-place dodges: each style's own head movement
 def('bob_boxing', 0.46, [ // bob and weave: dip right, roll under, come up left
   [0.1, { spine: [0.45, 0.1, 0.28], chest: [0.15, 0.05, 0.1], neck: [-0.05, 0.4, -0.15], lKnee: 1.1, rKnee: 1.1, lH: [0.08, 1.62, 0.36], rH: [-0.08, 1.62, 0.32] }, 'out'],
@@ -1755,13 +1768,14 @@ class Fighter {
     const canCancel = st === 'attack' && this.anim && this.anim.move && this.anim.move.cancel && this.anim.t >= this.anim.move.cancel && this.anim.hitsDone > 0 && !this.grapple;
     if (!(this.canAct || canCancel)) return false;
     if (!this.ready(slot)) return false;
-    const id = this.st.moves[slot];
+    let id = this.st.moves[slot];
+    if (slot === 'light' && this.oppDownNear()) id = (this.gpAlt = !this.gpAlt) ? 'groundPunchR' : 'groundPunchL';
     const M = MOVES[id];
     if (slot === 'super' || slot === 'finisher') this.meter = 0;
     else { this.cd[slot] = Math.max(slot === 'light' ? 0.22 : 0.6, M.cd * this.D.cdMul); this.stam = Math.max(0, this.stam - M.stam); }
     // combo tracking
     let combo = null;
-    if (SLOTS.includes(slot)) {
+    if (SLOTS.includes(slot) && !M.ground) {
       const now = Game.time;
       this.combo = this.combo.filter((c) => now - c.t < 1.1);
       this.combo.push({ slot, t: now });
@@ -1784,6 +1798,11 @@ class Fighter {
     if (slot === 'super' || slot === 'finisher') { FX.text(this, slot === 'finisher' ? 'FINISHER!' : 'SUPER: ' + M.name, slot === 'finisher' ? '#ff4d4d' : '#f3b928', 1.3); Sound.power(); Cam.punch(0.3); Game.slowmo(0.35, slot === 'finisher' ? 0.5 : 0.3); }
     if (M.kind === 'strike') Sound.whoosh(M.dmg[0] / 8);
   }
+  // a dodge that actually made something miss: longer slow-mo and a damage bonus on the next hit
+  perfectDodge() {
+    this.dodgeBonusT = 1.0;
+    if (this.isPlayer) { Game.witch(0.8, 0.3); FX.text(this, 'COUNTER NOW!', '#7fe3ff', 0.8, true); }
+  }
   breakGuard() {
     this.guard = 0; this.guardBrokenT = 1.8; this.guardDelay = 0; this.blockW = 0;
     FX.text(this, 'GUARD BROKEN!', '#ff7a1a', 1.1);
@@ -1798,12 +1817,14 @@ class Fighter {
     if (!dir || dir.lengthSq() < 0.01) {
       // no direction held: stay put and use the style's own head movement
       this.playAnim('bob_' + this.styleId, { rate: 1 }); this.vel.set(0, 0);
+      if (this.isPlayer) Game.witch(0.45, 0.5);
       Sound.whoosh(0.5); return true;
     }
     dir = dir.clone().normalize();
     const side = dir.dot(s), fw = dir.dot(f);
     this.playAnim(Math.abs(side) > Math.abs(fw) ? (side > 0 ? 'dodgeR' : 'dodgeL') : 'dodgeB', { rate: 1 });
     this.vel.set(dir.x * 5.2, dir.y * 5.2);
+    if (this.isPlayer) Game.witch(0.45, 0.5);
     Sound.whoosh(0.7);
     return true;
   }
@@ -1852,6 +1873,7 @@ class Fighter {
     for (const k in this.cd) if (this.cd[k] > 0) this.cd[k] -= dt;
     if (this.invulnT > 0) this.invulnT -= dt;
     if (this.dodgeCd > 0) this.dodgeCd -= dt;
+    if (this.dodgeBonusT > 0) this.dodgeBonusT -= dt;
     // guard (shield) recovers whenever you're not holding block
     if (this.guardBrokenT > 0) this.guardBrokenT -= dt;
     if (this.guardDelay > 0) this.guardDelay -= dt;
@@ -1906,9 +1928,19 @@ class Fighter {
     if (this.anim) { sampleAnim(this.anim.a, this.anim.a.dur, this.anim.start, this.P); for (const c of ROT_CH) this.P[c] = angWrap(this.P[c]); this.P[CH.fwd] = 0; }
     this.anim = null;
   }
-  facing(dt, rate) {
+  groundPoint() { return new THREE.Vector2(this.opp.aim.head.x, this.opp.aim.head.z); }
+  // where to kneel: beside the downed fighter's head and shoulders, on my side of their body
+  standPoint() {
+    const o = this.opp, h = this.groundPoint();
+    const ax = h.clone().sub(o.pos); if (ax.lengthSq() < 1e-4) ax.set(1, 0); ax.normalize();
+    const perp = new THREE.Vector2(-ax.y, ax.x);
+    if (perp.dot(this.pos.clone().sub(h)) < 0) perp.negate();
+    return h.clone().addScaledVector(perp, 0.5).addScaledVector(ax, -0.15);
+  }
+  oppDownNear() { const o = this.opp; return o && o.state === 'down' && !o.pendingKO && this.standPoint().distanceTo(this.pos) < 2.6; }
+  facing(dt, rate, pt) {
     if (!this.opp) return;
-    const d = this.dirTo();
+    const d = pt ? pt.clone().sub(this.pos).normalize() : this.dirTo();
     const want = Math.atan2(d.x, d.y);
     const diff = angWrap(want - this.yaw);
     this.yaw += clamp(diff, -rate * dt, rate * dt);
@@ -1956,17 +1988,18 @@ class Fighter {
     A.t += dt * A.rate;
     const firstHit = M.kind === 'grapple' ? M.grab : M.hits[0];
     // tracking during startup only
-    if (A.t < firstHit) this.facing(dt, M.kind === 'grapple' ? 5 : 3.5);
+    if (A.t < firstHit) this.facing(dt, M.ground ? 9 : M.kind === 'grapple' ? 5 : 3.5, M.ground ? this.groundPoint() : null);
     // magnet: step into (or out to) the ideal range during startup
     if (!this.grapple && A.t < firstHit + 0.02 && this.opp) {
-      const d = this.dist(), want = M.ideal;
+      const gp = M.ground ? this.standPoint() : null;
+      const d = gp ? gp.distanceTo(this.pos) : this.dist(), want = gp ? 0 : M.ideal;
       const remaining = Math.max(0.03, firstHit - prevT);
       let delta = d - want;
       if (delta > 0) delta = Math.min(delta, M.lunge - A.lunge);
       else delta = Math.max(delta, -0.35);
       const stepAmt = delta * clamp((dt * A.rate) / remaining, 0, 1);
       if (Math.abs(stepAmt) > 1e-4 && delta > -0.36) {
-        const f = this.dirTo(); this.pos.x += f.x * stepAmt; this.pos.y += f.y * stepAmt;
+        const f = gp ? gp.clone().sub(this.pos).normalize() : this.dirTo(); this.pos.x += f.x * stepAmt; this.pos.y += f.y * stepAmt;
         if (stepAmt > 0) A.lunge += stepAmt;
       }
     }
@@ -1994,10 +2027,21 @@ class Fighter {
   }
   resolveHit(i) {
     const M = this.anim.move, O = this.opp;
+    if (M.ground) { // punches to a downed opponent: no block, no parry, they stay down
+      const d = this.groundPoint().distanceTo(this.pos);
+      if (O.state !== 'down' || O.pendingKO || d > M.ideal + M.tol) { Sound.whoosh(0.6); return; }
+      const dmg = M.dmg[0] * this.D.dmg * this.stamF * (this.powered ? 1.5 : 1) * rand(0.92, 1.08);
+      const pt = O.aim.head.clone();
+      O.applyDamage(dmg, this, M, i, pt);
+      Sound.hit(0.8, true); FX.spark(pt, '#fff4d0', 8, 2); Cam.shake(0.08); Game.hitstop(0.04);
+      O.jolt = 1; Arena.excite = Math.min(1, Arena.excite + 0.1);
+      if (O.hp <= 0) O.goKO(this, M);
+      return;
+    }
     const d = this.dist();
     const reach = M.ideal + M.tol + this.D.reach + (this.anim.guaranteed ? 0.4 : 0);
     const inRange = d <= reach && this.inFront();
-    if (inRange && O.state === 'dodge') { FX.text(O, 'DODGED!', '#7fe3ff', 0.9); O.meter = Math.min(100, O.meter + 6); }
+    if (inRange && O.state === 'dodge') { FX.text(O, 'DODGED!', '#7fe3ff', 0.9); O.meter = Math.min(100, O.meter + 6); O.perfectDodge(); }
     if (!inRange || !O.vulnerable) {
       if (i === 0) { Sound.whoosh(0.9); this.stam = Math.max(0, this.stam - 2); if (this.isPlayer || O.isPlayer) FX.text(this, 'MISS', '#8d96b3', 0.6, true); }
       return;
@@ -2041,6 +2085,7 @@ class Fighter {
     if (M.counter) dmg *= this.D.counterMul;
     if (counterHit) dmg *= 1.2;
     if (this.mods.kickMul && /kick|teep|geri|roundhouse/i.test(M.name + M.anim)) dmg *= this.mods.kickMul;
+    if (this.dodgeBonusT > 0) { dmg *= 1.3; this.dodgeBonusT = 0; FX.text(this, 'DODGE COUNTER!', '#7fe3ff', 1.0); }
     dmg *= rand(0.92, 1.08);
     const pt = M.tgt === 'body' ? O.aim.body.clone() : M.tgt === 'leg' ? O.aim.leg.clone() : O.aim.head.clone();
     if (counterHit) FX.text(O, 'COUNTER HIT', '#ff7a1a', 0.8);
@@ -2080,7 +2125,7 @@ class Fighter {
     // armor: supers don't flinch during wind-up
     if (this.state === 'attack' && this.anim && this.anim.move && this.anim.move.armor) return;
     const knock = M.finisher || (M.knock && dmg >= 15) || (dmg >= 11 && this.hp / this.maxHp < 0.28 && Math.random() < 0.4);
-    if (knock) { this.knockdown(f, 1.25); return; }
+    if (knock) { this.knockdown(f, 1.8); return; }
     if (this.grapple) this.releaseGrapple(true);
     this.state = 'hit'; this.parryT = 0;
     this.playAnim(REACT_ANIM[react] || 'hHead', { rate: 1 });
@@ -2100,8 +2145,9 @@ class Fighter {
   goKO(att, M) {
     if (this.grapple) this.releaseGrapple(true);
     const sub = M && M.sub;
+    const wasDown = this.state === 'down';
     this.state = 'ko'; this.koT = 0;
-    if (!this.grappledBy) this.playAnim('ko', { rate: 1 });
+    if (!this.grappledBy && !wasDown) this.playAnim('ko', { rate: 1 });
     if (Game.onKO) Game.onKO(att, this, sub ? 'SUB' : (M && M.finisher ? 'FINISH' : 'KO'), M);
   }
   // ===== grappling =====
@@ -2110,7 +2156,7 @@ class Fighter {
     const d = this.dist();
     const ok = d <= M.ideal + M.tol + (this.anim.guaranteed ? 0.5 : 0) && this.inFront(1.0) && O.vulnerable;
     if (!ok) { // whiffed shot: stumble
-      if (O.state === 'dodge') FX.text(O, 'DODGED!', '#7fe3ff', 0.9);
+      if (O.state === 'dodge') { FX.text(O, 'DODGED!', '#7fe3ff', 0.9); O.perfectDodge(); }
       else FX.text(this, 'STUFFED', '#8d96b3', 0.7, true);
       this.state = 'hit'; this.playAnim('parried'); this.stunT = 0.35; return;
     }
@@ -2186,7 +2232,7 @@ class Fighter {
     }
     const lying = O.P[CH.tx] < -0.9;
     if (M.end === 'down' || lying) {
-      O.state = 'down'; O.anim = null; O.downT = 0.7 * (1.2 - (O.stats.men || 1) * 0.015); O.invulnT = 0;
+      O.state = 'down'; O.anim = null; O.downT = 1.25 * (1.2 - (O.stats.men || 1) * 0.015); O.invulnT = 0;
     } else {
       O.state = 'hit'; O.playAnim('stagger'); O.stunT = cut ? 0.2 : 0.55;
     }
@@ -2197,7 +2243,11 @@ class Fighter {
     const T = this.target;
     const base = STANCE_POSE[this.stance];
     T.set(base);
-    if (this.state === 'down' && !this.anim) { T.set(getAnim('down', this.stance).keys[0].P); return T; }
+    if (this.state === 'down' && !this.anim) {
+      T.set(getAnim('down', this.stance).keys[0].P);
+      if (this.jolt > 0) { T[CH.nx] -= this.jolt * 0.5; T[CH.ny] += this.jolt * 0.4; T[CH.sx] += this.jolt * 0.15; this.jolt = Math.max(0, this.jolt - dt * 5); }
+      return T;
+    }
     if (this.state === 'ko' && !this.anim) { return null; }
     // idle rhythm
     const t = this.t;
@@ -2337,6 +2387,12 @@ class AI {
       if (f.state === 'attack') return;
     }
     if (!f.canAct) return;
+    if (o.state === 'down' && !o.pendingKO) { // follow up on the ground
+      const hd = f.standPoint().distanceTo(f.pos);
+      I.fwd = hd > 1.6 ? 1 : 0; I.side = 0;
+      if (hd < 2.0 && Math.random() < this.p.punish * dt * 6) f.tryAttack('light');
+      return;
+    }
     // ---- offence / movement decisions
     this.next -= dt;
     const pref = PREF_RANGE[f.styleId] || 1.1;
@@ -2674,6 +2730,15 @@ const Game = {
   onHit: null, onKO: null, onCombo: null,
   hitstop(t) { if (this.mode !== 'fight') return; this.stopT = Math.max(this.stopT, t); },
   slowmo(t, s) { if (this.mode !== 'fight') return; this.slowT = Math.max(this.slowT, t); this.slowScale = s; },
+  // dodge slow-mo: the opponent slows down, you don't
+  witchT: 0, witchScale: 1, lastWitch: -9,
+  witch(t, s) {
+    if (this.mode !== 'fight') return;
+    if (s > 0.4 && this.time - this.lastWitch < 1.2) return; // plain dodges can't chain slow-mo
+    const active = this.witchT > 0;
+    this.lastWitch = this.time; this.witchT = Math.max(this.witchT, t); this.witchScale = active ? Math.min(this.witchScale, s) : s;
+    Sound.tone({ f: 240, f2: 70, dur: 0.35, g: 0.18, type: 'sine' });
+  },
   clearFighters() {
     for (const f of this.fighters) f.rig.dispose();
     this.fighters = []; this.ais = []; this.practiceDummy = null; this.practiceInfinite = false; this.exhibition = false;
@@ -3016,6 +3081,7 @@ const UI = {
       else if (m.slot === 'block') { frac = 1 - P.guard / P.maxGuard; off = P.guardBrokenT > 0; }
       else if (m.slot === 'dodge') { frac = clamp(P.dodgeCd / 0.6, 0, 1); off = frac > 0 || P.stam < 8; }
       else { const M = m.slot === 'counter' ? 1.15 * P.D.cdMul : MOVES[P.st.moves[m.slot]].cd * P.D.cdMul; frac = clamp(P.cd[m.slot] / M, 0, 1); off = frac > 0; }
+      if (m.slot === 'light') { const g = P.oppDownNear(); if (g !== m.g) { m.g = g; m.el.querySelector('.l').textContent = g ? 'Ground Punch' : MOVES[P.st.moves.light].name; } ready = ready || g; }
       m.cd.style.width = frac * 100 + '%';
       m.el.classList.toggle('ready', ready); m.el.classList.toggle('off', off && !ready);
     }
@@ -3215,7 +3281,8 @@ const SCREENS = {
           <b>Block</b><span>hold <span class="kbd">I</span> or <span class="kbd">SHIFT</span>. The shield next to your fighter is your guard health. It drains as you block and breaks at zero.</span>
           <b>Counter</b><span><span class="kbd">O</span> or <span class="kbd">V</span>, timed right before their hit lands</span>
           <b>Super</b><span><span class="kbd">U</span> when the meter is full</span>
-          <b>Dodge</b><span><span class="kbd">SPACE</span>. Hold a direction to slip that way; with no direction you stay put and use your style's head movement (bob &amp; weave, lean back, duck). Brief invincibility.</span>
+          <b>Dodge</b><span><span class="kbd">SPACE</span>. Hold a direction to slip that way; with no direction you stay put and use your style's head movement (bob &amp; weave, lean back, duck). Your opponent slows down for a moment. Make an attack miss and the slow-mo lasts longer and your next hit does +30%.</span>
+          <b>Ground punch</b><span>When your opponent is knocked down, <span class="kbd">J</span> punches down at them on the mat.</span>
           <b>Finisher</b><span><span class="kbd">F</span> (evolved fighters only)</span>
           <b>Pause</b><span><span class="kbd">ESC</span> or <span class="kbd">P</span></span></div></div>
         <div class="card"><h3>The rules</h3><p class="small">
@@ -3616,14 +3683,19 @@ function tick(real, render) {
   else if (Game.stopT > 0) { Game.stopT -= real; dt = 0; }
   else if (Game.slowT > 0) { Game.slowT -= real; dt *= Game.slowScale; }
   const M = Game.match;
+  // dodge slow-mo
+  let oppScale = 1;
+  if (Game.witchT > 0 && !Game.paused) { Game.witchT -= real; oppScale = Game.witchScale; }
+  if (Game.mode !== 'fight') Game.witchT = 0;
+  const wv = $('#witch'); if (wv) wv.classList.toggle('on', Game.witchT > 0);
   if (Game.mode === 'fight' && M) {
     let live = false;
     if (!Game.paused) live = M.update(dt, real);
     const P = M.P;
-    if (live && !Game.paused) { playerIntent(P); Game.ais.forEach((ai) => ai && ai.update(dt)); }
+    if (live && !Game.paused) { playerIntent(P); Game.ais.forEach((ai) => ai && ai.update(ai.f.isPlayer ? dt : dt * oppScale)); }
     else if (!Game.paused) { P.intent.fwd = 0; P.intent.side = 0; P.intent.block = false; P.queued = null; M.C.intent.attack = null; }
   } else if (Game.exhibition) Game.ais.forEach((ai) => ai && ai.update(dt));
-  if (dt > 0) for (const f of Game.fighters) f.update(dt);
+  if (dt > 0) for (const f of Game.fighters) f.update(f.isPlayer ? dt : dt * oppScale);
   separate();
   for (const f of Game.fighters) f.pose(dt || 1e-4);
   if (Game.mode === 'fight' && M && !Game.paused) Replay.record(dt);
