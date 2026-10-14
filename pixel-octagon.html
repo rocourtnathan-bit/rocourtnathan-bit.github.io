@@ -156,6 +156,18 @@ input[type=range]{width:100%;accent-color:var(--gold)}
 #banner.show{animation:ban .35s cubic-bezier(.2,1.6,.4,1)}
 @keyframes ban{from{transform:scale(2.2);opacity:0}to{transform:scale(1);opacity:1}}
 .combo{position:fixed;left:50%;top:22%;transform:translateX(-50%);z-index:4;pointer-events:none;text-align:center}
+.shield{position:absolute;left:0;top:0;width:46px;display:flex;flex-direction:column;align-items:center;gap:1px;transform:translate(-50%,-50%);transition:opacity .25s;pointer-events:none;opacity:.35}
+.shield svg{width:34px;height:39px;filter:drop-shadow(2px 2px 0 rgba(0,0,0,.7))}
+.shield .bg{fill:rgba(10,14,26,.75);stroke:#0a0c12;stroke-width:2}
+.shield .fl{fill:#8fb7ff}
+.shield b{font-family:var(--f-display);font-size:9px;color:#dfe8ff;text-shadow:1px 1px 0 #000;font-variant-numeric:tabular-nums}
+.shield.on{opacity:1}
+.shield.low .fl{fill:var(--fire)}
+.shield.broken{opacity:1}.shield.broken .fl{fill:var(--red)}.shield.broken svg{animation:pulse .3s infinite alternate}
+#lb{position:fixed;inset:0;z-index:6;pointer-events:none;border-top:11vh solid #000;border-bottom:11vh solid #000}
+#lb[hidden]{display:none}
+#lb span{position:absolute;left:max(20px,env(safe-area-inset-left,0px));top:-8vh;font-family:var(--f-display);font-size:14px;color:var(--red);animation:pulse .6s infinite alternate}
+#lb small{position:absolute;right:max(20px,env(safe-area-inset-right,0px));bottom:-7vh;font-family:var(--f-name);font-size:18px;letter-spacing:2px;color:var(--dim);text-transform:uppercase}
 #prac{position:fixed;right:max(16px,env(safe-area-inset-right,0px));top:120px;z-index:5;display:flex;flex-direction:column;gap:6px;width:200px;background:rgba(10,12,18,.85);border:2px solid var(--line);padding:10px}
 #prac[hidden]{display:none}
 #prac .opt button{font-size:16px;padding:4px 7px}
@@ -199,7 +211,10 @@ input[type=range]{width:100%;accent-color:var(--gold)}
     </div>
   </div>
   <div class="bottom" id="mvbar"></div>
+<div class="shield" id="shL" aria-label="Your guard"><svg viewBox="0 0 40 46" aria-hidden="true"><defs><clipPath id="cpL"><rect id="clL" x="0" y="0" width="40" height="46"/></clipPath></defs><path class="bg" d="M20 2 L37 8 V22 C37 34 29 41 20 44 C11 41 3 34 3 22 V8 Z"/><path class="fl" clip-path="url(#cpL)" d="M20 2 L37 8 V22 C37 34 29 41 20 44 C11 41 3 34 3 22 V8 Z"/></svg><b id="svL">100</b></div>
+  <div class="shield" id="shR" aria-label="Opponent guard"><svg viewBox="0 0 40 46" aria-hidden="true"><defs><clipPath id="cpR"><rect id="clR" x="0" y="0" width="40" height="46"/></clipPath></defs><path class="bg" d="M20 2 L37 8 V22 C37 34 29 41 20 44 C11 41 3 34 3 22 V8 Z"/><path class="fl" clip-path="url(#cpR)" d="M20 2 L37 8 V22 C37 34 29 41 20 44 C11 41 3 34 3 22 V8 Z"/></svg><b id="svR">100</b></div>
 </div>
+<div id="lb" hidden><span>● REPLAY</span><small>Press any key to skip</small></div>
 <div id="pops"></div>
 <div id="banner"></div>
 <div id="prac" hidden></div>
@@ -315,6 +330,7 @@ function loadSave() {
         const old = s.settings || {};
         SAVE = { ...SAVE, ...s, settings: { ...DEFAULT_SETTINGS, ...old } };
         if (old.v !== 2) { SAVE.settings.round = 30; SAVE.settings.v = 2; } // new 30s default
+        for (const f of SAVE.fighters) if (f.stats && f.stats.hp == null) f.stats.hp = f.evolved ? STAT_MAX : STAT_START; // Health stat added later
       }
     }
   } catch (e) { /* storage blocked: play without saving */ }
@@ -323,12 +339,13 @@ function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(SAVE));
 
 /* ---------------- Stats & progression ---------------- */
 const STATS = [
+  { id: 'hp', name: 'Health', desc: 'More health, so you can take more punishment before going down' },
   { id: 'spd', name: 'Speed', desc: 'Hand & foot speed, movement, shorter cooldowns' },
   { id: 'str', name: 'Strength', desc: 'Damage of every strike, takedown and slam' },
   { id: 'iq', name: 'Fight IQ', desc: 'Bigger parry window, harder counters' },
   { id: 'sta', name: 'Stamina', desc: 'Bigger gas tank and faster recovery' },
   { id: 'skl', name: 'Skill', desc: 'Combo damage, reach and super meter gain' },
-  { id: 'men', name: 'Mentality', desc: 'Health, chin, recovery and power-up length' },
+  { id: 'men', name: 'Mentality', desc: 'Chin, knockdown recovery, guard toughness and power-up length' },
 ];
 const STAT_MAX = 20;   // ranks; shown as rank*5 (10..100)
 const STAT_START = 2;
@@ -348,7 +365,8 @@ function derived(st, extra = {}) {
     comboMul: 1.12 + 0.012 * r('skl'),
     meterMul: 0.8 + 0.03 * r('skl'),
     reach: 0.004 * r('skl'),
-    maxHp: 150 + 6 * r('men'),
+    maxHp: 136 + 7 * r('hp') + 2 * r('men'),
+    maxGuard: 90 + 2 * r('men'),
     stunMul: 1 - 0.015 * r('men'),
     powerDur: 6 + 0.25 * r('men'),
     ...extra,
@@ -1243,6 +1261,27 @@ const PARRY_POSES = {
       def('bk' + nm + '_' + s, 0.42, [[0.06, pose, 'out'], [0.24, pose, 'lin'], [0.42, bp, 'io']]);
   }
 }
+// in-place dodges: each style's own head movement
+def('bob_boxing', 0.46, [ // bob and weave: dip right, roll under, come up left
+  [0.1, { spine: [0.45, 0.1, 0.28], chest: [0.15, 0.05, 0.1], neck: [-0.05, 0.4, -0.15], lKnee: 1.1, rKnee: 1.1, lH: [0.08, 1.62, 0.36], rH: [-0.08, 1.62, 0.32] }, 'out'],
+  [0.24, { spine: [0.48, -0.1, -0.28], chest: [0.15, -0.05, -0.1], neck: [-0.05, 0.3, 0.15], lKnee: 1.15, rKnee: 1.1, lH: [0.08, 1.6, 0.36], rH: [-0.08, 1.62, 0.32] }, 'io'],
+  [0.46, {}, 'io']]);
+def('bob_muaythai', 0.44, [ // lean back: the Thai sway
+  [0.1, { spine: [-0.38, 0, 0], chest: [-0.15, 0, 0], neck: [0.4, 0.2, 0], rKnee: 0.7, lKnee: 0.2, lAnk: 0.5, lH: [0.1, 1.82, 0.42], rH: [-0.1, 1.82, 0.34] }, 'out'],
+  [0.26, { spine: [-0.36, 0, 0], chest: [-0.14, 0, 0], neck: [0.4, 0.2, 0], rKnee: 0.7, lKnee: 0.2, lAnk: 0.5, lH: [0.1, 1.82, 0.42], rH: [-0.1, 1.82, 0.34] }, 'lin'],
+  [0.44, {}, 'io']]);
+def('bob_karate', 0.42, [ // shift weight back and turn the shoulders off the line
+  [0.09, { hips: [0, -1.15, 0], spine: [-0.25, -0.1, 0.12], neck: [0.2, 1.2, -0.1], rKnee: 0.75, lKnee: 0.25, lH: [0.08, 1.62, 0.5], rH: [-0.06, 1.55, 0.2] }, 'out'],
+  [0.24, { hips: [0, -1.15, 0], spine: [-0.25, -0.1, 0.12], neck: [0.2, 1.2, -0.1], rKnee: 0.75, lKnee: 0.25, lH: [0.08, 1.62, 0.5], rH: [-0.06, 1.55, 0.2] }, 'lin'],
+  [0.42, {}, 'io']]);
+def('bob_bjj', 0.44, [ // level change under the strike
+  [0.1, { spine: [0.65, 0, 0], chest: [0.15, 0, 0], neck: [-0.55, 0.2, 0], lKnee: 1.35, rKnee: 1.3, lHip: [-1.0, 0.35, 0.25], rHip: [-0.3, -0.2, -0.25], lH: [0.14, 1.3, 0.5], rH: [-0.14, 1.3, 0.45] }, 'out'],
+  [0.26, { spine: [0.65, 0, 0], chest: [0.15, 0, 0], neck: [-0.55, 0.2, 0], lKnee: 1.35, rKnee: 1.3, lHip: [-1.0, 0.35, 0.25], rHip: [-0.3, -0.2, -0.25], lH: [0.14, 1.3, 0.5], rH: [-0.14, 1.3, 0.45] }, 'lin'],
+  [0.44, {}, 'io']]);
+def('bob_wrestling', 0.44, [ // deep duck
+  [0.1, { spine: [0.8, 0, 0], chest: [0.2, 0, 0], neck: [-0.65, 0.2, 0], lKnee: 1.6, rKnee: 1.5, lHip: [-1.2, 0.3, 0.28], rHip: [-0.45, -0.2, -0.3], lH: [0.16, 1.15, 0.45], rH: [-0.16, 1.15, 0.42] }, 'out'],
+  [0.26, { spine: [0.8, 0, 0], chest: [0.2, 0, 0], neck: [-0.65, 0.2, 0], lKnee: 1.6, rKnee: 1.5, lHip: [-1.2, 0.3, 0.28], rHip: [-0.45, -0.2, -0.3], lH: [0.16, 1.15, 0.45], rH: [-0.16, 1.15, 0.42] }, 'lin'],
+  [0.44, {}, 'io']]);
 for (const s in PARRY_POSES) def('parry_' + s, 0.45, [[0.07, PARRY_POSES[s], 'out'], [0.3, PARRY_POSES[s], 'lin'], [0.45, {}, 'io']]);
 
 /* ============ REACTIONS (compiled on neutral-ish base of the fighter's stance) ============ */
@@ -1673,6 +1712,7 @@ class Fighter {
     if (full) { this.maxHp = this.D.maxHp; this.hp = this.maxHp; }
     this.maxStam = this.D.maxStam; this.stam = this.maxStam;
     if (full) this.meter = 0;
+    this.maxGuard = this.D.maxGuard; this.guard = this.maxGuard; this.guardBrokenT = 0; this.guardDelay = 0;
     this.streak = 0; this.powerT = 0;
     this.state = 'idle'; this.anim = null; this.stunT = 0; this.invulnT = 0; this.parryT = 0; this.downT = 0;
     this.grapple = null; this.grappledBy = null; this.queued = null; this.pendingKO = null; this.koT = 0;
@@ -1737,15 +1777,23 @@ class Fighter {
     if (slot === 'super' || slot === 'finisher') { FX.text(this, slot === 'finisher' ? 'FINISHER!' : 'SUPER: ' + M.name, slot === 'finisher' ? '#ff4d4d' : '#f3b928', 1.3); Sound.power(); Cam.punch(0.3); Game.slowmo(0.35, slot === 'finisher' ? 0.5 : 0.3); }
     if (M.kind === 'strike') Sound.whoosh(M.dmg[0] / 8);
   }
+  breakGuard() {
+    this.guard = 0; this.guardBrokenT = 1.8; this.guardDelay = 0; this.blockW = 0;
+    FX.text(this, 'GUARD BROKEN!', '#ff7a1a', 1.1);
+  }
   tryDodge(dir) {
     const A = this.anim;
     const canCancel = this.state === 'attack' && A && A.move && A.move.cancel && A.hitsDone > 0 && A.t >= A.move.cancel && !this.grapple;
     if (!(this.canAct || canCancel) || this.dodgeCd > 0 || this.stam < 8 || !this.opp) return false;
     const f = this.dirTo(), s = new THREE.Vector2(-f.y, f.x);
-    if (!dir || dir.lengthSq() < 0.01) dir = new THREE.Vector2(-f.x, -f.y);
-    dir = dir.clone().normalize();
     this.state = 'dodge'; this.stam -= 9; this.dodgeCd = 0.6; this.regenDelay = 0.3;
-    this.invulnT = Math.max(this.invulnT, 0.3); this.blockW = 0; this.parryT = 0; this.queued = null;
+    this.invulnT = Math.max(this.invulnT, 0.32); this.blockW = 0; this.parryT = 0; this.queued = null;
+    if (!dir || dir.lengthSq() < 0.01) {
+      // no direction held: stay put and use the style's own head movement
+      this.playAnim('bob_' + this.styleId, { rate: 1 }); this.vel.set(0, 0);
+      Sound.whoosh(0.5); return true;
+    }
+    dir = dir.clone().normalize();
     const side = dir.dot(s), fw = dir.dot(f);
     this.playAnim(Math.abs(side) > Math.abs(fw) ? (side > 0 ? 'dodgeR' : 'dodgeL') : 'dodgeB', { rate: 1 });
     this.vel.set(dir.x * 5.2, dir.y * 5.2);
@@ -1797,6 +1845,10 @@ class Fighter {
     for (const k in this.cd) if (this.cd[k] > 0) this.cd[k] -= dt;
     if (this.invulnT > 0) this.invulnT -= dt;
     if (this.dodgeCd > 0) this.dodgeCd -= dt;
+    // guard (shield) recovers whenever you're not holding block
+    if (this.guardBrokenT > 0) this.guardBrokenT -= dt;
+    if (this.guardDelay > 0) this.guardDelay -= dt;
+    else if (this.state !== 'block') this.guard = Math.min(this.maxGuard, this.guard + 24 * dt);
     if (this.parryT > 0) { this.parryT -= dt; this.parryAge = (this.parryAge || 0) + dt; }
     if (this.powerT > 0) { this.powerT -= dt; if (this.powerT <= 0) FX.text(this, 'POWER FADED', '#9aa3c0', 0.8); }
     if (this.regenDelay > 0) this.regenDelay -= dt;
@@ -1868,7 +1920,7 @@ class Fighter {
     const atk = I.attack || (SLOTS.includes(q) ? q : null);
     if (atk) { if (this.tryAttack(atk)) { this.queued = null; return; } }
     // block
-    const wantBlock = I.block && this.stam > 0;
+    const wantBlock = I.block && this.guard > 0 && this.guardBrokenT <= 0;
     this.state = wantBlock ? 'block' : 'idle';
     this.blockW = clamp(this.blockW + (wantBlock ? dt * 14 : -dt * 10), 0, 1);
     // movement
@@ -1949,11 +2001,12 @@ class Fighter {
     if (O.state === 'block' && O.blockW > 0.4 && !M.finisher && O.inFront(1.2)) {
       const fam = famOf(M), red = BLOCK_SKILL[O.styleId][fam];
       const chip = M.dmg[i] * (1 - red) * this.D.dmg;
-      O.stam -= (M.stam * 0.6 + 3 + M.dmg[i] * 0.35) * (1.6 - red);
+      const gcost = (M.stam * 0.6 + 3 + M.dmg[i] * 0.35) * (1.6 - red) * 1.6;
+      O.guard -= gcost; O.guardDelay = 0.9; O.stam = Math.max(0, O.stam - gcost * 0.25);
       O.stats_.blocked++;
       const pt = (M.tgt === 'body' ? O.aim.body : O.aim.head).clone().lerp(this.aim.head, 0.25);
-      if (O.stam <= 0) {
-        O.stam = 0; FX.text(O, 'GUARD BREAK!', '#ff7a1a', 1.1); Sound.hit(1.3, true);
+      if (O.guard <= 0) {
+        O.breakGuard(); Sound.hit(1.3, true);
         O.applyDamage(M.dmg[i] * this.D.dmg * 0.8, this, M, i, pt);
         O.interrupt('stagger', 0.9);
         return;
@@ -2058,15 +2111,15 @@ class Fighter {
     // blocked: a set guard sprawls on the shot; grapplers do it cheaply, strikers pay for it
     if (O.state === 'block' && O.blockW > 0.4 && !M.finisher && O.inFront(1.2)) {
       const cost = BLOCK_SKILL[O.styleId].grapple;
-      O.stam -= cost + M.stam * 0.3; O.stats_.blocked++;
-      if (O.stam > 0) {
+      O.guard -= cost * 2 + M.stam * 0.6; O.guardDelay = 0.9; O.stam = Math.max(0, O.stam - cost * 0.4); O.stats_.blocked++;
+      if (O.guard > 0) {
         Sound.block(); Cam.shake(0.08);
         O.playAnim('bkSprawl_' + O.styleId);
         FX.text(O, cost <= 8 ? 'SPRAWL! EASY STUFF' : cost <= 15 ? 'SPRAWL!' : 'BARELY STUFFED', cost <= 15 ? '#bcd3ff' : '#ffb36b', 0.85);
         O.meter = Math.min(100, O.meter + 4);
         this.state = 'hit'; this.playAnim('parried'); this.stunT = cost <= 8 ? 0.75 : 0.45; return;
       }
-      O.stam = 0; FX.text(O, 'GUARD BREAK!', '#ff7a1a', 1.1);
+      O.breakGuard();
     }
     // grabbed!
     const rel = new THREE.Vector2(O.pos.x - this.pos.x, O.pos.y - this.pos.y);
@@ -2257,13 +2310,14 @@ class AI {
       const still = o.state === 'attack' && o.anim && o.anim.id === pd.id;
       if (still) {
         if (pd.kind === 'parry') I.counter = true;
-        else if (pd.kind === 'block') this.holdBlock = 0.45 + rand(0, 0.25);
+        else if (pd.kind === 'block') { if (f.guard > f.maxGuard * 0.15 && f.guardBrokenT <= 0) this.holdBlock = 0.45 + rand(0, 0.25); else this.evadeT = 0.3; }
         else if (pd.kind === 'evade') {
-          if (this.diff >= 1 && f.stam > 18 && Math.random() < 0.4 + this.diff * 0.1) { const fd = f.dirTo(); I.dodge = new THREE.Vector2(-fd.y * this.circle, fd.x * this.circle); }
+          if (this.diff >= 1 && f.stam > 18 && Math.random() < 0.4 + this.diff * 0.1) { const fd = f.dirTo(); I.dodge = Math.random() < 0.45 ? new THREE.Vector2() : new THREE.Vector2(-fd.y * this.circle, fd.x * this.circle); }
           else this.evadeT = 0.3;
         }
       }
     }
+    if (this.holdBlock > 0 && (f.guard <= 0 || f.guardBrokenT > 0)) this.holdBlock = 0;
     if (this.holdBlock > 0) { this.holdBlock -= dt; I.block = true; I.fwd = 0; I.side = this.circle * 0.2; return; }
     I.block = false;
     if (this.evadeT > 0) { this.evadeT -= dt; I.fwd = -1; I.side = this.circle * 0.5; return; }
@@ -2464,6 +2518,15 @@ const Cam = {
       // pull the camera in a little toward the centre so the far fence frames the action
       wantPos.x -= mid.x * 0.12; wantPos.z -= mid.y * 0.12;
       wantLook.set(mid.x, 1.05, mid.y);
+    } else if (this.mode === 'replay' && Replay.focus) {
+      // tight, low, slowly orbiting shot of the final blow
+      const fp = Replay.focus, ax = Replay.axis || new THREE.Vector2(1, 0);
+      let perp = new THREE.Vector2(-ax.y, ax.x);
+      if (this.side && perp.dot(this.side) < 0) perp.negate();
+      const a = -0.55 + this.t * 0.12;
+      const dx = perp.x * Math.cos(a) - perp.y * Math.sin(a), dz = perp.x * Math.sin(a) + perp.y * Math.cos(a);
+      wantPos.set(fp.x + dx * 2.7, fp.y - 0.05, fp.z + dz * 2.7);
+      wantLook.set(fp.x, fp.y - 0.3, fp.z);
     } else if (this.mode === 'ko' && this.focus) {
       const f = this.focus, o = f.opp || f;
       const cx = (f.pos.x * 2 + o.pos.x) / 3, cz = (f.pos.y * 2 + o.pos.y) / 3;
@@ -2482,7 +2545,7 @@ const Cam = {
       wantPos.set(cx + Math.cos(a) * 6.8, 2.6 + Math.sin(this.t * 0.2) * 0.3, cz + Math.sin(a) * 6.8);
       wantLook.set(cx, 1.05, cz);
     }
-    const k = this.snapNext ? 1 : 1 - Math.exp(-dt * (this.mode === 'fight' ? 5 : 2.2));
+    const k = this.snapNext ? 1 : 1 - Math.exp(-dt * (this.mode === 'fight' ? 5 : this.mode === 'replay' ? 6 : 2.2));
     this.snapNext = false;
     this.pos.lerp(wantPos, k); this.look.lerp(wantLook, k);
     cam.position.copy(this.pos);
@@ -2495,6 +2558,66 @@ const Cam = {
     this.zoomPunch *= Math.exp(-dt * 3);
     cam.lookAt(this.look);
     Arena.fadeFence(cam.position);
+  },
+};
+
+/* ---------------- final-blow replay ---------------- */
+const Replay = {
+  buf: [], t: 0, active: false, koT: 0, speed: 0.28,
+  reset() { this.buf = []; this.t = 0; this.active = false; this.koT = 0; },
+  record(dt) {
+    if (dt <= 0 || this.active || Game.fighters.length < 2) return;
+    this.t += dt;
+    this.buf.push({ t: this.t, f: Game.fighters.map((f) => ({ x: f.pos.x, z: f.pos.y, yaw: f.yaw, P: Float32Array.from(f.P), aim: { head: f.aim.head.clone(), body: f.aim.body.clone(), leg: f.aim.leg.clone() } })) });
+    while (this.buf.length && this.t - this.buf[0].t > 2.4) this.buf.shift();
+  },
+  mark(victim) { this.koT = this.t; this.victimIdx = Game.fighters.indexOf(victim); },
+  start() {
+    if (this.buf.length < 10 || !this.koT) return false;
+    this.active = true; this.fired = false;
+    this.pt = Math.max(this.buf[0].t, this.koT - 1.0); this.end = Math.min(this.t, this.koT + 0.7);
+    $('#hud').hidden = true; UI.banner(''); $('#lb').hidden = false;
+    Cam.mode = 'replay'; Cam.t = 0; Cam.snap();
+    this.apply(this.pt);
+    return true;
+  },
+  stop() {
+    this.active = false; $('#lb').hidden = true; $('#hud').hidden = false;
+    Cam.mode = 'fight'; Cam.snap();
+    if (Game.match) Game.match.afterReplay();
+  },
+  frame(pt) {
+    const B = this.buf; let i = 0;
+    while (i < B.length - 2 && B[i + 1].t < pt) i++;
+    const a = B[i], b = B[Math.min(i + 1, B.length - 1)];
+    return { a, b, u: clamp((pt - a.t) / Math.max(1e-5, b.t - a.t), 0, 1) };
+  },
+  apply(pt) {
+    const { a, b, u } = this.frame(pt);
+    const F = Game.fighters, tmp = new Float32Array(NCH);
+    F.forEach((f, j) => {
+      const A = a.f[j], Bf = b.f[j];
+      for (let c = 0; c < NCH; c++) tmp[c] = A.P[c] + (Bf.P[c] - A.P[c]) * u;
+      const r = f.rig.root;
+      r.position.set(lerp(A.x, Bf.x, u), 0, lerp(A.z, Bf.z, u)); r.rotation.y = A.yaw + angWrap(Bf.yaw - A.yaw) * u;
+      r.updateMatrixWorld(true);
+      applyPose(f.rig, tmp, (u < 0.5 ? a : b).f[1 - j].aim);
+    });
+    const v = (u < 0.5 ? a : b).f[this.victimIdx];
+    this.focus = v.aim.head.clone();
+    this.axis = new THREE.Vector2(b.f[1].x - b.f[0].x, b.f[1].z - b.f[0].z).normalize();
+  },
+  update(real) {
+    const was = this.pt;
+    this.pt += real * this.speed;
+    if (!this.fired && was <= this.koT && this.pt >= this.koT) {
+      this.fired = true;
+      Sound.hit(2, true); Sound.slam(); Sound.cheer(1.4);
+      FX.spark(this.focus, '#fff4d0', 30, 3); FX.sweat(this.focus, this.axis);
+      Cam.shake(0.35); const fl = $('#flash'); fl.style.transition = 'none'; fl.style.opacity = 0.55; requestAnimationFrame(() => { fl.style.transition = 'opacity .5s'; fl.style.opacity = 0; });
+    }
+    if (this.pt >= this.end) { this.stop(); return; }
+    this.apply(this.pt);
   },
 };
 
@@ -2567,6 +2690,7 @@ class Match {
     this.roundTime = SAVE.settings.round; this.clock = this.roundTime;
     this.phase = 'intro'; this.phaseT = 0; this.over = false; this.result = null;
     this.practiceXP = 0; this.practiceHits = 0;
+    Replay.reset();
     const pc = playerCfg(o.profile);
     // corner colours: never let both fighters wear the same shorts
     if (o.opp.look && o.opp.look.shorts === pc.look.shorts) o.opp = { ...o.opp, look: { ...o.opp.look, shorts: pc.look.shorts === 1 ? 0 : 1 } };
@@ -2609,6 +2733,10 @@ class Match {
       return false;
     }
     if (this.phase === 'ko') {
+      if (this.phaseT > 1.25 && !this.replayed && this.result.method !== 'DEC') {
+        this.replayed = true;
+        if (Replay.start()) { this.phase = 'replay'; return false; }
+      }
       if (this.phaseT > 1.4 && !this.celebrated) {
         this.celebrated = true;
         const w = this.result.winner;
@@ -2622,6 +2750,7 @@ class Match {
     }
     return false;
   }
+  afterReplay() { this.phase = 'ko'; this.phaseT = 1.35; UI.banner(this.koBanner || '', ''); }
   endRound() {
     Sound.bell(2);
     if (this.round >= this.rounds) { this.decision(); return; }
@@ -2654,7 +2783,8 @@ class Match {
     this.finish(att, vic, method);
     const big = kind === 'SUB' ? 'TAP OUT!' : kind === 'FINISH' ? 'FINISHED!' : method === 'TKO' ? 'T.K.O.!' : 'K.O.!';
     UI.banner(big, (M ? M.name : '') + ' · Round ' + this.round);
-    Game.slowmo(1.3, 0.28); Sound.slam(); Sound.cheer(1.6); Arena.excite = 1; Cam.shake(0.4);
+    Replay.mark(vic); this.koBanner = big;
+    Game.slowmo(1.0, 0.3); Sound.slam(); Sound.cheer(1.6); Arena.excite = 1; Cam.shake(0.4);
     Sound.bell(3);
   }
   finish(w, l, method) {
@@ -2799,6 +2929,7 @@ const UI = {
       supL: [...$('#supL').children], supR: [...$('#supR').children], clk: $('#clk'), rd: $('#rd'), dots: $('#dots'),
       mv: [...$('#mvbar').children].map((el) => ({ el, slot: el.dataset.slot, cd: el.querySelector('.cd') })),
       ghostL: 1, ghostR: 1,
+      sh: [{ el: $('#shL'), cl: $('#clL'), v: $('#svL'), x: 0, y: 0 }, { el: $('#shR'), cl: $('#clR'), v: $('#svR'), x: 0, y: 0 }],
     };
     $('#dots').innerHTML = match.o.mode === 'practice' ? '' : '<i></i><i></i><i></i>';
     $('#prac').hidden = match.o.mode !== 'practice';
@@ -2851,11 +2982,27 @@ const UI = {
       H.rd.textContent = 'ROUND ' + match.round;
       [...H.dots.children].forEach((d, i) => d.classList.toggle('on', i < match.round));
     }
+    // guard shields float beside each fighter, on the outside so they never cover the action
+    const sp = [P, C].map((f) => FX.project(new THREE.Vector3(f.pos.x, 1.35, f.pos.y)));
+    [P, C].forEach((f, j) => {
+      const S = H.sh[j], s = sp[j], o = sp[1 - j];
+      const out = s.x <= o.x ? -1 : 1;
+      const tx = clamp(s.x + out * 78, 30, innerWidth - 30), ty = clamp(s.y, 130, innerHeight - 90);
+      S.x = S.x ? lerp(S.x, tx, 0.25) : tx; S.y = S.y ? lerp(S.y, ty, 0.25) : ty;
+      S.el.style.left = S.x + 'px'; S.el.style.top = S.y + 'px';
+      const fr = clamp(f.guard / f.maxGuard, 0, 1);
+      S.cl.setAttribute('y', 46 * (1 - fr)); S.cl.setAttribute('height', 46 * fr);
+      S.v.textContent = f.guardBrokenT > 0 ? 'BROKEN' : Math.round(fr * 100);
+      S.el.classList.toggle('on', f.state === 'block' || fr < 0.999);
+      S.el.classList.toggle('low', fr < 0.35);
+      S.el.classList.toggle('broken', f.guardBrokenT > 0);
+      S.el.style.visibility = s.ok && !['ko', 'down', 'grappled'].includes(f.state) ? 'visible' : 'hidden';
+    });
     for (const m of H.mv) {
       let frac = 0, ready = false, off = false;
       if (m.slot === 'super') { frac = 1 - P.meter / 100; ready = P.meter >= 100; }
       else if (m.slot === 'finisher') { ready = P.ready('finisher'); off = !ready; frac = ready ? 0 : 1; }
-      else if (m.slot === 'block') { off = P.stam <= 0; }
+      else if (m.slot === 'block') { frac = 1 - P.guard / P.maxGuard; off = P.guardBrokenT > 0; }
       else if (m.slot === 'dodge') { frac = clamp(P.dodgeCd / 0.6, 0, 1); off = frac > 0 || P.stam < 8; }
       else { const M = m.slot === 'counter' ? 1.15 * P.D.cdMul : MOVES[P.st.moves[m.slot]].cd * P.D.cdMul; frac = clamp(P.cd[m.slot] / M, 0, 1); off = frac > 0; }
       m.cd.style.width = frac * 100 + '%';
@@ -3054,10 +3201,10 @@ const SCREENS = {
           <b>Light</b><span><span class="kbd">J</span> or <span class="kbd">Z</span></span>
           <b>Medium</b><span><span class="kbd">K</span> or <span class="kbd">X</span></span>
           <b>Heavy</b><span><span class="kbd">L</span> or <span class="kbd">C</span></span>
-          <b>Block</b><span>hold <span class="kbd">I</span> or <span class="kbd">SHIFT</span></span>
+          <b>Block</b><span>hold <span class="kbd">I</span> or <span class="kbd">SHIFT</span>. The shield next to your fighter is your guard health. It drains as you block and breaks at zero.</span>
           <b>Counter</b><span><span class="kbd">O</span> or <span class="kbd">V</span>, timed right before their hit lands</span>
           <b>Super</b><span><span class="kbd">U</span> when the meter is full</span>
-          <b>Dodge</b><span><span class="kbd">SPACE</span>. Quick slip in the direction you're holding (back if none). Brief invincibility, costs stamina.</span>
+          <b>Dodge</b><span><span class="kbd">SPACE</span>. Hold a direction to slip that way; with no direction you stay put and use your style's head movement (bob &amp; weave, lean back, duck). Brief invincibility.</span>
           <b>Finisher</b><span><span class="kbd">F</span> (evolved fighters only)</span>
           <b>Pause</b><span><span class="kbd">ESC</span> or <span class="kbd">P</span></span></div></div>
         <div class="card"><h3>The rules</h3><p class="small">
@@ -3275,6 +3422,7 @@ const Ref = {
     }
     clampToOctagon(want);
     const d = want.clone().sub(this.pos); const dist = d.length();
+    if (!(dt > 0)) dt = 0;
     const sp = Math.min(dist, 2.6 * dt * (dist > 0.3 ? 1 : dist / 0.3));
     if (dist > 1e-3) this.pos.addScaledVector(d.normalize(), sp);
     // keep clear of the fighters
@@ -3287,9 +3435,13 @@ const Ref = {
     else {
       const k = 1 - Math.exp(-dt * 8);
       for (let c = 0; c < NCH; c++) this.P[c] += (T[c] - this.P[c]) * k;
-      const mv = clamp(sp / dt / 2, 0, 1); this.ph += sp * 8;
+      const mv = dt > 0 ? clamp(sp / dt / 2, 0, 1) : 0; this.ph += sp * 8;
       this.P[CH.lhx] += -Math.sin(this.ph) * 0.35 * mv; this.P[CH.rhx] += Math.sin(this.ph) * 0.35 * mv;
     }
+    // always on his feet: never tilted, and reset if anything went bad
+    this.P[CH.tx] = this.P[CH.ty] = this.P[CH.tz] = 0; this.P[CH.py] = 0; this.P[CH.flat] = 1;
+    for (let c = 0; c < NCH; c++) if (!Number.isFinite(this.P[c])) { this.P.set(STANCE_POSE.ref); break; }
+    if (!Number.isFinite(this.pos.x) || !Number.isFinite(this.pos.y)) this.pos.set(0, 3.2);
     const r = this.rig.root; r.position.set(this.pos.x, 0, this.pos.y); r.rotation.y = this.yaw; r.updateMatrixWorld(true);
     applyPose(this.rig, this.P, null);
   },
@@ -3367,6 +3519,7 @@ function keyDown(code, repeat) {
   if (repeat || was) return;
   const M = Game.match;
   if (Game.mode !== 'fight' || !M) return;
+  if (Replay.active) { Replay.stop(); return; } // any key skips the replay
   if (code === 'Escape' || code === 'KeyP') { if (!M.over) togglePause(!Game.paused); return; }
   if (Game.paused || M.over) return;
   if (code === 'Space') { dodgeReq = true; return; }
@@ -3439,6 +3592,12 @@ function loop(now) {
 }
 function tick(real, render) {
   Game.time += real;
+  if (Replay.active) {
+    Replay.update(real);
+    FX.update(real * Replay.speed); Arena.update(real, Game.time); Cam.update(real);
+    if (render) Game.renderer.render(Game.scene, Game.camera);
+    return;
+  }
   let dt = real;
   if (Game.paused) dt = 0;
   else if (Game.stopT > 0) { Game.stopT -= real; dt = 0; }
@@ -3454,6 +3613,7 @@ function tick(real, render) {
   if (dt > 0) for (const f of Game.fighters) f.update(dt);
   separate();
   for (const f of Game.fighters) f.pose(dt || 1e-4);
+  if (Game.mode === 'fight' && M && !Game.paused) Replay.record(dt);
   for (const f of Game.fighters) {
     if (!f.rig.root.visible) continue;
     if (f.powered) FX.aura(f, dt, '#ff7a1a', 70);
