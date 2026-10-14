@@ -375,9 +375,9 @@ const STYLES = {
     blurb: 'The art of eight limbs. Teeps to keep range, elbows up close, body kicks that fold people.',
     moves: { light: 'elbow', medium: 'teep', heavy: 'roundhouse', block: 'check', counter: 'catchSweep', super: 'plumKnees', finisher: 'spinElbow' },
     combos: [
-      { seq: ['medium', 'heavy'], name: 'Teep-Kick' },
-      { seq: ['light', 'heavy'], name: 'Elbow-Kick' },
-      { seq: ['light', 'light', 'heavy'], name: 'Thai Storm' },
+      { seq: ['medium', 'heavy'], name: 'Push Kick-Roundhouse' },
+      { seq: ['light', 'heavy'], name: 'Elbow-Roundhouse' },
+      { seq: ['light', 'light', 'heavy'], name: 'Double Elbow Kick' },
     ],
   },
   karate: {
@@ -385,9 +385,9 @@ const STYLES = {
     blurb: 'Bladed stance, blitz entries and snapping kicks from range. Hit and get out.',
     moves: { light: 'kizami', medium: 'maegeri', heavy: 'mawashi', block: 'uke', counter: 'ukeGyaku', super: 'spinBack', finisher: 'tobiSpin' },
     combos: [
-      { seq: ['light', 'heavy'], name: 'Kizami-Mawashi' },
-      { seq: ['medium', 'heavy'], name: 'Mae-Mawashi' },
-      { seq: ['light', 'medium', 'heavy'], name: 'Sanbon Kumite' },
+      { seq: ['light', 'heavy'], name: 'Punch-High Kick' },
+      { seq: ['medium', 'heavy'], name: 'Front Kick-High Kick' },
+      { seq: ['light', 'medium', 'heavy'], name: 'Triple Strike' },
     ],
   },
   bjj: {
@@ -395,9 +395,9 @@ const STYLES = {
     blurb: 'Low kicks to set up trips and takedowns. Every scramble ends with a choke.',
     moves: { light: 'oblique', medium: 'singleLeg', heavy: 'osoto', block: 'frame', counter: 'guillotine', super: 'rnc', finisher: 'armbar' },
     combos: [
-      { seq: ['light', 'medium'], name: 'Kick to Shot' },
-      { seq: ['light', 'light', 'heavy'], name: 'Chop & Reap' },
-      { seq: ['light', 'heavy'], name: 'Stomp-Reap' },
+      { seq: ['light', 'medium'], name: 'Stomp to Takedown' },
+      { seq: ['light', 'light', 'heavy'], name: 'Double Stomp Trip' },
+      { seq: ['light', 'heavy'], name: 'Stomp-Trip' },
     ],
   },
   wrestling: {
@@ -406,8 +406,8 @@ const STYLES = {
     moves: { light: 'wjab', medium: 'overhand', heavy: 'doubleLeg', block: 'wguard', counter: 'snapKnee', super: 'gnp', finisher: 'powerbomb' },
     combos: [
       { seq: ['light', 'medium'], name: 'Jab-Overhand' },
-      { seq: ['medium', 'heavy'], name: 'Overhand to Double' },
-      { seq: ['light', 'medium', 'heavy'], name: 'Strike-to-Shoot' },
+      { seq: ['medium', 'heavy'], name: 'Punch to Slam' },
+      { seq: ['light', 'medium', 'heavy'], name: 'Jab-Punch-Slam' },
     ],
   },
 };
@@ -418,43 +418,75 @@ const STYLE_IDS = Object.keys(STYLES);
    steps to it during startup (up to 'lunge' forward). tol = how far past ideal still connects. */
 const MOVES = {
   // ---- Boxing
-  jab:      { name: 'Jab', kind: 'strike', anim: 'jab', hits: [0.12], dmg: [4], stam: 4, cd: 0.3, ideal: 1.02, lunge: 0.25, tol: 0.14, tgt: 'head', react: 'head', stun: 0.22, kb: 0.06, cancel: 0.18, desc: 'Lead straight. Fast, safe, sets up everything.' },
-  cross:    { name: 'Cross', kind: 'strike', anim: 'cross', hits: [0.19], dmg: [11], stam: 10, cd: 1, ideal: 1.0, lunge: 0.3, tol: 0.14, tgt: 'head', react: 'head', stun: 0.42, kb: 0.2, cancel: 0.3, desc: 'Rear straight with full hip turn. Your power shot.' },
-  uppercut: { name: 'Lead Uppercut', kind: 'strike', anim: 'uppercut', hits: [0.2], dmg: [8], stam: 7, cd: 1, ideal: 0.8, lunge: 0.32, tol: 0.13, tgt: 'head', react: 'up', stun: 0.36, kb: 0.1, cancel: 0.3, desc: 'Dip the knees, drive the lead fist up under the chin.' },
-  hook:     { name: 'Lead Hook', kind: 'strike', anim: 'hook', hits: [0.23], dmg: [11], stam: 10, cd: 1, ideal: 0.82, lunge: 0.32, tol: 0.12, tgt: 'head', react: 'headSide', stun: 0.42, kb: 0.1, cancel: 0.36, desc: 'Short lead hook, pivot on the lead foot.' },
-  slipHook: { name: 'Slip & Hook', kind: 'strike', anim: 'slipHook', hits: [0.3], dmg: [13], stam: 4, cd: 1.2, ideal: 0.85, lunge: 0.4, tol: 0.3, tgt: 'head', react: 'headSide', stun: 0.55, kb: 0.15, counter: true, desc: 'Slip outside the punch, come back with the hook.' },
-  flurry:   { name: 'Pocket Flurry', kind: 'strike', anim: 'flurry', hits: [0.12, 0.3, 0.5, 0.74], dmg: [5, 7, 8, 13], stam: 0, cd: 0, ideal: 0.92, lunge: 0.45, tol: 0.25, tgt: 'head', react: 'head', reacts: ['head', 'head', 'headSide', 'up'], stun: 0.45, kb: 0.08, armor: true, desc: 'Jab, cross, hook, rear uppercut.' },
-  overhandKO: { name: 'Overhand Bomb', kind: 'strike', anim: 'overhandKO', hits: [0.44], dmg: [30], stam: 0, cd: 0, ideal: 0.98, lunge: 0.7, tol: 0.35, tgt: 'head', react: 'headSide', stun: 0.8, kb: 0.4, armor: true, finisher: true, desc: 'Looping overhand right with everything behind it.' },
+  jab:      { name: 'Jab', cat: 'punch', kind: 'strike', anim: 'jab', hits: [0.12], dmg: [4], stam: 4, cd: 0.3, ideal: 1.02, lunge: 0.25, tol: 0.14, tgt: 'head', react: 'head', stun: 0.22, kb: 0.06, cancel: 0.18, desc: 'Lead straight. Fast, safe, sets up everything.' },
+  cross:    { name: 'Cross', cat: 'punch', kind: 'strike', anim: 'cross', hits: [0.19], dmg: [11], stam: 10, cd: 1, ideal: 1.0, lunge: 0.3, tol: 0.14, tgt: 'head', react: 'head', stun: 0.42, kb: 0.2, cancel: 0.3, desc: 'Rear straight with full hip turn. Your power shot.' },
+  uppercut: { name: 'Uppercut', cat: 'uppercut', kind: 'strike', anim: 'uppercut', hits: [0.2], dmg: [8], stam: 7, cd: 1, ideal: 0.8, lunge: 0.32, tol: 0.13, tgt: 'head', react: 'up', stun: 0.36, kb: 0.1, cancel: 0.3, desc: 'Dip the knees, drive the lead fist up under the chin.' },
+  hook:     { name: 'Hook', cat: 'hook', kind: 'strike', anim: 'hook', hits: [0.23], dmg: [11], stam: 10, cd: 1, ideal: 0.82, lunge: 0.32, tol: 0.12, tgt: 'head', react: 'headSide', stun: 0.42, kb: 0.1, cancel: 0.36, desc: 'Short lead hook, pivot on the lead foot.' },
+  slipHook: { name: 'Slip & Hook', cat: 'hook', kind: 'strike', anim: 'slipHook', hits: [0.3], dmg: [13], stam: 4, cd: 1.2, ideal: 0.85, lunge: 0.4, tol: 0.3, tgt: 'head', react: 'headSide', stun: 0.55, kb: 0.15, counter: true, desc: 'Lean out of the way, come back with a hook.' },
+  flurry:   { name: '4-Punch Combo', cat: 'punch', kind: 'strike', anim: 'flurry', hits: [0.12, 0.3, 0.5, 0.74], dmg: [5, 7, 8, 13], stam: 0, cd: 0, ideal: 0.92, lunge: 0.45, tol: 0.25, tgt: 'head', react: 'head', reacts: ['head', 'head', 'headSide', 'up'], stun: 0.45, kb: 0.08, armor: true, desc: 'Jab, cross, hook, uppercut.' },
+  overhandKO: { name: 'Knockout Overhand', cat: 'hook', kind: 'strike', anim: 'overhandKO', hits: [0.44], dmg: [30], stam: 0, cd: 0, ideal: 0.98, lunge: 0.7, tol: 0.35, tgt: 'head', react: 'headSide', stun: 0.8, kb: 0.4, armor: true, finisher: true, desc: 'A huge looping right hand with everything behind it.' },
   // ---- Muay Thai
-  elbow:    { name: 'Sok Tad Elbow', kind: 'strike', anim: 'elbow', hits: [0.15], dmg: [6], stam: 5, cd: 0.35, ideal: 0.68, lunge: 0.32, tol: 0.12, tgt: 'head', react: 'headSide', stun: 0.3, kb: 0.05, cancel: 0.24, desc: 'Horizontal rear elbow at clinch range. Cuts.' },
-  teep:     { name: 'Teep', kind: 'strike', anim: 'teep', hits: [0.24], dmg: [7], stam: 8, cd: 1, ideal: 1.18, lunge: 0.25, tol: 0.15, tgt: 'body', react: 'push', stun: 0.36, kb: 0.75, cancel: 0.36, desc: 'Lead-leg push kick to the belly. Resets range.' },
-  roundhouse: { name: 'Body Kick', kind: 'strike', anim: 'roundhouse', hits: [0.3], dmg: [13], stam: 13, cd: 1, ideal: 1.1, lunge: 0.3, tol: 0.16, tgt: 'body', react: 'body', stun: 0.48, kb: 0.25, cancel: 0.5, desc: 'Rear roundhouse with the shin, hips turned over.' },
-  catchSweep: { name: 'Catch & Sweep', kind: 'grapple', anim: 'catchSweep', vanim: 'vSwept', grab: 0.12, dur: 1.1, events: [[0.62, 11, 'slam']], stam: 4, cd: 1.2, ideal: 0.8, lunge: 0.45, tol: 0.4, end: 'down', counter: true, desc: 'Catch the strike, sweep the standing leg.' },
-  plumKnees: { name: 'Plum Clinch Knees', kind: 'grapple', anim: 'plumKnees', vanim: 'vClinch', grab: 0.18, dur: 1.55, events: [[0.5, 8, 'body'], [0.85, 8, 'body'], [1.2, 13, 'head']], stam: 0, cd: 0, ideal: 0.62, lunge: 0.5, tol: 0.3, end: 'stagger', armor: true, desc: 'Double-collar tie, three rising knees.' },
-  spinElbow: { name: 'Spinning Back Elbow', kind: 'strike', anim: 'spinElbow', hits: [0.42], dmg: [30], stam: 0, cd: 0, ideal: 0.72, lunge: 0.6, tol: 0.35, tgt: 'head', react: 'headSide', stun: 0.8, kb: 0.3, armor: true, finisher: true, desc: 'Sok Klab: spin and whip the elbow through the jaw.' },
+  elbow:    { name: 'Elbow', cat: 'elbow', kind: 'strike', anim: 'elbow', hits: [0.15], dmg: [6], stam: 5, cd: 0.35, ideal: 0.68, lunge: 0.32, tol: 0.12, tgt: 'head', react: 'headSide', stun: 0.3, kb: 0.05, cancel: 0.24, desc: 'Short sideways elbow up close. Cuts.' },
+  teep:     { name: 'Push Kick', cat: 'push', kind: 'strike', anim: 'teep', hits: [0.24], dmg: [7], stam: 8, cd: 1, ideal: 1.18, lunge: 0.25, tol: 0.15, tgt: 'body', react: 'push', stun: 0.36, kb: 0.75, cancel: 0.36, desc: 'Front-leg push kick to the belly. Shoves them away.' },
+  roundhouse: { name: 'Roundhouse Kick', cat: 'bodyKick', kind: 'strike', anim: 'roundhouse', hits: [0.3], dmg: [13], stam: 13, cd: 1, ideal: 1.1, lunge: 0.3, tol: 0.16, tgt: 'body', react: 'body', stun: 0.48, kb: 0.25, cancel: 0.5, desc: 'Swing the shin into the ribs, hips fully turned.' },
+  catchSweep: { name: 'Catch & Sweep', cat: 'takedown', kind: 'grapple', anim: 'catchSweep', vanim: 'vSwept', grab: 0.12, dur: 1.1, events: [[0.62, 11, 'slam']], stam: 4, cd: 1.2, ideal: 0.8, lunge: 0.45, tol: 0.4, end: 'down', counter: true, desc: 'Catch the strike, sweep the standing leg.' },
+  plumKnees: { name: 'Clinch Knees', cat: 'clinch', kind: 'grapple', anim: 'plumKnees', vanim: 'vClinch', grab: 0.18, dur: 1.55, events: [[0.5, 8, 'body'], [0.85, 8, 'body'], [1.2, 13, 'head']], stam: 0, cd: 0, ideal: 0.62, lunge: 0.5, tol: 0.3, end: 'stagger', armor: true, desc: 'Grab behind the head, three knees to the body and face.' },
+  spinElbow: { name: 'Spinning Elbow', cat: 'elbow', kind: 'strike', anim: 'spinElbow', hits: [0.42], dmg: [30], stam: 0, cd: 0, ideal: 0.72, lunge: 0.6, tol: 0.35, tgt: 'head', react: 'headSide', stun: 0.8, kb: 0.3, armor: true, finisher: true, desc: 'Spin and whip the elbow through the jaw.' },
   // ---- Karate
-  kizami:   { name: 'Kizami Zuki', kind: 'strike', anim: 'kizami', hits: [0.14], dmg: [4], stam: 4, cd: 0.3, ideal: 1.02, lunge: 0.45, tol: 0.14, tgt: 'head', react: 'head', stun: 0.22, kb: 0.08, cancel: 0.2, desc: 'Blitzing lead punch from long range.' },
-  maegeri:  { name: 'Mae Geri', kind: 'strike', anim: 'maegeri', hits: [0.23], dmg: [8], stam: 8, cd: 1, ideal: 1.15, lunge: 0.25, tol: 0.15, tgt: 'body', react: 'body', stun: 0.36, kb: 0.45, cancel: 0.36, desc: 'Rear front snap kick with the ball of the foot.' },
-  mawashi:  { name: 'Jodan Mawashi Geri', kind: 'strike', anim: 'mawashi', hits: [0.33], dmg: [14], stam: 14, cd: 1, ideal: 1.08, lunge: 0.3, tol: 0.16, tgt: 'head', react: 'headSide', stun: 0.55, kb: 0.2, cancel: 0.55, desc: 'Rear roundhouse to the head, chambered and snapped.' },
-  ukeGyaku: { name: 'Uke & Gyaku Zuki', kind: 'strike', anim: 'ukeGyaku', hits: [0.28], dmg: [12], stam: 4, cd: 1.2, ideal: 0.95, lunge: 0.4, tol: 0.3, tgt: 'body', react: 'body', stun: 0.5, kb: 0.25, counter: true, desc: 'Forearm deflection, then the reverse punch.' },
-  spinBack: { name: 'Ushiro Geri', kind: 'strike', anim: 'spinBack', hits: [0.43], dmg: [26], stam: 0, cd: 0, ideal: 1.12, lunge: 0.5, tol: 0.25, tgt: 'body', react: 'body', stun: 0.7, kb: 1.0, armor: true, knock: true, desc: 'Spinning back kick straight through the liver.' },
-  tobiSpin: { name: 'Jump Spin Hook Kick', kind: 'strike', anim: 'tobiSpin', hits: [0.5], dmg: [30], stam: 0, cd: 0, ideal: 1.05, lunge: 0.7, tol: 0.35, tgt: 'head', react: 'headSide', stun: 0.8, kb: 0.4, armor: true, finisher: true, desc: 'Tobi ushiro mawashi geri. Lights out.' },
+  kizami:   { name: 'Lead Punch', cat: 'punch', kind: 'strike', anim: 'kizami', hits: [0.14], dmg: [4], stam: 4, cd: 0.3, ideal: 1.02, lunge: 0.45, tol: 0.14, tgt: 'head', react: 'head', stun: 0.22, kb: 0.08, cancel: 0.2, desc: 'Lunging front-hand punch from long range.' },
+  maegeri:  { name: 'Front Kick', cat: 'push', kind: 'strike', anim: 'maegeri', hits: [0.23], dmg: [8], stam: 8, cd: 1, ideal: 1.15, lunge: 0.25, tol: 0.15, tgt: 'body', react: 'body', stun: 0.36, kb: 0.45, cancel: 0.36, desc: 'Snap the back leg straight into the stomach.' },
+  mawashi:  { name: 'High Kick', cat: 'headKick', kind: 'strike', anim: 'mawashi', hits: [0.33], dmg: [14], stam: 14, cd: 1, ideal: 1.08, lunge: 0.3, tol: 0.16, tgt: 'head', react: 'headSide', stun: 0.55, kb: 0.2, cancel: 0.55, desc: 'Back-leg roundhouse kick to the head.' },
+  ukeGyaku: { name: 'Block & Punch', cat: 'punch', kind: 'strike', anim: 'ukeGyaku', hits: [0.28], dmg: [12], stam: 4, cd: 1.2, ideal: 0.95, lunge: 0.4, tol: 0.3, tgt: 'body', react: 'body', stun: 0.5, kb: 0.25, counter: true, desc: 'Knock the strike aside with your forearm, punch the body.' },
+  spinBack: { name: 'Spinning Back Kick', cat: 'bodyKick', kind: 'strike', anim: 'spinBack', hits: [0.43], dmg: [26], stam: 0, cd: 0, ideal: 1.12, lunge: 0.5, tol: 0.25, tgt: 'body', react: 'body', stun: 0.7, kb: 1.0, armor: true, knock: true, desc: 'Spin and drive your heel into the liver.' },
+  tobiSpin: { name: 'Jumping Spin Kick', cat: 'headKick', kind: 'strike', anim: 'tobiSpin', hits: [0.5], dmg: [30], stam: 0, cd: 0, ideal: 1.05, lunge: 0.7, tol: 0.35, tgt: 'head', react: 'headSide', stun: 0.8, kb: 0.4, armor: true, finisher: true, desc: 'Jump, spin and sweep the heel across the jaw.' },
   // ---- BJJ
-  oblique:  { name: 'Oblique Kick', kind: 'strike', anim: 'oblique', hits: [0.17], dmg: [4], stam: 5, cd: 0.35, ideal: 1.0, lunge: 0.3, tol: 0.15, tgt: 'leg', react: 'leg', stun: 0.2, kb: 0.05, cancel: 0.24, drain: 7, desc: 'Stomp the lead knee. Drains their gas tank.' },
-  singleLeg: { name: 'Single-Leg', kind: 'grapple', anim: 'singleLeg', vanim: 'vSingle', grab: 0.28, dur: 1.3, events: [[0.9, 10, 'slam']], stam: 14, cd: 1, ideal: 0.6, lunge: 0.7, tol: 0.16, end: 'down', desc: 'Level change, grab the lead leg, run the pipe.' },
-  osoto:    { name: 'Osoto Gari', kind: 'grapple', anim: 'osoto', vanim: 'vReap', grab: 0.22, dur: 1.15, events: [[0.72, 13, 'slam']], stam: 15, cd: 1, ideal: 0.58, lunge: 0.5, tol: 0.14, end: 'down', desc: 'Grip up, step outside, reap the leg away.' },
-  guillotine: { name: 'Guillotine', kind: 'grapple', anim: 'guillotine', vanim: 'vClinch', grab: 0.12, dur: 1.45, events: [[0.6, 4, 'choke'], [0.9, 4, 'choke'], [1.2, 6, 'choke']], stam: 4, cd: 1.2, ideal: 0.6, lunge: 0.5, tol: 0.4, end: 'stagger', counter: true, desc: 'Wrap the neck as they come in and squeeze.' },
-  rnc:      { name: 'Back Take RNC', kind: 'grapple', anim: 'rnc', vanim: 'vRnc', grab: 0.16, dur: 2.5, events: [[1.0, 6, 'choke'], [1.4, 6, 'choke'], [1.8, 7, 'choke'], [2.15, 9, 'choke']], stam: 0, cd: 0, ideal: 0.7, lunge: 0.55, tol: 0.25, end: 'down', armor: true, sub: true, desc: 'Arm drag to the back, sink the rear-naked choke.' },
-  armbar:   { name: 'Flying Armbar', kind: 'grapple', anim: 'armbar', vanim: 'vArmbar', grab: 0.2, dur: 2.2, events: [[1.5, 30, 'choke']], stam: 0, cd: 0, ideal: 0.65, lunge: 0.6, tol: 0.35, end: 'down', armor: true, finisher: true, sub: true, desc: 'Jump guard, swing the leg over, hips to the elbow.' },
+  oblique:  { name: 'Knee Stomp', cat: 'lowKick', kind: 'strike', anim: 'oblique', hits: [0.17], dmg: [4], stam: 5, cd: 0.35, ideal: 1.0, lunge: 0.3, tol: 0.15, tgt: 'leg', react: 'leg', stun: 0.2, kb: 0.05, cancel: 0.24, drain: 7, desc: 'Stomp kick to the front knee. Drains their stamina.' },
+  singleLeg: { name: 'Single-Leg Takedown', cat: 'takedown', kind: 'grapple', anim: 'singleLeg', vanim: 'vSingle', grab: 0.28, dur: 1.3, events: [[0.9, 10, 'slam']], stam: 14, cd: 1, ideal: 0.6, lunge: 0.7, tol: 0.16, end: 'down', desc: 'Drop low, grab one leg, drive them to the mat.' },
+  osoto:    { name: 'Leg Trip Throw', cat: 'takedown', kind: 'grapple', anim: 'osoto', vanim: 'vReap', grab: 0.22, dur: 1.15, events: [[0.72, 13, 'slam']], stam: 15, cd: 1, ideal: 0.58, lunge: 0.5, tol: 0.14, end: 'down', desc: 'Grab the collar, step outside, sweep their leg away.' },
+  guillotine: { name: 'Guillotine Choke', cat: 'clinch', kind: 'grapple', anim: 'guillotine', vanim: 'vClinch', grab: 0.12, dur: 1.45, events: [[0.6, 4, 'choke'], [0.9, 4, 'choke'], [1.2, 6, 'choke']], stam: 4, cd: 1.2, ideal: 0.6, lunge: 0.5, tol: 0.4, end: 'stagger', counter: true, desc: 'Wrap the neck as they come in and squeeze.' },
+  rnc:      { name: 'Rear Choke', cat: 'takedown', kind: 'grapple', anim: 'rnc', vanim: 'vRnc', grab: 0.16, dur: 2.5, events: [[1.0, 6, 'choke'], [1.4, 6, 'choke'], [1.8, 7, 'choke'], [2.15, 9, 'choke']], stam: 0, cd: 0, ideal: 0.7, lunge: 0.55, tol: 0.25, end: 'down', armor: true, sub: true, desc: 'Spin to their back, sink the choke from behind.' },
+  armbar:   { name: 'Armbar', cat: 'takedown', kind: 'grapple', anim: 'armbar', vanim: 'vArmbar', grab: 0.2, dur: 2.2, events: [[1.5, 30, 'choke']], stam: 0, cd: 0, ideal: 0.65, lunge: 0.6, tol: 0.35, end: 'down', armor: true, finisher: true, sub: true, desc: 'Jump on, swing the leg over, straighten the arm.' },
   // ---- Wrestling
-  wjab:     { name: 'Jab', kind: 'strike', anim: 'jab', hits: [0.12], dmg: [4], stam: 4, cd: 0.3, ideal: 1.0, lunge: 0.25, tol: 0.14, tgt: 'head', react: 'head', stun: 0.22, kb: 0.06, cancel: 0.18, desc: 'Pawing jab to hide the level change.' },
-  overhand: { name: 'Overhand Right', kind: 'strike', anim: 'overhand', hits: [0.27], dmg: [10], stam: 9, cd: 1, ideal: 0.95, lunge: 0.35, tol: 0.14, tgt: 'head', react: 'headSide', stun: 0.42, kb: 0.15, cancel: 0.42, desc: 'Looping right over the top, head off the line.' },
-  doubleLeg: { name: 'Double-Leg Slam', kind: 'grapple', anim: 'doubleLeg', vanim: 'vDouble', grab: 0.3, dur: 1.45, events: [[1.0, 15, 'slam']], stam: 16, cd: 1, ideal: 0.62, lunge: 0.75, tol: 0.16, end: 'down', desc: 'Penetration step, lift and slam.' },
-  snapKnee: { name: 'Snap-Down Knee', kind: 'grapple', anim: 'snapKnee', vanim: 'vClinch', grab: 0.12, dur: 0.95, events: [[0.5, 12, 'head']], stam: 4, cd: 1.2, ideal: 0.62, lunge: 0.45, tol: 0.4, end: 'stagger', counter: true, desc: 'Sprawl, snap the head down, knee to the face.' },
-  gnp:      { name: 'Ground & Pound', kind: 'grapple', anim: 'gnp', vanim: 'vGnp', grab: 0.3, dur: 2.7, events: [[0.95, 7, 'slam'], [1.45, 5, 'head'], [1.72, 5, 'head'], [1.99, 6, 'head'], [2.3, 8, 'head']], stam: 0, cd: 0, ideal: 0.62, lunge: 0.75, tol: 0.25, end: 'down', armor: true, desc: 'Double to mount, then rain down punches.' },
-  powerbomb: { name: 'Powerbomb', kind: 'grapple', anim: 'powerbomb', vanim: 'vPowerbomb', grab: 0.25, dur: 2.0, events: [[1.35, 30, 'slam']], stam: 0, cd: 0, ideal: 0.6, lunge: 0.7, tol: 0.3, end: 'down', armor: true, finisher: true, desc: 'Lift them to the lights and drive them through the canvas.' },
+  wjab:     { name: 'Jab', cat: 'punch', kind: 'strike', anim: 'jab', hits: [0.12], dmg: [4], stam: 4, cd: 0.3, ideal: 1.0, lunge: 0.25, tol: 0.14, tgt: 'head', react: 'head', stun: 0.22, kb: 0.06, cancel: 0.18, desc: 'Pawing jab to hide the level change.' },
+  overhand: { name: 'Overhand Punch', cat: 'hook', kind: 'strike', anim: 'overhand', hits: [0.27], dmg: [10], stam: 9, cd: 1, ideal: 0.95, lunge: 0.35, tol: 0.14, tgt: 'head', react: 'headSide', stun: 0.42, kb: 0.15, cancel: 0.42, desc: 'Looping right hand over the top.' },
+  doubleLeg: { name: 'Takedown Slam', cat: 'takedown', kind: 'grapple', anim: 'doubleLeg', vanim: 'vDouble', grab: 0.3, dur: 1.45, events: [[1.0, 15, 'slam']], stam: 16, cd: 1, ideal: 0.62, lunge: 0.75, tol: 0.16, end: 'down', desc: 'Shoot in, grab both legs, lift and slam.' },
+  snapKnee: { name: 'Head Snap Knee', cat: 'clinch', kind: 'grapple', anim: 'snapKnee', vanim: 'vClinch', grab: 0.12, dur: 0.95, events: [[0.5, 12, 'head']], stam: 4, cd: 1.2, ideal: 0.62, lunge: 0.45, tol: 0.4, end: 'stagger', counter: true, desc: 'Yank the head down, knee to the face.' },
+  gnp:      { name: 'Ground & Pound', cat: 'takedown', kind: 'grapple', anim: 'gnp', vanim: 'vGnp', grab: 0.3, dur: 2.7, events: [[0.95, 7, 'slam'], [1.45, 5, 'head'], [1.72, 5, 'head'], [1.99, 6, 'head'], [2.3, 8, 'head']], stam: 0, cd: 0, ideal: 0.62, lunge: 0.75, tol: 0.25, end: 'down', armor: true, desc: 'Takedown to mount, then rain down punches.' },
+  powerbomb: { name: 'Powerbomb', cat: 'takedown', kind: 'grapple', anim: 'powerbomb', vanim: 'vPowerbomb', grab: 0.25, dur: 2.0, events: [[1.35, 30, 'slam']], stam: 0, cd: 0, ideal: 0.6, lunge: 0.7, tol: 0.3, end: 'down', armor: true, finisher: true, desc: 'Lift them to the lights and drive them into the mat.' },
 };
-const BLOCK_NAMES = { shell: 'High Guard', check: 'Shin Check', uke: 'Soto Uke', frame: 'Frames', wguard: 'Crouch Guard' };
+const BLOCK_NAMES = { shell: 'High Guard', check: 'Leg Check', uke: 'Forearm Block', frame: 'Hand Frames', wguard: 'Crouch Guard' };
+
+/* ---------- matchups: what each style is good at blocking and countering ----------
+   Every attack has a type; types group into three families. */
+const FAMILY = { punch: 'hands', hook: 'hands', uppercut: 'hands', elbow: 'hands', push: 'kicks', bodyKick: 'kicks', headKick: 'kicks', lowKick: 'kicks', knee: 'kicks', takedown: 'grapple', clinch: 'grapple' };
+const famOf = (M) => FAMILY[M.cat] || (M.kind === 'grapple' ? 'grapple' : 'hands');
+const FAM_LABEL = { hands: 'punches & elbows', kicks: 'kicks', grapple: 'takedowns & clinches' };
+// share of strike damage the guard stops; for grapples: stamina it costs to sprawl
+const BLOCK_SKILL = {
+  boxing:    { hands: 0.92, kicks: 0.68, grapple: 24 },
+  muaythai:  { hands: 0.82, kicks: 0.95, grapple: 14 },
+  karate:    { hands: 0.88, kicks: 0.88, grapple: 22 },
+  bjj:       { hands: 0.72, kicks: 0.76, grapple: 7 },
+  wrestling: { hands: 0.8, kicks: 0.72, grapple: 5 },
+};
+// how forgiving the counter timing is for each family (x parry window)
+const COUNTER_SKILL = {
+  boxing:    { hands: 1.4, kicks: 0.9, grapple: 0.85 },
+  muaythai:  { hands: 1.0, kicks: 1.45, grapple: 1.05 },
+  karate:    { hands: 1.25, kicks: 1.25, grapple: 0.8 },
+  bjj:       { hands: 0.9, kicks: 1.0, grapple: 1.45 },
+  wrestling: { hands: 0.95, kicks: 1.05, grapple: 1.45 },
+};
+// which counter fires depends on what you caught
+const COUNTERS = {
+  boxing:    { hands: 'slipHook', kicks: 'stepCross', grapple: 'sprawlUpper' },
+  muaythai:  { hands: 'parryElbow', kicks: 'catchSweep', grapple: 'shotKnee' },
+  karate:    { hands: 'ukeGyaku', kicks: 'stopKick', grapple: 'sprawlKnee' },
+  bjj:       { hands: 'guillotine', kicks: 'catchTrip', grapple: 'guillotine' },
+  wrestling: { hands: 'duckDouble', kicks: 'catchDump', grapple: 'snapKnee' },
+};
+const skillWord = (v) => (v >= 1.3 ? 'great' : v >= 1.0 ? 'good' : 'weak');
+const blockWord = (fam, v) => (fam === 'grapple' ? (v <= 8 ? 'great' : v <= 15 ? 'good' : 'weak') : v >= 0.9 ? 'great' : v >= 0.8 ? 'good' : 'weak');
 
 /* ---------------- Looks ---------------- */
 const SKIN = ['#f3d2b5', '#e8b98f', '#d39a6a', '#b97a4c', '#8f5a35', '#6b4127', '#4a2c1b', '#f6dcc8'];
@@ -485,6 +517,20 @@ const ROSTER = [
   { id: 'carter', name: 'Jamal Carter', nick: 'Showtime', style: 'boxing', look: L(6, 'afro', 0, 'none', 8, 7, 'lean', 'tall'), quote: 'Hands down, eyes up, lights out.' },
   { id: 'tupou', name: 'Sione Tupou', nick: 'Big Island', style: 'wrestling', look: L(4, 'mohawk', 0, 'goatee', 5, 2, 'heavy', 'tall'), quote: 'Island strength, mainland problems.' },
 ];
+// counter-only techniques picked by the matchup tables
+const cc = (base, o) => ({ ...MOVES[base], cancel: undefined, counter: true, stam: 4, cd: 1.2, ...o });
+Object.assign(MOVES, {
+  stepCross:   cc('cross', { name: 'Step-In Cross', dmg: [12], lunge: 0.5, tol: 0.3, desc: 'Step inside the kick and land the cross.' }),
+  sprawlUpper: cc('uppercut', { name: 'Sprawl & Uppercut', dmg: [12], lunge: 0.45, tol: 0.3, desc: 'Kick the legs back, uppercut the ducking head.' }),
+  parryElbow:  cc('elbow', { name: 'Parry & Elbow', dmg: [11], lunge: 0.45, tol: 0.3, desc: 'Swat the punch down, step in with the elbow.' }),
+  stopKick:    cc('maegeri', { name: 'Stop Kick', dmg: [11], lunge: 0.3, tol: 0.3, desc: 'Front kick into their stomach before their kick lands.' }),
+  sprawlKnee:  cc('snapKnee', { name: 'Sprawl & Knee', desc: 'Sprawl on the shot, knee to the head.' }),
+  shotKnee:    cc('snapKnee', { name: 'Knee to the Shot', events: [[0.5, 13, 'head']], desc: 'Time the takedown with a rising knee.' }),
+  catchTrip:   cc('catchSweep', { name: 'Catch Kick Trip', desc: 'Trap the kicking leg, trip the standing one.' }),
+  catchDump:   cc('catchSweep', { name: 'Catch Kick Dump', events: [[0.62, 12, 'slam']], desc: 'Catch the kick and dump them on their back.' }),
+  duckDouble:  cc('doubleLeg', { name: 'Duck-Under Takedown', events: [[1.0, 12, 'slam']], lunge: 0.8, tol: 0.4, desc: 'Duck under the punch and shoot the double-leg.' }),
+});
+for (const id of ['stepCross', 'sprawlUpper', 'parryElbow', 'stopKick']) MOVES[id].cat = MOVES[id].cat || 'punch';
 const BOSSES = [
   { id: 'hollis', name: 'Hollis Crane', nick: 'Gravedigger', style: 'wrestling', rank: 21, trait: 'Iron Body', traitDesc: 'Takes 20% less damage.', look: L(0, 'bald', 0, 'full', 2, 2, 'heavy', 'tall'), quote: 'I dig the holes. You fill them.', mods: { armor: 0.8 } },
   { id: 'thep', name: 'Thep Rattana', nick: 'The Monk', style: 'muaythai', rank: 22, trait: 'Iron Shins', traitDesc: 'Kicks hit 25% harder, endless gas.', look: L(2, 'bald', 0, 'none', 4, 2, 'lean'), quote: 'Ten thousand kicks. One for you.', mods: { kickMul: 1.25, regenMul: 1.4 } },
@@ -1182,6 +1228,21 @@ const PARRY_POSES = {
   bjj: { spine: [0.35, 0, 0], lKnee: 0.95, rKnee: 0.9, lH: [0.16, 1.45, 0.65], rH: [-0.16, 1.45, 0.62], neck: [-0.15, 0.2, 0] },
   wrestling: { pos: [0, 0, -0.1], spine: [0.55, 0, 0], lHip: [-0.35, 0.25, 0.25], rHip: [0.25, -0.2, -0.28], lKnee: 0.7, rKnee: 0.6, lH: [0.15, 1.35, 0.55], rH: [-0.15, 1.35, 0.55] },
 };
+// block reactions: what the guard does depending on the incoming attack
+{
+  const BLK_OF = { boxing: 'shell', muaythai: 'check', karate: 'uke', bjj: 'frame', wrestling: 'wguard' };
+  for (const s in BLK_OF) {
+    const bp = BLOCK_POSES[BLK_OF[s]];
+    const hiGuard = { ...BLOCK_POSES.shell, lHip: STANCES[s].lHip, lKnee: STANCES[s].lKnee, lAnk: 0, rHip: STANCES[s].rHip, rKnee: STANCES[s].rKnee };
+    const head = { ...hiGuard, spine: [0.05, 0.05, 0], neck: [0.1, 0.35, 0], pos: [0, 0, -0.07] };
+    const body = { ...hiGuard, spine: [0.42, 0.05, 0], chest: [0.2, 0, 0], neck: [0.25, 0.3, 0], lH: [0.1, 1.48, 0.3], lP: [0.4, -1, 0.3], rH: [-0.1, 1.5, 0.28], rP: [-0.4, -1, 0.3], lKnee: 0.75, rKnee: 0.75 };
+    const leg = { ...hiGuard, lHip: [-1.3, 0.35, 0.32], lKnee: 1.8, lAnk: 0.4, rKnee: 0.35, spine: [0.05, 0, 0] };
+    const sprawl = { pos: [0, 0, -0.18], hips: [0, -0.2, 0], spine: [0.75, 0, 0], chest: [0.2, 0, 0], neck: [-0.4, 0.2, 0], lHip: [0.35, 0.25, 0.3], lKnee: 0.5, rHip: [0.55, -0.25, -0.3], rKnee: 0.4, lAnk: 0.6, rAnk: 0.6,
+      lH: [0.15, 1.2, 0.5], lP: [1, -0.4, 0], rH: [-0.15, 1.2, 0.5], rP: [-1, -0.4, 0] };
+    for (const [nm, pose] of [['Head', head], ['Body', body], ['Leg', leg], ['Sprawl', sprawl]])
+      def('bk' + nm + '_' + s, 0.42, [[0.06, pose, 'out'], [0.24, pose, 'lin'], [0.42, bp, 'io']]);
+  }
+}
 for (const s in PARRY_POSES) def('parry_' + s, 0.45, [[0.07, PARRY_POSES[s], 'out'], [0.3, PARRY_POSES[s], 'lin'], [0.45, {}, 'io']]);
 
 /* ============ REACTIONS (compiled on neutral-ish base of the fighter's stance) ============ */
@@ -1695,22 +1756,30 @@ class Fighter {
     if (!this.canAct || this.cd.counter > 0 || this.stam < 3) return false;
     this.cd.counter = 1.15 * this.D.cdMul;
     this.state = 'parry';
-    this.parryT = this.D.parryWin * (this.mods.parryMul || 1);
+    this.parryT = this.D.parryWin * (this.mods.parryMul || 1) * 1.45; this.parryAge = 0;
     this.playAnim('parry_' + this.styleId, { rate: 1 });
     this.stam -= 3;
     return true;
   }
+  // did the counter land in time? the window depends on my style vs the attack type
+  parryOk(M) {
+    if (this.state !== 'parry' || !(this.parryT > 0) || M.finisher) return false;
+    const w = this.D.parryWin * (this.mods.parryMul || 1) * COUNTER_SKILL[this.styleId][famOf(M)];
+    return this.parryAge <= w;
+  }
   parrySuccess(att) {
+    const inM = att.anim && att.anim.move;
+    const fam = inM ? famOf(inM) : 'hands';
     Sound.parry(); this.stats_.parries++;
     FX.spark(this.aim.head.clone().lerp(att.aim.head, 0.5), '#ffd75a', 18, 3);
-    FX.text(this, 'PARRY!', '#ffd75a', 1.1);
     Game.hitstop(0.09);
     Arena.excite = Math.min(1, Arena.excite + 0.35); Sound.cheer(0.6);
     att.interrupt('parried', 0.6);
     this.meter = Math.min(100, this.meter + 14 * this.D.meterMul);
     this.parryT = 0;
-    // fire the counter technique
-    const M = this.moveFor('counter');
+    // fire the counter that fits what I caught
+    const M = MOVES[COUNTERS[this.styleId][fam]] || this.moveFor('counter');
+    FX.text(this, 'COUNTER: ' + M.name.toUpperCase(), '#ffd75a', 1.0);
     this.startMove(M, 'counter', null, true);
   }
   interrupt(animName, stun) {
@@ -1728,7 +1797,7 @@ class Fighter {
     for (const k in this.cd) if (this.cd[k] > 0) this.cd[k] -= dt;
     if (this.invulnT > 0) this.invulnT -= dt;
     if (this.dodgeCd > 0) this.dodgeCd -= dt;
-    if (this.parryT > 0) this.parryT -= dt;
+    if (this.parryT > 0) { this.parryT -= dt; this.parryAge = (this.parryAge || 0) + dt; }
     if (this.powerT > 0) { this.powerT -= dt; if (this.powerT <= 0) FX.text(this, 'POWER FADED', '#9aa3c0', 0.8); }
     if (this.regenDelay > 0) this.regenDelay -= dt;
     // stamina
@@ -1875,11 +1944,12 @@ class Fighter {
       return;
     }
     // parried?
-    if (O.state === 'parry' && O.parryT > 0 && !M.armor && !M.finisher) { O.parrySuccess(this); return; }
-    // blocked?
+    if (O.parryOk(M)) { O.parrySuccess(this); return; }
+    // blocked? how well depends on the defender's style vs this attack type
     if (O.state === 'block' && O.blockW > 0.4 && !M.finisher && O.inFront(1.2)) {
-      const chip = M.dmg[i] * 0.12 * this.D.dmg;
-      O.stam -= M.stam * 0.75 + 3 + M.dmg[i] * 0.4;
+      const fam = famOf(M), red = BLOCK_SKILL[O.styleId][fam];
+      const chip = M.dmg[i] * (1 - red) * this.D.dmg;
+      O.stam -= (M.stam * 0.6 + 3 + M.dmg[i] * 0.35) * (1.6 - red);
       O.stats_.blocked++;
       const pt = (M.tgt === 'body' ? O.aim.body : O.aim.head).clone().lerp(this.aim.head, 0.25);
       if (O.stam <= 0) {
@@ -1889,11 +1959,18 @@ class Fighter {
         return;
       }
       O.hp = Math.max(1, O.hp - chip);
-      Sound.block(); FX.spark(pt, '#bcd3ff', 8, 1.6); Cam.shake(0.05);
-      O.recoil = 1;
-      const f = this.dirTo(); O.vel.x += f.x * 0.9; O.vel.y += f.y * 0.9;
+      Sound.block(); FX.spark(pt, red >= 0.85 ? '#bcd3ff' : '#ffb36b', 8, 1.6); Cam.shake(0.05 + (1 - red) * 0.2);
+      // guard reaction that matches the attack
+      const checks = fam === 'kicks' && (M.tgt === 'leg' || (O.styleId === 'muaythai' && M.tgt !== 'head'));
+      O.playAnim((checks ? 'bkLeg_' : M.tgt === 'body' ? 'bkBody_' : 'bkHead_') + O.styleId);
+      const f = this.dirTo(); const push = 0.6 + (1 - red) * 2; O.vel.x += f.x * push; O.vel.y += f.y * push;
       this.meter = Math.min(100, this.meter + 2 * this.D.meterMul); O.meter = Math.min(100, O.meter + 3);
-      if (this.isPlayer || O.isPlayer) FX.text(O, 'BLOCKED', '#bcd3ff', 0.6, true);
+      if (O.styleId === 'muaythai' && fam === 'kicks' && M.tgt !== 'head') {
+        // a checked kick hurts the kicker's shin
+        this.hp = Math.max(1, this.hp - 3 * O.D.dmg); this.streak = 0;
+        FX.text(O, 'CHECKED!', '#7fe3ff', 0.9); Sound.hit(0.6, false);
+        this.state = 'hit'; this.playAnim('hLeg'); this.stunT = 0.3; this.grapple = null;
+      } else if (this.isPlayer || O.isPlayer) FX.text(O, red >= 0.9 ? 'BLOCKED' : red >= 0.8 ? 'BLOCKED' : 'PARTIAL BLOCK', red >= 0.8 ? '#bcd3ff' : '#ffb36b', 0.7, true);
       return;
     }
     // clean hit
@@ -1977,15 +2054,17 @@ class Fighter {
       else FX.text(this, 'STUFFED', '#8d96b3', 0.7, true);
       this.state = 'hit'; this.playAnim('parried'); this.stunT = 0.35; return;
     }
-    if (O.state === 'parry' && O.parryT > 0 && !M.armor && !M.finisher) { O.parrySuccess(this); return; }
-    // blocked: a set guard sprawls on the shot, but it eats into stamina
+    if (O.parryOk(M)) { O.parrySuccess(this); return; }
+    // blocked: a set guard sprawls on the shot; grapplers do it cheaply, strikers pay for it
     if (O.state === 'block' && O.blockW > 0.4 && !M.finisher && O.inFront(1.2)) {
-      O.stam -= 10 + M.stam * 0.5; O.stats_.blocked++;
+      const cost = BLOCK_SKILL[O.styleId].grapple;
+      O.stam -= cost + M.stam * 0.3; O.stats_.blocked++;
       if (O.stam > 0) {
-        Sound.block(); Cam.shake(0.08); O.recoil = 1;
-        FX.text(O, 'SPRAWL! STUFFED', '#bcd3ff', 0.8);
+        Sound.block(); Cam.shake(0.08);
+        O.playAnim('bkSprawl_' + O.styleId);
+        FX.text(O, cost <= 8 ? 'SPRAWL! EASY STUFF' : cost <= 15 ? 'SPRAWL!' : 'BARELY STUFFED', cost <= 15 ? '#bcd3ff' : '#ffb36b', 0.85);
         O.meter = Math.min(100, O.meter + 4);
-        this.state = 'hit'; this.playAnim('parried'); this.stunT = 0.45; return;
+        this.state = 'hit'; this.playAnim('parried'); this.stunT = cost <= 8 ? 0.75 : 0.45; return;
       }
       O.stam = 0; FX.text(O, 'GUARD BREAK!', '#ff7a1a', 1.1);
     }
@@ -2157,15 +2236,17 @@ class AI {
       const reactAt = now + this.p.react * rand(0.8, 1.35);
       const contactAt = now + (hitT - startedAgo);
       const roll = Math.random();
-      const pParry = this.p.parry * (M.kind === 'grapple' ? 1.3 : 1) * (this.mode === 'counter' ? 2.2 : 1);
-      const pBlock = M.kind === 'grapple' ? 0 : this.p.block * (this.mode === 'counter' ? 1.5 : 1);
+      const fam = famOf(M);
+      const pParry = this.p.parry * COUNTER_SKILL[f.styleId][fam] * (this.mode === 'counter' ? 2.2 : 1);
+      const bs = BLOCK_SKILL[f.styleId][fam];
+      const pBlock = this.p.block * (fam === 'grapple' ? (bs <= 8 ? 1.3 : bs <= 15 ? 0.9 : 0.55) : bs / 0.85) * (this.mode === 'counter' ? 1.5 : 1);
       let kind = 'none';
       if (M.finisher || M.armor) kind = Math.random() < this.p.block ? 'evade' : 'none';
       else if (roll < pParry) kind = 'parry';
       else if (roll < pParry + pBlock) kind = 'block';
       else if (roll < pParry + pBlock + this.p.block * 0.35) kind = 'evade';
       if (kind === 'parry') {
-        const win = f.D.parryWin * (f.mods.parryMul || 1);
+        const win = f.D.parryWin * (f.mods.parryMul || 1) * COUNTER_SKILL[f.styleId][fam];
         const err = (1 - this.diff / 6) * 0.12;
         const at = Math.max(reactAt, contactAt - win * 0.55 + rand(-err, err));
         this.pending = at < contactAt ? { at, kind, id: o.anim.id } : { at: reactAt, kind: 'block', id: o.anim.id };
@@ -2663,7 +2744,7 @@ const nameOf = (id) => (id === 'P' ? (activeFighter() || {}).name : (ROSTER.find
 /* =====================================================================
    UI — menus, creator, training, HUD, results
    ===================================================================== */
-const KEYCAP = { light: 'J', medium: 'K', heavy: 'L', block: 'I', counter: 'O', super: 'U', dodge: 'SPACE ×2', finisher: 'F' };
+const KEYCAP = { light: 'J', medium: 'K', heavy: 'L', block: 'I', counter: 'O', super: 'U', dodge: 'SPACE', finisher: 'F' };
 const SLOT_LABEL = { light: 'Light', medium: 'Medium', heavy: 'Heavy', block: 'Block', counter: 'Counter', super: 'Super', dodge: 'Dodge', finisher: 'Finisher' };
 const UI = {
   el: null, screen: 'title', draft: null, editId: null, confirm: null, sel: {}, hudEls: null,
@@ -2815,8 +2896,11 @@ function moveListHTML(style, evolvedShown = true) {
   const S = STYLES[style];
   const rows = ['light', 'medium', 'heavy', 'block', 'counter', 'super', 'finisher'].map((s) => {
     const nm = s === 'block' ? BLOCK_NAMES[S.moves.block] : MOVES[S.moves[s]].name;
-    const ds = s === 'block' ? 'Hold to stop strikes AND sprawl on takedowns from any style. Costs stamina per hit.' : s === 'counter' ? 'Tap right before any attack lands (any style, strike or takedown) to parry it and fire back: ' + MOVES[S.moves[s]].desc : MOVES[S.moves[s]].desc;
-    return `<b>${SLOT_LABEL[s]}${s === 'finisher' && !evolvedShown ? ' 🔒' : ''}</b><span><span style="font-family:var(--f-name);font-size:19px;text-transform:uppercase">${esc(nm)}</span> <span class="muted">· ${esc(ds)}</span></span>`;
+    const B = BLOCK_SKILL[style], C = COUNTER_SKILL[style], CN = COUNTERS[style];
+    const ds = s === 'block' ? `Hold it. Blocks punches: <b>${blockWord('hands', B.hands)}</b> · kicks: <b>${blockWord('kicks', B.kicks)}</b> · takedowns: <b>${blockWord('grapple', B.grapple)}</b>.`
+      : s === 'counter' ? `Tap just before a hit lands. Fires a different move for each attack type: vs punches <b>${esc(MOVES[CN.hands].name)}</b> (${skillWord(C.hands)} timing) · vs kicks <b>${esc(MOVES[CN.kicks].name)}</b> (${skillWord(C.kicks)}) · vs takedowns <b>${esc(MOVES[CN.grapple].name)}</b> (${skillWord(C.grapple)}).`
+      : esc(MOVES[S.moves[s]].desc);
+    return `<b>${SLOT_LABEL[s]}${s === 'finisher' && !evolvedShown ? ' 🔒' : ''}</b><span><span style="font-family:var(--f-name);font-size:19px;text-transform:uppercase">${esc(s === 'counter' ? 'Counter' : nm)}</span> <span class="muted">· ${ds}</span></span>`;
   }).join('');
   const combos = S.combos.map((c) => `${c.seq.map((x) => KEYCAP[x]).join('-')} <span class="muted">${esc(c.name)}</span>`).join(' · ');
   return `<div class="mvlist">${rows}</div><p class="small"><b style="color:var(--gold)">Combos:</b> ${combos}</p>`;
@@ -2840,7 +2924,7 @@ const SCREENS = {
         <button class="btn" data-act="go" data-to="fighters">My Fighters <small>Train stats, evolve, customize</small></button>
         <div class="row"><button class="btn" data-act="go" data-to="howto">How to Play</button><button class="btn" data-act="go" data-to="settings">Settings</button></div>
       </div>
-      <p class="small muted">Move <span class="kbd">WASD</span> Attack <span class="kbd">J</span><span class="kbd">K</span><span class="kbd">L</span> Block <span class="kbd">I</span> Counter <span class="kbd">O</span> Super <span class="kbd">U</span> Dodge <span class="kbd">SPACE ×2</span></p>
+      <p class="small muted">Move <span class="kbd">WASD</span> Attack <span class="kbd">J</span><span class="kbd">K</span><span class="kbd">L</span> Block <span class="kbd">I</span> Counter <span class="kbd">O</span> Super <span class="kbd">U</span> Dodge <span class="kbd">SPACE</span></p>
     </div>`;
   },
   fighters() {
@@ -2973,7 +3057,7 @@ const SCREENS = {
           <b>Block</b><span>hold <span class="kbd">I</span> or <span class="kbd">SHIFT</span></span>
           <b>Counter</b><span><span class="kbd">O</span> or <span class="kbd">V</span>, timed right before their hit lands</span>
           <b>Super</b><span><span class="kbd">U</span> when the meter is full</span>
-          <b>Dodge</b><span>double-tap <span class="kbd">SPACE</span>. Quick slip in the direction you're holding (back if none). Brief invincibility, costs stamina.</span>
+          <b>Dodge</b><span><span class="kbd">SPACE</span>. Quick slip in the direction you're holding (back if none). Brief invincibility, costs stamina.</span>
           <b>Finisher</b><span><span class="kbd">F</span> (evolved fighters only)</span>
           <b>Pause</b><span><span class="kbd">ESC</span> or <span class="kbd">P</span></span></div></div>
         <div class="card"><h3>The rules</h3><p class="small">
@@ -2981,7 +3065,7 @@ const SCREENS = {
           <b>Stamina.</b> Every attack costs gas. As it drains you get slower and weaker, and your hands drop. Back off to recover.<br><br>
           <b>Power-up.</b> Land 7 hits in a row without getting hit and you power up: 1.5x damage until you get tagged or it runs out.<br><br>
           <b>Combos.</b> Chain the right inputs (listed per style) for bonus damage and super meter.<br><br>
-          <b>Block &amp; counter.</b> Every style blocks and counters every other style. Holding block stops strikes and sprawls on takedowns, but each hit drains stamina until your guard breaks. A well-timed counter parries anything and fires back. Supers can be blocked; finishers can't.<br><br>
+          <b>Block &amp; counter matchups.</b> Every attack is a punch, a kick or a takedown, and every style handles them differently. A boxer's guard eats punches but leaks against kicks. Muay Thai checks kicks with the shin, which hurts the kicker. Wrestlers and jiu-jitsu fighters sprawl on takedowns almost for free. Counters change with what you caught: a Muay Thai fighter catches a kick and sweeps, but sees a punch coming and answers with an elbow. Each style also gets a wider counter timing window against what it's best at. Blocking drains stamina until your guard breaks. Finishers go through everything.<br><br>
           <b>Winning.</b> 3 rounds of 30 seconds (change it in Settings). KO, TKO or submission ends it early. Otherwise the judges score damage and knockdowns.</p></div>
       </div>
       <div class="card"><h3>Progression</h3><p class="small">You start weak. Win fights for XP; losing still pays a little, and dominant wins (finishes, barely touched, first-round stoppages) pay big bonuses. Practice pays 1 XP per landed hit. Every level gives ${PTS_PER_LEVEL} points for Speed, Strength, Fight IQ, Stamina, Skill or Mentality. Max all six to <b>evolve</b> and unlock your style's finisher.</p></div>
@@ -3005,7 +3089,7 @@ const SCREENS = {
     return `<div class="panel" style="margin:auto"><h2>Paused</h2>
       <button class="btn primary" data-act="resume">Resume</button>
       ${prac ? `<button class="btn" data-act="pexit">Finish session (keep ${m.practiceXP} XP)</button>` : `<button class="btn" data-act="quitFight">Quit fight <small>Counts as nothing. No XP.</small></button>`}
-      <p class="small muted">Move <span class="kbd">WASD</span> · <span class="kbd">J</span><span class="kbd">K</span><span class="kbd">L</span> attacks · <span class="kbd">I</span> block · <span class="kbd">O</span> counter · <span class="kbd">U</span> super · <span class="kbd">SPACE ×2</span> dodge${activeFighter() && activeFighter().evolved ? ' · <span class="kbd">F</span> finisher' : ''}</p></div>`;
+      <p class="small muted">Move <span class="kbd">WASD</span> · <span class="kbd">J</span><span class="kbd">K</span><span class="kbd">L</span> attacks · <span class="kbd">I</span> block · <span class="kbd">O</span> counter · <span class="kbd">U</span> super · <span class="kbd">SPACE</span> dodge${activeFighter() && activeFighter().evolved ? ' · <span class="kbd">F</span> finisher' : ''}</p></div>`;
   },
   results(d) {
     const { r, lines, total, ups, lvBefore, prof, mode, extra } = d;
@@ -3285,11 +3369,7 @@ function keyDown(code, repeat) {
   if (Game.mode !== 'fight' || !M) return;
   if (code === 'Escape' || code === 'KeyP') { if (!M.over) togglePause(!Game.paused); return; }
   if (Game.paused || M.over) return;
-  if (code === 'Space') { // double-tap = dodge
-    const now = performance.now();
-    if (spaceAt && now - spaceAt < 260) { dodgeReq = true; spaceAt = 0; } else spaceAt = now;
-    return;
-  }
+  if (code === 'Space') { dodgeReq = true; return; }
   if (code === 'TouchDodge') { dodgeReq = true; return; }
   if (code === 'TouchSuper') { M.P.queued = { slot: 'super', t: Game.time }; return; }
   const slot = ATTACK_KEYS[code];
