@@ -534,6 +534,12 @@ const ROSTER = [
   { id: 'volkov', name: 'Ivan Volkov', nick: 'Tank', style: 'wrestling', look: L(7, 'bald', 0, 'stubble', 2, 2, 'heavy'), quote: 'I take you down. You stay down.' },
   { id: 'carter', name: 'Jamal Carter', nick: 'Showtime', style: 'boxing', look: L(6, 'afro', 0, 'none', 8, 7, 'lean', 'tall'), quote: 'Hands down, eyes up, lights out.' },
   { id: 'tupou', name: 'Sione Tupou', nick: 'Big Island', style: 'wrestling', look: L(4, 'mohawk', 0, 'goatee', 5, 2, 'heavy', 'tall'), quote: 'Island strength, mainland problems.' },
+  { id: 'cole', name: 'Darius Cole', nick: 'Smooth', style: 'boxing', look: L(5, 'short', 0, 'stubble', 7, 7, 'lean', 'tall'), quote: 'You can\'t hit what you can\'t find.' },
+  { id: 'fonoti', name: 'Malia Fonoti', nick: 'Tidal', style: 'muaythai', look: L(3, 'ponytail', 0, 'none', 8, 2, 'athletic', 'average', 'sports'), quote: 'Waves don\'t stop. Neither do I.' },
+  { id: 'arai', name: 'Yuki Arai', nick: 'Ghost', style: 'karate', look: L(0, 'short', 6, 'none', 3, 2, 'lean', 'average'), quote: 'You will feel it before you see it.' },
+  { id: 'ruiz', name: 'Mateo Ruiz', nick: 'Lockdown', style: 'bjj', look: L(2, 'buzz', 0, 'full', 0, 2, 'athletic', 'short', 'rash'), quote: 'Once I grab you, it\'s over.' },
+  { id: 'wolak', name: 'Tomasz Wolak', nick: 'Wolfpack', style: 'wrestling', look: L(0, 'short', 3, 'stubble', 1, 2, 'heavy'), quote: 'Hunt in packs, fight alone.' },
+  { id: 'diallo', name: 'Amara Diallo', nick: 'Lioness', style: 'wrestling', look: L(6, 'afro', 0, 'none', 4, 2, 'athletic', 'average', 'sports'), quote: 'The mat is my territory.' },
 ];
 // counter-only techniques picked by the matchup tables
 const cc = (base, o) => ({ ...MOVES[base], cancel: undefined, counter: true, stam: 4, cd: 1.2, ...o });
@@ -568,9 +574,10 @@ const DIFFS = [
   { id: 'boss', name: 'Boss', rank: 22, xp: 4.5, color: '#b347ff' },
 ];
 const TOURNAMENTS = [
-  { id: 'amateur', name: 'Amateur Cup', diffs: [0, 1, 2], belt: 'Amateur Cup', prize: 400, need: 1 },
-  { id: 'pro', name: 'Pro Championship', diffs: [1, 2, 3], belt: 'Pro Belt', prize: 800, need: 6 },
-  { id: 'world', name: 'World Grand Prix', diffs: [2, 3, 4], belt: 'World Title', prize: 1500, need: 12 },
+  { id: 'amateur', name: 'Amateur Cup', diffs: [0, 0, 1, 2], belt: 'Amateur Cup', prize: 500, need: 1 },
+  { id: 'pro', name: 'Pro Championship', diffs: [1, 2, 2, 3], belt: 'Pro Belt', prize: 1000, need: 6 },
+  { id: 'world', name: 'World Grand Prix', diffs: [2, 3, 3, 4], belt: 'World Title', prize: 1800, need: 12 },
+  { id: 'legends', name: 'Legends Invitational', diffs: [3, 4, 4, 4], belt: 'Legends Crown', prize: 2600, need: 20 },
 ];
 /* =====================================================================
    RIG — voxel fighter model, pose channels, arm IK, ground contact
@@ -2835,7 +2842,7 @@ class Match {
 /* ---------------- tournament ---------------- */
 const Tourney = {
   create(prof, tierIdx) {
-    const ids = ROSTER.map((r) => r.id).sort(() => Math.random() - 0.5).slice(0, 7);
+    const ids = ROSTER.map((r) => r.id).sort(() => Math.random() - 0.5).slice(0, 15); // 16-fighter bracket: 4 fights to the belt
     prof.tourney = { tier: tierIdx, rounds: [['P', ...ids]], stage: 0, done: false, won: false };
     persist();
   },
@@ -2845,7 +2852,10 @@ const Tourney = {
     const i = r.indexOf('P'); if (i < 0) return null;
     return r[i ^ 1];
   },
-  diffFor(prof) { const T = prof.tourney; return TOURNAMENTS[T.tier].diffs[T.stage]; },
+  // works for old 8-fighter brackets too: they start further up the difficulty ladder
+  diffFor(prof) { const T = prof.tourney, d = TOURNAMENTS[T.tier].diffs; return d[clamp(d.length - Math.log2(T.rounds[0].length) + T.stage, 0, d.length - 1)]; },
+  stageName(n) { return { 16: 'Round of 16', 8: 'Quarter-final', 4: 'Semi-final', 2: 'Final' }[n] || 'Round'; },
+  current_stage(prof) { const T = prof.tourney; return Tourney.stageName(T.rounds[T.stage].length); },
   afterFight(prof, won, lines, m) {
     const T = prof.tourney; if (!T) return null;
     const r = T.rounds[T.stage];
@@ -2857,8 +2867,9 @@ const Tourney = {
     }
     T.rounds.push(next); T.stage++;
     const tier = TOURNAMENTS[T.tier];
-    let info = { stageName: ['Quarter-final', 'Semi-final', 'Final'][T.stage - 1], won };
+    let info = { stageName: Tourney.stageName(r.length), won };
     if (!won) { T.done = true; T.won = false; lines.push(['Tournament run (' + info.stageName + ')', 30 * T.stage]); }
+    else if (next.length > 1) lines.push(['Advanced past the ' + info.stageName, 40 * T.stage]);
     else if (next.length === 1) {
       T.done = true; T.won = true;
       lines.push([tier.name.toUpperCase() + ' CHAMPION', tier.prize]);
@@ -3065,7 +3076,7 @@ const SCREENS = {
       <div class="menu-list">
         ${has ? '' : `<button class="btn primary" data-act="newFighter">Create Fighter <small>Pick a style and a look</small></button>`}
         <button class="btn ${has ? 'primary' : ''}" data-act="go" data-to="quick" ${has ? '' : 'disabled'}>Quick Fight <small>Any opponent, any difficulty</small></button>
-        <button class="btn" data-act="go" data-to="tourney" ${has ? '' : 'disabled'}>Tournament <small>8-fighter bracket, harder every round</small></button>
+        <button class="btn" data-act="go" data-to="tourney" ${has ? '' : 'disabled'}>Tournament <small>16-fighter bracket, 4 fights, harder every round</small></button>
         <button class="btn" data-act="go" data-to="boss" ${has ? '' : 'disabled'}>Boss Mode <small>Five monsters. Earn it.</small></button>
         <button class="btn" data-act="practice" ${has ? '' : 'disabled'}>Practice <small>Drill moves, earn XP</small></button>
         <button class="btn" data-act="go" data-to="fighters">My Fighters <small>Train stats, evolve, customize</small></button>
@@ -3166,7 +3177,7 @@ const SCREENS = {
     if (T && !T.done) {
       const opp = Tourney.opponentOf(p); const di = Tourney.diffFor(p);
       return `<div class="panel wide"><h2>${TOURNAMENTS[T.tier].name}</h2>${bracketHTML(T)}
-        <p style="font-family:var(--f-name);font-size:24px;text-transform:uppercase">Next: <span style="color:var(--gold)">${['Quarter-final', 'Semi-final', 'Final'][T.stage]}</span> vs ${esc(nameOf(opp))} · <span style="color:${DIFFS[di].color}">${DIFFS[di].name}</span></p>
+        <p style="font-family:var(--f-name);font-size:24px;text-transform:uppercase">Next: <span style="color:var(--gold)">${Tourney.current_stage(p)}</span> vs ${esc(nameOf(opp))} · <span style="color:${DIFFS[di].color}">${DIFFS[di].name}</span></p>
         ${UI.confirm === 'forfeit' ? `<div class="confirm"><p>Forfeit the tournament? You keep XP already earned.</p><div class="row"><button class="btn primary" data-act="tForfeit">Forfeit</button><button class="btn" data-act="cancelConfirm">Keep going</button></div></div>` : ''}
         <div class="row"><button class="btn primary" data-act="tFight">Walk Out</button><button class="btn ghost" data-act="askForfeit">Forfeit</button>${backBtn()}</div></div>`;
     }
@@ -3174,7 +3185,7 @@ const SCREENS = {
       const locked = p.level < t.need;
       return `<button class="card ${locked ? 'locked' : ''}" data-act="tStart" data-v="${i}" ${locked ? 'disabled' : ''}><span class="nm">${t.name}</span>
         <span class="small">${t.diffs.map((d) => DIFFS[d].name).join(' → ')}</span><span class="nk">Champion: +${t.prize} XP${p.belts.includes(t.belt) ? ' · 🏆 won' : ''}</span>
-        <span class="small muted">${locked ? 'Unlocks at level ' + t.need : '8 fighters, 3 rounds. Each fight is harder.'}</span></button>`;
+        <span class="small muted">${locked ? 'Unlocks at level ' + t.need : '16 fighters, 4 fights to the belt. Each one is harder.'}</span></button>`;
     }).join('');
     const last = T && T.done ? `<div class="card"><h3>Last tournament</h3>${bracketHTML(T)}<p>${T.won ? '🏆 Champion!' : 'Eliminated.'}</p></div>` : '';
     return `<div class="panel wide"><h2>Tournament</h2><div class="grid3">${tiers}</div>${last}${backBtn()}</div>`;
@@ -3273,7 +3284,9 @@ function bracketHTML(T) {
     return `<div class="bcol">${pairs.join('')}</div>`;
   };
   const tbd = (n) => `<div class="bcol">${Array.from({ length: Math.max(1, n / 2) }, () => n === 1 ? '<div class="bm"><div class="muted">🏆 Champion</div></div>' : '<div class="bm"><div class="muted">TBD</div><div class="muted">TBD</div></div>').join('')}</div>`;
-  return `<div style="overflow-x:auto"><div class="bracket">${col(R[0], 0)}${R[1] ? col(R[1], 1) : tbd(4)}${R[2] ? col(R[2], 2) : tbd(2)}${R[3] ? col(R[3], 3) : tbd(1)}</div></div>`;
+  const cols = []; let n = R[0].length;
+  for (let ri = 0; n >= 1; ri++, n /= 2) cols.push(R[ri] ? col(R[ri], ri) : tbd(n));
+  return `<div style="overflow-x:auto"><div class="bracket" style="grid-template-columns:repeat(${cols.length},minmax(130px,1fr))">${cols.join('')}</div></div>`;
 }
 
 /* ---------- actions ---------- */
@@ -3340,7 +3353,7 @@ const ACT = {
   tStart: (d) => { Tourney.create(activeFighter(), +d.v); UI.go('tourney'); },
   tFight: () => {
     const p = activeFighter(); const T = p.tourney; const oid = Tourney.opponentOf(p); const di = Tourney.diffFor(p);
-    startFight({ mode: 'tourney', profile: p, opp: botCfg(ROSTER.find((r) => r.id === oid), di), diff: di, label: TOURNAMENTS[T.tier].name + ' · ' + ['Quarter-final', 'Semi-final', 'Final'][T.stage] });
+    startFight({ mode: 'tourney', profile: p, opp: botCfg(ROSTER.find((r) => r.id === oid), di), diff: di, label: TOURNAMENTS[T.tier].name + ' · ' + Tourney.current_stage(p) });
   },
   askForfeit: () => { UI.confirm = 'forfeit'; UI.show(SCREENS.tourney()); },
   tForfeit: () => { const p = activeFighter(); p.tourney.done = true; p.tourney.won = false; persist(); UI.confirm = null; UI.go('tourney'); },
