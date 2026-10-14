@@ -1801,7 +1801,7 @@ class Fighter {
   // a dodge that actually made something miss: longer slow-mo and a damage bonus on the next hit
   perfectDodge() {
     this.dodgeBonusT = 1.0;
-    if (this.isPlayer) { Game.witch(0.8, 0.3); FX.text(this, 'COUNTER NOW!', '#7fe3ff', 0.8, true); }
+    if (this.isPlayer) { Game.witch(0.9, 0.2); FX.text(this, 'COUNTER NOW!', '#7fe3ff', 0.8, true); }
   }
   breakGuard() {
     this.guard = 0; this.guardBrokenT = 1.8; this.guardDelay = 0; this.blockW = 0;
@@ -1817,14 +1817,12 @@ class Fighter {
     if (!dir || dir.lengthSq() < 0.01) {
       // no direction held: stay put and use the style's own head movement
       this.playAnim('bob_' + this.styleId, { rate: 1 }); this.vel.set(0, 0);
-      if (this.isPlayer) Game.witch(0.45, 0.5);
       Sound.whoosh(0.5); return true;
     }
     dir = dir.clone().normalize();
     const side = dir.dot(s), fw = dir.dot(f);
     this.playAnim(Math.abs(side) > Math.abs(fw) ? (side > 0 ? 'dodgeR' : 'dodgeL') : 'dodgeB', { rate: 1 });
     this.vel.set(dir.x * 5.2, dir.y * 5.2);
-    if (this.isPlayer) Game.witch(0.45, 0.5);
     Sound.whoosh(0.7);
     return true;
   }
@@ -3281,7 +3279,7 @@ const SCREENS = {
           <b>Block</b><span>hold <span class="kbd">I</span> or <span class="kbd">SHIFT</span>. The shield next to your fighter is your guard health. It drains as you block and breaks at zero.</span>
           <b>Counter</b><span><span class="kbd">O</span> or <span class="kbd">V</span>, timed right before their hit lands</span>
           <b>Super</b><span><span class="kbd">U</span> when the meter is full</span>
-          <b>Dodge</b><span><span class="kbd">SPACE</span>. Hold a direction to slip that way; with no direction you stay put and use your style's head movement (bob &amp; weave, lean back, duck). Your opponent slows down for a moment. Make an attack miss and the slow-mo lasts longer and your next hit does +30%.</span>
+          <b>Dodge</b><span><span class="kbd">SPACE</span>. Hold a direction to slip that way; with no direction you stay put and use your style's head movement (bob &amp; weave, lean back, duck). Make an attack miss and time slows down on your opponent for a moment, and your next hit does +30%.</span>
           <b>Ground punch</b><span>When your opponent is knocked down, <span class="kbd">J</span> punches down at them on the mat.</span>
           <b>Finisher</b><span><span class="kbd">F</span> (evolved fighters only)</span>
           <b>Pause</b><span><span class="kbd">ESC</span> or <span class="kbd">P</span></span></div></div>
