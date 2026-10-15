@@ -37,7 +37,7 @@ button{font-family:var(--f-body);cursor:pointer}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 
 /* ---------- screens ---------- */
-.screen{position:fixed;inset:0;z-index:5;display:flex;padding-block:max(20px,env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));overflow-y:auto}
+.screen{position:fixed;inset:0;z-index:5;display:flex;overflow-x:hidden;padding-block:max(20px,env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));overflow-y:auto}
 .screen[hidden]{display:none!important}
 .panel{background:linear-gradient(180deg,rgba(18,22,35,.94),rgba(12,15,24,.96));border:2px solid var(--line);box-shadow:6px 6px 0 rgba(0,0,0,.5);padding:22px;width:min(560px,100%);margin:auto 0;display:flex;flex-direction:column;gap:14px;min-width:0}
 .panel.wide{width:min(980px,100%);margin:auto}
@@ -242,16 +242,16 @@ details.card summary{cursor:pointer}
 .btn.primary:hover{box-shadow:0 0 0 2px rgba(255,107,117,.35),4px 4px 0 rgba(0,0,0,.4)}
 .pghost{position:fixed;z-index:4;pointer-events:none;display:flex}
 .pghost>.panel{margin:0!important;width:100%!important;height:100%;overflow:hidden}
-.pghost.out{animation:ghostOut .24s ease-in forwards}.pghost.out-back{animation:ghostOutBack .24s ease-in forwards}
+.pghost.tx-out{animation:ghostOut .24s ease-in forwards}.pghost.tx-outb{animation:ghostOutBack .24s ease-in forwards}
 @keyframes ghostOut{to{opacity:0;transform:translateX(-36px) scale(.98)}}
 @keyframes ghostOutBack{to{opacity:0;transform:translateX(36px) scale(.98)}}
-.panel.in{animation:panelIn .34s cubic-bezier(.2,.9,.3,1) both}
-.panel.in-back{animation:panelInBack .34s cubic-bezier(.2,.9,.3,1) both}
-.panel.pop{animation:panelPop .32s cubic-bezier(.2,1.25,.4,1) both}
+.panel.tx-in{animation:panelIn .34s cubic-bezier(.2,.9,.3,1) both}
+.panel.tx-back{animation:panelInBack .34s cubic-bezier(.2,.9,.3,1) both}
+.panel.tx-pop{animation:panelPop .32s cubic-bezier(.2,1.25,.4,1) both}
 @keyframes panelIn{from{opacity:0;transform:translateX(42px)}}
 @keyframes panelInBack{from{opacity:0;transform:translateX(-42px)}}
 @keyframes panelPop{from{opacity:0;transform:scale(.94)}}
-.panel.in .menu-list>*,.panel.in-back .menu-list>*,.panel.pop .menu-list>*,.panel.in .grid3>*,.panel.in-back .grid3>*,.panel.in .turfmap>*,.panel.in .items>*,.panel.in .mvlist>*,.panel.pop .mvlist>*{animation:rise .36s cubic-bezier(.2,.9,.3,1) both}
+.panel.tx-in .menu-list>*,.panel.tx-back .menu-list>*,.panel.tx-pop .menu-list>*,.panel.tx-in .grid3>*,.panel.tx-back .grid3>*,.panel.tx-in .turfmap>*,.panel.tx-in .items>*,.panel.tx-in .mvlist>*,.panel.tx-pop .mvlist>*{animation:rise .36s cubic-bezier(.2,.9,.3,1) both}
 @keyframes rise{from{opacity:0;transform:translateY(12px)}}
 .panel .menu-list>:nth-child(1),.panel .grid3>:nth-child(1),.panel .items>:nth-child(1),.panel .mvlist>:nth-child(1){animation-delay:0.03s}
 .panel .menu-list>:nth-child(2),.panel .grid3>:nth-child(2),.panel .items>:nth-child(2),.panel .mvlist>:nth-child(2){animation-delay:0.06s}
@@ -289,7 +289,7 @@ details.card summary{cursor:pointer}
 .panel .turfmap>:nth-child(18){animation-delay:0.36s}
 .panel .turfmap>:nth-child(19){animation-delay:0.38s}
 .panel .turfmap>:nth-child(20){animation-delay:0.40s}
-.panel.in h1.logo,.panel.in-back h1.logo,.panel.pop h1.logo{animation:logoIn .5s cubic-bezier(.2,1.3,.4,1) both}
+.panel.tx-in h1.logo,.panel.tx-back h1.logo,.panel.tx-pop h1.logo{animation:logoIn .5s cubic-bezier(.2,1.3,.4,1) both}
 @keyframes logoIn{from{opacity:0;transform:translateY(-18px) scale(1.06);text-shadow:0 0 0 var(--red),0 0 0 rgba(0,0,0,.6)}}
 #wipe{position:fixed;inset:0;z-index:9;pointer-events:none;background:#07080c;visibility:hidden}
 #wipe::after{content:'';position:absolute;top:0;bottom:0;left:-14px;width:14px;background:var(--red);box-shadow:-8px 0 0 var(--gold)}
@@ -309,7 +309,23 @@ input.shake{animation:shake .35s}
 .nm2{font-family:var(--f-name);font-size:18px;line-height:1;text-transform:uppercase}
 .sw2{display:block;width:100%;height:26px;border:2px solid #000;position:relative;box-shadow:inset 0 -6px 0 rgba(0,0,0,.25)}
 .sw2 b{position:absolute;right:6px;top:5px;width:12px;height:12px;border:2px solid #000}
-@media (prefers-reduced-motion:reduce){.pghost{display:none}.panel.in,.panel.in-back,.panel.pop,.panel *{animation:none!important}#wipe{display:none}}
+
+/* ---------- main menu: two columns so it fits without scrolling ---------- */
+.panel.titlep{width:min(800px,100%);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:18px;align-items:start}
+.titlep .tl{display:flex;flex-direction:column;gap:12px;min-width:0}
+.titlep h1.logo{font-size:clamp(20px,3.1vw,34px)}
+.titlep .tag{font-size:17px}
+.titlep .row>.btn{font-size:19px;padding:8px 10px}
+.titlep .hint{line-height:2}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn.mode{flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;padding:9px 12px;font-size:21px;line-height:1;min-height:60px;min-width:0}
+.btn.mode span{white-space:nowrap}
+.btn.mode small{font-size:11.5px;line-height:1.25;color:var(--dim)}
+.btn.mode.primary small{color:#ffe1e3}
+.btn.mode.wide2{grid-column:1/-1}
+@media (max-width:640px){.panel.titlep{grid-template-columns:1fr}.titlep h1.logo{font-size:clamp(22px,7vw,34px)}}
+@media (max-width:380px){.modes{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){.pghost{display:none}.panel.tx-in,.panel.tx-back,.panel.tx-pop,.panel *{animation:none!important}#wipe{display:none}}
 </style>
 <canvas id="gl"></canvas>
 <div class="vign"></div>
@@ -4152,7 +4168,7 @@ const UI = {
   show(html) {
     const cur = this.el.hidden ? null : this.el.firstElementChild; // remember where the panel was, for the hand-off animation
     this.lastRect = cur ? cur.getBoundingClientRect() : null;
-    this.el.innerHTML = html; this.el.hidden = false; this.el.scrollTop = 0;
+    this.el.innerHTML = html; this.el.hidden = false; this.el.scrollTop = 0; this.el.scrollLeft = 0;
   },
   hide() { this.el.hidden = true; this.el.innerHTML = ''; },
   go(name, arg) {
@@ -4163,17 +4179,17 @@ const UI = {
     if (Game.mode !== 'fight') setMenuScene(name === 'create' || name === 'shop' ? 'creator' : 'menu');
     this.show(fn(arg));
     this.animate(old, name === 'title' || (from !== 'title' && SCREEN_DEPTH[name] < SCREEN_DEPTH[from]));
-    const first = this.el.querySelector('.btn.primary, .btn');
+    const first = this.el.querySelector('.btn.primary:not([disabled])') || this.el.querySelector('.btn:not([disabled])');
     if (first && !('ontouchstart' in window)) first.focus({ preventScroll: true });
   },
   refresh(arg) { this.go(this.screen, arg); },
   // screen changes: the old panel slides/fades away while the new one slides in, buttons arrive one after another
   animate(old, back) {
     const neu = this.el.firstElementChild; if (!neu || REDUCED_MOTION()) return;
-    neu.classList.add(old ? (back ? 'in-back' : 'in') : 'pop');
+    neu.classList.add(old ? (back ? 'tx-back' : 'tx-in') : 'tx-pop');
     if (old) {
       const r = this.lastRect; if (!r || !r.width) return;
-      const g = document.createElement('div'); g.className = 'pghost ' + (back ? 'out-back' : 'out');
+      const g = document.createElement('div'); g.className = 'pghost ' + (back ? 'tx-outb' : 'tx-out');
       g.style.cssText = `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px`;
       g.appendChild(old); document.body.appendChild(g);
       g.addEventListener('animationend', () => g.remove()); setTimeout(() => g.remove(), 400);
@@ -4360,24 +4376,27 @@ const backBtn = (to = 'title') => `<button class="btn ghost" data-act="go" data-
 const SCREENS = {
   title() {
     const p = activeFighter();
-    const has = !!p;
-    return `<div class="panel left">
-      <div><h1 class="logo">PIXEL<br><span>OCTAGON</span></h1><p class="tag" style="margin-top:10px">Voxel MMA · Fight Night</p></div>
-      ${has ? fighterCard(p) : `<div class="fcard"><p>No fighter yet. Build one, pick a style and start at the bottom.</p></div>`}
-      <div class="menu-list">
-        ${has ? '' : `<button class="btn primary" data-act="newFighter">Create Fighter <small>Pick a style and a look</small></button>`}
-        <button class="btn ${has ? 'primary' : ''}" data-act="go" data-to="quick" ${has ? '' : 'disabled'}>Quick Fight <small>Any opponent, any difficulty</small></button>
-        <button class="btn" data-act="go" data-to="tourney" ${has ? '' : 'disabled'}>Tournament <small>16-fighter bracket, 4 fights, harder every round</small></button>
-        <button class="btn" data-act="go" data-to="boss" ${has ? '' : 'disabled'}>Boss Mode <small>Five monsters. Earn it.</small></button>
-        <button class="btn" data-act="go" data-to="street" ${has ? '' : 'disabled'}>Street Fight <small>Get jumped in the city. Survive the waves</small></button>
-        <button class="btn" data-act="go" data-to="turf" ${has ? '' : 'disabled'}>Turf Wars <small>Claim city blocks. Your clone defends them</small></button>
-        <button class="btn" data-act="go" data-to="online" ${has ? '' : 'disabled'}>Online <small>Private match with a friend, join by code</small></button>
-        <button class="btn" data-act="practice" ${has ? '' : 'disabled'}>Practice <small>Drill moves, earn XP</small></button>
-        <button class="btn" data-act="go" data-to="fighters">My Fighters <small>Train stats, evolve, customize</small></button>
-        <button class="btn" data-act="go" data-to="shop" ${has ? '' : 'disabled'}>Street Shop <small>${has ? '$' + Shop.ensure(p).cash + ' · ' : ''}clothes, chains, watches</small></button>
+    const has = !!p, off = has ? '' : 'disabled';
+    const mode = (to, label, desc, extra = '') => `<button class="btn mode ${extra}" ${to.startsWith('act:') ? `data-act="${to.slice(4)}"` : `data-act="go" data-to="${to}"`} ${extra.includes('free') ? '' : off}><span>${label}</span><small>${desc}</small></button>`;
+    return `<div class="panel left titlep">
+      <div class="tl">
+        <div><h1 class="logo">PIXEL<br><span>OCTAGON</span></h1><p class="tag" style="margin-top:8px">Voxel MMA · Fight Night</p></div>
+        ${has ? fighterCard(p) : `<div class="fcard"><p>No fighter yet. Build one, pick a style and start at the bottom.</p></div>`}
         <div class="row"><button class="btn" data-act="go" data-to="howto">How to Play</button><button class="btn" data-act="go" data-to="settings">Settings</button></div>
+        <p class="small muted hint">Move <span class="kbd">WASD</span> Attack <span class="kbd">J</span><span class="kbd">K</span><span class="kbd">L</span> Block <span class="kbd">I</span> Counter <span class="kbd">O</span> Super <span class="kbd">U</span> Dodge <span class="kbd">SPACE</span></p>
       </div>
-      <p class="small muted">Move <span class="kbd">WASD</span> Attack <span class="kbd">J</span><span class="kbd">K</span><span class="kbd">L</span> Block <span class="kbd">I</span> Counter <span class="kbd">O</span> Super <span class="kbd">U</span> Dodge <span class="kbd">SPACE</span></p>
+      <div class="menu-list modes">
+        ${has ? '' : `<button class="btn primary mode wide2" data-act="newFighter"><span>Create Fighter</span><small>Pick a style and a look</small></button>`}
+        ${mode('quick', 'Quick Fight', 'Any opponent, any difficulty', has ? 'primary' : '')}
+        ${mode('tourney', 'Tournament', '16 fighters, 4 fights to the belt')}
+        ${mode('boss', 'Boss Mode', 'Five monsters. Earn it.')}
+        ${mode('street', 'Street Fight', 'Get jumped. Survive the waves')}
+        ${mode('turf', 'Turf Wars', 'Claim city blocks')}
+        ${mode('online', 'Online', 'Play a friend with a code')}
+        ${mode('act:practice', 'Practice', 'Drill moves, earn XP')}
+        ${mode('shop', 'Street Shop', (has ? '$' + Shop.ensure(p).cash + ' · ' : '') + 'clothes, chains, watches')}
+        ${mode('fighters', 'My Fighters', 'Train, evolve, customize', 'free wide2')}
+      </div>
     </div>`;
   },
   fighters() {
