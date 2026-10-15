@@ -196,6 +196,44 @@ details.netcfg summary{cursor:pointer;font-family:var(--f-name);font-size:20px;l
   .bracket{grid-template-columns:repeat(4,150px)}
 }
 @media (prefers-reduced-motion:reduce){.pop,#banner.show{animation-duration:.01s}.btn{transition:none}}
+
+/* ping badge */
+.clock .ni{font-family:var(--f-display);font-size:11px;letter-spacing:1px;color:var(--dim);margin-top:3px;padding:3px 7px;background:#000;border:2px solid currentColor;line-height:1}
+.clock .ni:empty{display:none}
+#witch.slow{background:radial-gradient(ellipse at center,transparent 45%,rgba(255,60,80,.34));box-shadow:inset 0 0 0 3px rgba(255,110,120,.55)}
+#witch.slow::after{content:'SLOWED';position:absolute;top:30%;left:50%;transform:translateX(-50%);font-family:var(--f-display);font-size:13px;letter-spacing:3px;color:#ff9aa2;text-shadow:2px 2px 0 #000}
+/* street fight: bars over attackers */
+#ehp{position:fixed;inset:0;pointer-events:none;z-index:3}
+.ehb{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;gap:2px}
+.ehb span{font-family:var(--f-name);font-size:14px;text-transform:uppercase;color:#e9e6dc;text-shadow:1px 1px 0 #000;white-space:nowrap}
+.ehb b{display:block;width:54px;height:6px;background:#000;border:1px solid #000}
+.ehb i{display:block;height:100%;background:var(--red)}
+.ehb.tgt span{color:var(--gold)}.ehb.tgt b{border-color:var(--gold);width:64px}
+.ehb.tgt::after{content:'▼';color:var(--gold);font-size:10px;line-height:1}
+.ehb.boss b{width:80px}.ehb.boss i{background:#b347ff}
+/* turf wars map */
+.turfwrap{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:12px;align-items:start}
+.turfmap{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:6px;background:#06070b;border:2px solid #000;background-image:linear-gradient(#1a1d26 2px,transparent 2px),linear-gradient(90deg,#1a1d26 2px,transparent 2px);background-size:25% 25%}
+.tile{appearance:none;border:2px solid #000;color:#f2efe6;min-height:78px;padding:6px;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:2px;cursor:pointer;text-align:left;font:inherit;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.tile:hover,.tile:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+.tile.sel{outline:3px solid #fff;outline-offset:-3px}
+.tile.gang{background-image:repeating-linear-gradient(45deg,rgba(0,0,0,.25) 0 6px,transparent 6px 12px)!important}
+.tile.mine{border-color:var(--gold)}
+.tile .tn{font-family:var(--f-name);font-size:16px;line-height:1;text-transform:uppercase}
+.tile .tw{font-size:11px;opacity:.85;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tile .tt{font-size:10px;letter-spacing:1px}
+.turfside h3{margin:0 0 4px}
+.lbrow{display:grid;grid-template-columns:22px 1fr auto;gap:8px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.lbrow.me span{color:var(--gold)}.lbrow em{font-style:normal;color:var(--dim);font-size:13px}
+pre.sql{max-height:180px;overflow:auto;background:#06070b;border:2px solid #000;padding:8px;font-size:11px;white-space:pre;user-select:all}
+details.card summary{cursor:pointer}
+/* fight DNA */
+.dna{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dnab{display:grid;grid-template-columns:minmax(0,1fr) 70px 36px;gap:6px;align-items:center;font-size:13px}
+.dnab span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dnab b{display:block;height:8px;background:#000;border:1px solid #000}.dnab i{display:block;height:100%}
+.dnab em{font-style:normal;color:var(--dim);font-size:12px;text-align:right}
+@media (max-width:700px){.turfwrap{grid-template-columns:1fr}.tile{min-height:58px;padding:4px;overflow:hidden}.tile .tn{font-size:11px;overflow-wrap:anywhere}.tile .tw{font-size:9px}.dna{grid-template-columns:1fr}}
 </style>
 <canvas id="gl"></canvas>
 <div class="vign"></div>
@@ -710,35 +748,38 @@ class Rig {
     const skin = SKIN[L.skin] || SKIN[2];
     const skinD = shade(skin, 0.82);
     const hairC = HAIR_COL[L.hairCol] || HAIR_COL[0];
-    const shortsC = opts.ref ? '#1a1c22' : GEAR_COL[L.shorts] ?? GEAR_COL[0];
+    const SC = L.street || null; // street clothes: shirt, jeans, sneakers, bare fists
+    const shortsC = opts.ref ? '#1a1c22' : SC ? SC.pants : GEAR_COL[L.shorts] ?? GEAR_COL[0];
     const gloveC = GEAR_COL[L.gloves] ?? GEAR_COL[2];
     const b = L.build === 'lean' ? 0.9 : L.build === 'heavy' ? 1.13 : 1.0;
     const hs = L.height === 'short' ? 0.95 : L.height === 'tall' ? 1.05 : 1.0;
     this.root.scale.setScalar(hs);
     this.scale = hs;
-    const torsoC = opts.ref ? '#22252e' : (L.top !== 'none' ? shortsC : skin);
-    const absC = opts.ref ? '#22252e' : (L.top === 'rash' ? shortsC : skin);
-    const armC = opts.ref ? '#22252e' : (L.top === 'rash' ? shortsC : skin);
+    const torsoC = opts.ref ? '#22252e' : SC ? SC.shirt : (L.top !== 'none' ? shortsC : skin);
+    const absC = opts.ref ? '#22252e' : SC ? SC.shirt : (L.top === 'rash' ? shortsC : skin);
+    const armC = opts.ref ? '#22252e' : SC ? SC.shirt : (L.top === 'rash' ? shortsC : skin);
 
     const piv = this.pivot = grp(this.root, 0, PIV, 0, 'YXZ');
     const hips = this.hips = grp(piv, 0, 0, 0, 'YXZ');
     // pelvis / shorts
     vox(hips, 0.34 * b, 0.2, 0.22 * b, shortsC, 0, 0.0, 0);
-    if (!opts.ref) vox(hips, 0.355 * b, 0.045, 0.235 * b, st.stance === 'boxing' ? '#f2f2f2' : shade(shortsC, 0.6), 0, 0.09, 0, { outline: false });
+    if (!opts.ref) vox(hips, 0.355 * b, 0.045, 0.235 * b, SC ? '#1b1b1f' : st.stance === 'boxing' ? '#f2f2f2' : shade(shortsC, 0.6), 0, 0.09, 0, { outline: false });
     // spine
     const spine = this.spine = grp(hips, 0, 0.1, 0, 'YXZ');
     vox(spine, 0.31 * b, 0.25, 0.19 * b, absC, 0, 0.1, 0);
-    if (L.top === 'none' && !opts.ref) { // abs detail
+    if (L.top === 'none' && !opts.ref && !SC) { // abs detail
       const absM = toon(shade(skin, 0.9));
       for (let i = 0; i < 3; i++) for (let j = -1; j <= 1; j += 2) vox(spine, 0.08, 0.05, 0.02, absM, j * 0.045, 0.04 + i * 0.065, 0.096 * b, { outline: false, shadow: false });
     }
     const chest = this.chest = grp(spine, 0, 0.22, 0, 'YXZ');
     vox(chest, 0.44 * b, 0.3, 0.24 * b, torsoC, 0, 0.15, 0);
-    if (L.top === 'none' && !opts.ref) {
+    if (L.top === 'none' && !opts.ref && !SC) {
       vox(chest, 0.17 * b, 0.1, 0.03, toon(shade(skin, 0.94)), 0.095 * b, 0.19, 0.12 * b, { outline: false, shadow: false });
       vox(chest, 0.17 * b, 0.1, 0.03, toon(shade(skin, 0.94)), -0.095 * b, 0.19, 0.12 * b, { outline: false, shadow: false });
     }
-    if (L.top === 'sports') vox(chest, 0.445 * b, 0.06, 0.245 * b, shade(shortsC, 0.6), 0, 0.03, 0, { outline: false });
+    if (SC && SC.hood) vox(chest, 0.3 * b, 0.13, 0.12, shade(SC.shirt, 0.85), 0, 0.33, -0.12); // bunched hood
+    if (SC && SC.print) vox(chest, 0.14, 0.1, 0.02, SC.print, 0, 0.18, 0.121 * b, { outline: false, shadow: false });
+    if (!SC && L.top === 'sports') vox(chest, 0.445 * b, 0.06, 0.245 * b, shade(shortsC, 0.6), 0, 0.03, 0, { outline: false });
     if (opts.ref) { // referee shirt stripes + bow tie
       for (let i = -2; i <= 2; i++) vox(chest, 0.035, 0.3, 0.245 * b, '#d9dbe2', i * 0.08, 0.15, 0, { outline: false });
       vox(chest, 0.08, 0.04, 0.03, '#111', 0, 0.28, 0.125 * b, { outline: false });
@@ -759,9 +800,9 @@ class Rig {
       vox(sh, 0.15 * b, 0.15, 0.16 * b, armC, 0, -0.02, 0);
       vox(sh, armW, 0.29, armW + 0.01, armC, 0, -0.155, 0);
       const el = grp(sh, 0, -0.31, 0);
-      vox(el, armW * 0.92, 0.27, armW * 0.95, skin, 0, -0.13, 0);
+      vox(el, armW * 0.92, 0.27, armW * 0.95, SC && SC.hood ? SC.shirt : skin, 0, -0.13, 0);
       const hand = grp(el, 0, -0.28, 0);
-      if (opts.ref) vox(hand, 0.09, 0.1, 0.1, skin, 0, -0.04, 0);
+      if (opts.ref || SC) vox(hand, 0.095, 0.1, 0.105, skin, 0, -0.04, 0);
       else if (st.gloves === 'boxing') {
         vox(hand, 0.105, 0.07, 0.11, '#f2f2f2', 0, 0.02, 0);
         vox(hand, 0.15, 0.16, 0.17, gloveC, 0, -0.08, 0.015);
@@ -779,19 +820,22 @@ class Rig {
     for (const side of ['l', 'r']) {
       const s = side === 'l' ? 1 : -1;
       const hip = grp(hips, s * 0.1, -0.04, 0);
-      vox(hip, legW, 0.46, legW + 0.01, skin, 0, -0.23, 0);
+      vox(hip, legW, 0.46, legW + 0.01, SC ? shortsC : skin, 0, -0.23, 0);
       // shorts leg
       const thai = st.stance === 'muaythai';
       if (opts.ref) vox(hip, legW + 0.02, 0.44, legW + 0.03, '#1a1c22', 0, -0.22, 0);
+      else if (SC) vox(hip, legW + 0.02, 0.44, legW + 0.03, shortsC, 0, -0.22, 0);
       else vox(hip, legW + (thai ? 0.05 : 0.025), thai ? 0.2 : 0.25, legW + (thai ? 0.06 : 0.035), shortsC, 0, thai ? -0.08 : -0.1, 0);
       const knee = grp(hip, 0, -0.46, 0);
-      vox(knee, 0.13, 0.44, 0.14, opts.ref ? '#1a1c22' : skin, 0, -0.22, 0);
-      vox(knee, 0.13, 0.12, 0.05, skinD, 0, -0.12, 0.07, { outline: false, shadow: false }); // shin highlight
+      vox(knee, 0.13, 0.44, 0.14, opts.ref ? '#1a1c22' : SC ? shortsC : skin, 0, -0.22, 0);
+      if (!SC && !opts.ref) vox(knee, 0.13, 0.12, 0.05, skinD, 0, -0.12, 0.07, { outline: false, shadow: false }); // shin highlight
       const ank = grp(knee, 0, -0.44, 0);
-      const shoe = opts.ref || st.shoes;
-      vox(ank, 0.12, 0.07, 0.27, shoe ? '#16181f' : skin, 0, -0.035, 0.06);
-      if (shoe) vox(ank, 0.14, 0.14, 0.15, opts.ref ? '#16181f' : '#16181f', 0, 0.04, 0.0);
-      if (st.wraps && !opts.ref) vox(ank, 0.145, 0.07, 0.155, '#222631', 0, 0.03, 0.0);
+      const shoe = opts.ref || st.shoes || SC;
+      const shoeC = SC ? SC.shoes : '#16181f';
+      vox(ank, SC ? 0.13 : 0.12, 0.07, 0.27, shoe ? shoeC : skin, 0, -0.035, 0.06);
+      if (shoe) vox(ank, 0.14, 0.14, 0.15, shoeC, 0, 0.04, 0.0);
+      if (SC) vox(ank, 0.135, 0.025, 0.28, '#e9e6dc', 0, -0.06, 0.06, { outline: false, shadow: false }); // sole
+      if (st.wraps && !opts.ref && !SC) vox(ank, 0.145, 0.07, 0.155, '#222631', 0, 0.03, 0.0);
       // contact markers
       const toe = grp(ank, 0, -0.07, 0.19), heel = grp(ank, 0, -0.07, -0.07);
       this[side + 'Hip'] = hip; this[side + 'Knee'] = knee; this[side + 'Ank'] = ank; this[side + 'Toe'] = toe; this[side + 'Heel'] = heel;
@@ -834,6 +878,10 @@ class Rig {
     if (bd === 'stubble') vox(head, 0.224, 0.09, 0.2, shade(skin, 0.72), 0, -0.085, 0.025, { outline: false });
     if (bd === 'goatee') { vox(head, 0.08, 0.07, 0.03, hairC, 0, -0.1, 0.12, { outline: false }); vox(head, 0.09, 0.02, 0.02, hairC, 0, -0.05, 0.125, { outline: false }); }
     if (bd === 'full') { vox(head, 0.235, 0.11, 0.22, hairC, 0, -0.09, 0.02); vox(head, 0.1, 0.025, 0.02, hairC, 0, -0.05, 0.128, { outline: false }); }
+    const SC = L.street;
+    if (SC && SC.cap) { vox(head, 0.245, 0.08, 0.265, SC.cap, 0, 0.14, -0.005); vox(head, 0.2, 0.025, 0.12, shade(SC.cap, 0.8), 0, 0.11, 0.16); }
+    if (SC && SC.beanie) vox(head, 0.25, 0.12, 0.27, SC.beanie, 0, 0.14, -0.01);
+    if (SC && SC.shades) vox(head, 0.2, 0.04, 0.02, '#0b0b0f', 0, 0.025, 0.128, { outline: false, shadow: false });
   }
   dispose() { if (this.root.parent) this.root.parent.remove(this.root); }
 }
@@ -1650,7 +1698,7 @@ const Arena = {
     // --- crowd
     this.buildCrowd(g);
     // --- lights
-    const hemi = new THREE.HemisphereLight(0xc9d4ff, 0x1a1420, 0.55); scene.add(hemi);
+    const hemi = new THREE.HemisphereLight(0xc9d4ff, 0x1a1420, 0.55); scene.add(hemi); this.hemi = hemi;
     const key = new THREE.DirectionalLight(0xfff1dc, 0.85);
     key.position.set(-3, 12, 4); key.castShadow = true;
     key.shadow.mapSize.set(1024, 1024);
@@ -1719,6 +1767,251 @@ const Arena = {
     this.excite = Math.max(0.15, this.excite - dt * 0.12);
     this.flashes.material.opacity = Math.random() < 0.05 + this.excite * 0.3 ? rand(0.4, 1) : this.flashes.material.opacity * 0.8;
     if (this.jumbo) this.jumbo.rotation.y += dt * 0.15;
+  },
+};
+/* =====================================================================
+   CITY — a closed-off street for street fights and turf wars
+   Road along X, shops and apartments behind (-z), a little park on the
+   camera side (+z). Cross-street traffic rolls past the barriers.
+   ===================================================================== */
+const CITY_BOUNDS = { x: 8.4, z: 3.15 };
+const CITY_TIMES = {
+  night: { bg: '#0b0e1a', fog: '#0b0e1a', hemi: [0x9fb0ff, 0x1a1420, 0.42], moon: [0xaec4ff, 0.42], lamps: 1, win: 1 },
+  dusk: { bg: '#3a2340', fog: '#4a2c45', hemi: [0xffc7a0, 0x2a1a2a, 0.62], moon: [0xffb27a, 0.62], lamps: 0.8, win: 0.7 },
+  day: { bg: '#8fc3f0', fog: '#a9cdea', hemi: [0xe8f2ff, 0x5a5048, 0.95], moon: [0xfff4e0, 0.95], lamps: 0, win: 0.15 },
+};
+const City = {
+  group: null, built: false, obstacles: [], fadeables: [], cars: [], lampLights: [], winMats: [], lampMats: [], time: 'night', signs: [],
+  clamp(p) {
+    p.x = clamp(p.x, -CITY_BOUNDS.x, CITY_BOUNDS.x); p.y = clamp(p.y, -CITY_BOUNDS.z, CITY_BOUNDS.z);
+    for (const o of this.obstacles) { // push fighters out of parked cars and props
+      const r = 0.36, dx = p.x - o.x, dz = p.y - o.z;
+      const px = o.hx + r - Math.abs(dx), pz = o.hz + r - Math.abs(dz);
+      if (px > 0 && pz > 0) { if (px < pz) p.x += Math.sign(dx || 1) * px; else p.y += Math.sign(dz || 1) * pz; }
+    }
+    return p;
+  },
+  build(scene) {
+    if (this.built) return;
+    this.built = true;
+    const g = (this.group = new THREE.Group()); g.visible = false; scene.add(g);
+    const lam = (c, extra) => new THREE.MeshLambertMaterial({ color: c, ...(extra || {}) });
+    // --- ground: asphalt with lane paint
+    const roadTex = canvasTex(1024, 256, (x, w, h) => {
+      x.fillStyle = '#2b2e36'; x.fillRect(0, 0, w, h);
+      for (let i = 0; i < 6000; i++) { x.fillStyle = `rgba(${Math.random() < 0.5 ? '0,0,0' : '255,255,255'},${Math.random() * 0.06})`; x.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+      for (let i = 0; i < 12; i++) { x.fillStyle = 'rgba(10,12,18,0.35)'; x.beginPath(); x.ellipse(Math.random() * w, Math.random() * h, rand(10, 40), rand(4, 12), 0, 0, TAU); x.fill(); } // patches
+      x.fillStyle = '#e8e2cf'; x.fillRect(0, h * 0.04, w, 3); x.fillRect(0, h * 0.96 - 3, w, 3); // edge lines
+      x.fillStyle = '#e8b52a'; for (let i = 0; i < w; i += 64) { x.fillRect(i, h / 2 - 5, 36, 3); x.fillRect(i, h / 2 + 2, 36, 3); }
+    });
+    roadTex.wrapS = THREE.RepeatWrapping; roadTex.repeat.set(4, 1);
+    const road = new THREE.Mesh(new THREE.PlaneGeometry(80, 8), lam('#ffffff', { map: roadTex }));
+    road.rotation.x = -Math.PI / 2; road.receiveShadow = true; g.add(road);
+    const base = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), lam('#23262d')); base.rotation.x = -Math.PI / 2; base.position.y = -0.01; g.add(base);
+    // crosswalks + cross streets
+    const zebra = canvasTex(256, 256, (x, w, h) => { x.fillStyle = '#2b2e36'; x.fillRect(0, 0, w, h); x.fillStyle = '#e8e2cf'; for (let i = 8; i < h; i += 32) x.fillRect(30, i, w - 60, 16); });
+    for (const sx of [-1, 1]) {
+      const cw = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 8), lam('#fff', { map: zebra })); cw.rotation.x = -Math.PI / 2; cw.position.set(sx * 10.4, 0.003, 0); cw.receiveShadow = true; g.add(cw);
+      const cross = new THREE.Mesh(new THREE.PlaneGeometry(8, 80), lam('#2b2e36')); cross.rotation.x = -Math.PI / 2; cross.position.set(sx * 15.5, 0.002, 0); g.add(cross);
+    }
+    // --- sidewalks with curbs
+    const walkTex = canvasTex(256, 256, (x, w, h) => {
+      x.fillStyle = '#8b8a86'; x.fillRect(0, 0, w, h);
+      for (let i = 0; i < 2500; i++) { x.fillStyle = `rgba(0,0,0,${Math.random() * 0.06})`; x.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+      x.strokeStyle = 'rgba(40,40,40,0.35)'; x.lineWidth = 2; for (let i = 0; i <= w; i += 64) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i, h); x.stroke(); x.beginPath(); x.moveTo(0, i); x.lineTo(w, i); x.stroke(); }
+    });
+    walkTex.wrapS = walkTex.wrapT = THREE.RepeatWrapping;
+    // one slab per side of the fight block, more past the cross streets
+    for (const sz of [-1, 1]) for (const [cx, len] of [[0, 23], [-29.75, 20.5], [29.75, 20.5]]) {
+      const tex = walkTex.clone(); tex.needsUpdate = true; tex.repeat.set(len / 1.2, 3.2 / 1.2);
+      const sw = new THREE.Mesh(new THREE.BoxGeometry(len, 0.14, 3.2), [lam('#77766f'), lam('#77766f'), lam('#fff', { map: tex }), lam('#77766f'), lam('#6c6b65'), lam('#6c6b65')]);
+      sw.position.set(cx, 0.07, sz * 5.6); sw.receiveShadow = true; g.add(sw);
+    }
+    // --- buildings behind the far sidewalk
+    const facade = (hue, rows, cols, shop) => {
+      const W = 128, H = 256;
+      const col = canvasTex(W, H, (x) => {
+        x.fillStyle = `hsl(${hue},${rand(12, 30)}%,${rand(22, 34)}%)`; x.fillRect(0, 0, W, H);
+        for (let i = 0; i < 800; i++) { x.fillStyle = `rgba(0,0,0,${Math.random() * 0.08})`; x.fillRect(Math.random() * W, Math.random() * H, 2, 1); }
+        const cw = W / cols, rh = (H - (shop ? 40 : 0)) / rows;
+        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+          x.fillStyle = '#141824'; x.fillRect(c * cw + cw * 0.22, r * rh + rh * 0.2, cw * 0.56, rh * 0.58);
+          x.fillStyle = `hsl(${hue},20%,40%)`; x.fillRect(c * cw + cw * 0.18, r * rh + rh * 0.78, cw * 0.64, 2);
+        }
+        if (shop) { x.fillStyle = '#10131c'; x.fillRect(0, H - 40, W, 40); x.fillStyle = '#273145'; x.fillRect(8, H - 34, W - 40, 30); x.fillStyle = '#0a0c12'; x.fillRect(W - 28, H - 36, 18, 36); }
+      }, true);
+      const em = canvasTex(W, H, (x) => {
+        x.fillStyle = '#000'; x.fillRect(0, 0, W, H);
+        const cw = W / cols, rh = (H - (shop ? 40 : 0)) / rows;
+        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (Math.random() < 0.45) {
+          x.fillStyle = pick(['#ffd98a', '#ffe7b0', '#9fd0ff', '#ffc070']); x.fillRect(c * cw + cw * 0.22, r * rh + rh * 0.2, cw * 0.56, rh * 0.58);
+        }
+        if (shop) { x.fillStyle = pick(['#ffe2a0', '#cfe8ff']); x.fillRect(8, H - 34, W - 40, 30); }
+      }, true);
+      return { col, em };
+    };
+    const shops = [['NOODLES', '#ff4d6d'], ['24/7', '#3dfc9a'], ['GYM', '#ffd23f'], ['PAWN', '#4dd2ff'], ['LAUNDRY', '#c77dff'], ['PIZZA', '#ff8c42'], ['BARBER', '#4dd2ff'], ['TACOS', '#ffd23f'], ['ARCADE', '#ff4dc4']];
+    let bx = -34, si = 0;
+    while (bx < 34) {
+      const w = rand(5, 8.5), h = rand(7, 19), d = rand(6, 9);
+      const fac = facade(rand(0, 360), Math.max(3, Math.round(h / 2.6)), Math.max(3, Math.round(w / 1.6)), true);
+      fac.col.repeat.set(1, 1); fac.em.repeat.set(1, 1);
+      const front = new THREE.MeshLambertMaterial({ map: fac.col, emissive: new THREE.Color('#ffffff'), emissiveMap: fac.em, emissiveIntensity: 0.9 });
+      this.winMats.push(front);
+      const sideM = lam(shade('#3a3f4c', rand(0.7, 1.1)));
+      const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), [sideM, sideM, lam('#1c1f27'), sideM, front, sideM]);
+      b.position.set(bx + w / 2, h / 2, -7.3 - d / 2); b.castShadow = false; b.receiveShadow = true; g.add(b);
+      // roof trim + water tank on some
+      vox(g, w + 0.2, 0.3, d + 0.2, '#22252e', bx + w / 2, h + 0.15, -7.3 - d / 2, { shadow: false });
+      if (Math.random() < 0.4) { vox(g, 1.2, 1.4, 1.2, '#5b4636', bx + w * 0.3, h + 1.0, -7.3 - d * 0.6, { shadow: false }); }
+      // neon shop sign + awning
+      const [txt, nc] = shops[si++ % shops.length];
+      if (Math.abs(bx + w / 2) < 26) {
+        const st = canvasTex(256, 64, (x, W2, H2) => { x.fillStyle = '#07080c'; x.fillRect(0, 0, W2, H2); x.fillStyle = nc; x.shadowColor = nc; x.shadowBlur = 12; x.font = 'bold 40px Impact, "Arial Black", sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(txt, W2 / 2, H2 / 2 + 2); }, true);
+        const sm = new THREE.MeshBasicMaterial({ map: st }); this.signs.push(sm);
+        const sign = new THREE.Mesh(new THREE.PlaneGeometry(Math.min(w - 1, 4), 1), sm); sign.position.set(bx + w / 2, 3.6, -7.28); g.add(sign);
+        const aw = new THREE.Mesh(new THREE.BoxGeometry(Math.min(w - 0.6, 5), 0.12, 1.2), lam(pick(['#a02331', '#1f6e4a', '#2a4f9a', '#7a2a8a', '#b5651d']))); aw.position.set(bx + w / 2, 2.9, -6.7); aw.rotation.x = 0.25; g.add(aw);
+      }
+      bx += w + rand(0.1, 0.6);
+    }
+    // distant skyline all around
+    const skyM = new THREE.MeshLambertMaterial({ color: '#141826', emissive: new THREE.Color('#0d1020') });
+    for (let i = 0; i < 46; i++) {
+      const a = (i / 46) * TAU, r = rand(48, 70), w = rand(4, 10), h = rand(12, 40);
+      const m = new THREE.Mesh(boxGeo(w, h, w), skyM); m.position.set(Math.cos(a) * r, h / 2, Math.sin(a) * r); g.add(m);
+    }
+    // camera side: low shops further back, park strip with a low fence
+    for (let x0 = -30; x0 < 30; x0 += rand(6, 9)) {
+      const w = rand(5, 7.5), h = rand(4, 7);
+      const fac = facade(rand(0, 360), 2, 4, false);
+      const front = new THREE.MeshLambertMaterial({ map: fac.col, emissive: new THREE.Color('#ffffff'), emissiveMap: fac.em, emissiveIntensity: 0.9 }); this.winMats.push(front);
+      const sm = lam('#33384a');
+      const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, 6), [sm, sm, lam('#1c1f27'), sm, sm, front]);
+      b.position.set(x0 + w / 2, h / 2, 17 + 3); g.add(b);
+    }
+    const grass = new THREE.Mesh(new THREE.PlaneGeometry(60, 8), lam('#2f4a2c')); grass.rotation.x = -Math.PI / 2; grass.position.set(0, 0.015, 11.2); grass.receiveShadow = true; g.add(grass);
+    for (let x0 = -24; x0 <= 24; x0 += 1.6) { const p = vox(g, 0.06, 0.8, 0.06, '#3b404c', x0, 0.4, 7.35, { outline: false, shadow: false }); this.fadeables.push({ o: p, x: x0, z: 7.35 }); }
+    const rail = new THREE.Mesh(boxGeo(48, 0.06, 0.06), toon('#3b404c')); rail.position.set(0, 0.78, 7.35); g.add(rail);
+    // --- street lamps (a few real lights near the fight)
+    const lampMat = new THREE.MeshBasicMaterial({ color: '#ffe3a1' }); this.lampMats.push(lampMat);
+    const glowMat = new THREE.MeshBasicMaterial({ color: '#ffd27a', transparent: true, opacity: 0.06, depthWrite: false, side: THREE.DoubleSide }); this.lampMats.push(glowMat);
+    for (const sz of [-1, 1]) for (const lx of [-16, -8, 0, 8, 16]) {
+      const x0 = lx + (sz > 0 ? 4 : 0), z0 = sz * 4.55;
+      const pole = new THREE.Group(); pole.position.set(x0, 0, z0); g.add(pole);
+      vox(pole, 0.12, 4.6, 0.12, '#2a2e38', 0, 2.3, 0);
+      vox(pole, 0.08, 0.08, 1.1, '#2a2e38', 0, 4.55, -sz * 0.5);
+      const head = new THREE.Mesh(boxGeo(0.34, 0.14, 0.5), lampMat); head.position.set(0, 4.45, -sz * 1.0); pole.add(head);
+      if (sz < 0) { const cone = new THREE.Mesh(new THREE.ConeGeometry(1.6, 4.3, 12, 1, true), glowMat); cone.position.set(0, 2.25, -sz * 1.0); pole.add(cone); }
+      if (sz > 0) this.fadeables.push({ o: pole, x: x0, z: z0 });
+      if (Math.abs(x0) <= 9) { const L = new THREE.PointLight(0xffc97a, 0.9, 11, 1.6); L.position.set(x0, 4.2, z0 - sz * 1.0); g.add(L); this.lampLights.push(L); }
+    }
+    // --- trees in planters
+    const leafCols = ['#2f6b3a', '#3c7d43', '#285c33', '#4a8a4a'];
+    for (const sz of [-1, 1]) for (let tx = -20; tx <= 20; tx += 6.5) {
+      const x0 = tx + (sz > 0 ? 2.2 : 3.4), z0 = sz * 5.9;
+      if (Math.abs(x0) > 22) continue;
+      const tr = new THREE.Group(); tr.position.set(x0, 0.14, z0); g.add(tr);
+      vox(tr, 0.9, 0.18, 0.9, '#3a2a20', 0, 0.02, 0, { shadow: false });
+      vox(tr, 0.2, 2.2, 0.2, '#5a3e2b', 0, 1.1, 0);
+      const lc = pick(leafCols);
+      for (let k = 0; k < 6; k++) vox(tr, rand(0.8, 1.3), rand(0.7, 1.0), rand(0.8, 1.3), shade(lc, rand(0.85, 1.15)), rand(-0.45, 0.45), 2.3 + rand(0, 0.9), rand(-0.45, 0.45));
+      if (sz > 0) this.fadeables.push({ o: tr, x: x0, z: z0 });
+      this.obstacles.push({ x: x0, z: z0, hx: 0.45, hz: 0.45 }); // outside the bounds anyway, kept for completeness
+    }
+    // --- props
+    const hyd = new THREE.Group(); hyd.position.set(-3.2, 0.14, -4.5); g.add(hyd);
+    vox(hyd, 0.26, 0.55, 0.26, '#c0262e', 0, 0.28, 0); vox(hyd, 0.36, 0.1, 0.14, '#c0262e', 0, 0.4, 0); vox(hyd, 0.2, 0.12, 0.2, '#e0e0e0', 0, 0.62, 0);
+    const bin = (x0, z0, c) => { const b2 = new THREE.Group(); b2.position.set(x0, 0.14, z0); g.add(b2); vox(b2, 0.5, 0.8, 0.5, c, 0, 0.4, 0); vox(b2, 0.56, 0.08, 0.56, shade(c, 0.7), 0, 0.82, 0); return b2; };
+    bin(5.5, -4.6, '#2d5a3a'); bin(6.2, -4.6, '#3a4a6a');
+    const dump = new THREE.Group(); dump.position.set(-12.5, 0.14, -5.6); g.add(dump);
+    vox(dump, 2.2, 1.3, 1.2, '#2f6b4a', 0, 0.65, 0); vox(dump, 2.3, 0.12, 1.3, '#245a3c', 0, 1.36, 0, { rot: [0.1, 0, 0] });
+    const bench = new THREE.Group(); bench.position.set(2.5, 0.14, 6.2); g.add(bench); this.fadeables.push({ o: bench, x: 2.5, z: 6.2 });
+    vox(bench, 1.8, 0.08, 0.5, '#7a5a3a', 0, 0.45, 0); vox(bench, 1.8, 0.4, 0.08, '#7a5a3a', 0, 0.7, -0.22); vox(bench, 0.08, 0.45, 0.45, '#2a2e38', -0.8, 0.22, 0); vox(bench, 0.08, 0.45, 0.45, '#2a2e38', 0.8, 0.22, 0);
+    // graffiti on a wall at street level
+    const graf = canvasTex(256, 96, (x, w, h) => { x.clearRect(0, 0, w, h); x.font = 'bold 56px Impact, "Arial Black", sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.lineWidth = 8; x.strokeStyle = '#111'; x.strokeText('PXL', w / 2, h / 2); x.fillStyle = '#ff4dc4'; x.fillText('PXL', w / 2, h / 2); }, true);
+    const gm = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.9), new THREE.MeshLambertMaterial({ map: graf, transparent: true })); gm.position.set(-9, 1.4, -7.27); g.add(gm);
+    // manholes
+    for (const mx of [-4.5, 3.8]) { const mh = new THREE.Mesh(new THREE.CircleGeometry(0.45, 12), lam('#1b1d22')); mh.rotation.x = -Math.PI / 2; mh.position.set(mx, 0.004, mx > 0 ? 1.2 : -1.6); g.add(mh); }
+    // --- road closure at both ends: sawhorses and cones
+    const stripe = canvasTex(64, 16, (x, w, h) => { for (let i = -2; i < 8; i++) { x.fillStyle = i % 2 ? '#f2f2f2' : '#ff7a1a'; x.beginPath(); x.moveTo(i * 10, 0); x.lineTo(i * 10 + 10, 0); x.lineTo(i * 10 + 18, h); x.lineTo(i * 10 + 8, h); x.fill(); } }, true);
+    for (const sx of [-1, 1]) {
+      for (const bz of [-2.4, 0, 2.4]) {
+        const sh = new THREE.Group(); sh.position.set(sx * 9.25, 0, bz); g.add(sh);
+        const board = new THREE.Mesh(boxGeo(0.08, 0.28, 1.9), [toon('#f2f2f2'), toon('#f2f2f2'), toon('#f2f2f2'), toon('#f2f2f2'), new THREE.MeshBasicMaterial({ map: stripe }), new THREE.MeshBasicMaterial({ map: stripe })]);
+        board.position.y = 0.85; sh.add(board);
+        vox(sh, 0.06, 0.9, 0.06, '#d9d9d9', 0, 0.45, -0.85); vox(sh, 0.06, 0.9, 0.06, '#d9d9d9', 0, 0.45, 0.85);
+        const lt = new THREE.Mesh(boxGeo(0.1, 0.1, 0.1), new THREE.MeshBasicMaterial({ color: '#ffb000' })); lt.position.set(0, 1.05, 0.8); sh.add(lt); this.lampMats.push(lt.material);
+      }
+      for (let k = -3; k <= 3; k += 1.5) { const cn = new THREE.Group(); cn.position.set(sx * 8.95, 0, k + 0.7); g.add(cn); vox(cn, 0.32, 0.05, 0.32, '#202020', 0, 0.025, 0, { outline: false }); const c2 = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.5, 6), toon('#ff6a1a')); c2.position.y = 0.3; cn.add(c2); }
+    }
+    // --- parked cars along the far curb (obstacles) and one near the park side
+    const parked = [[-6.2, -3.55, 0], [4.6, -3.55, 0], [-1.2, 3.62, Math.PI]];
+    for (const [x0, z0, ry] of parked) {
+      const car = this.makeCar(pick(['#b8322e', '#2d5fa8', '#e2e2e2', '#2b2b2b', '#c9a227', '#4a7a52'])); car.position.set(x0, 0, z0); car.rotation.y = ry; g.add(car);
+      this.obstacles.push({ x: x0, z: z0, hx: 1.05, hz: 0.5 });
+      if (z0 > 0) this.fadeables.push({ o: car, x: x0, z: z0 });
+    }
+    // --- moving traffic on the cross streets
+    for (let i = 0; i < 6; i++) {
+      const car = this.makeCar(pick(['#b8322e', '#2d5fa8', '#e2e2e2', '#2b2b2b', '#c9a227', '#4a7a52', '#e86a1c', '#7a3fb0']), true);
+      const lane = i % 2 ? 1 : -1, sx = i < 3 ? -1 : 1;
+      const c = { o: car, x: sx * 15.5 + lane * 1.8, z: rand(-40, 40), v: lane * rand(5, 8) };
+      car.rotation.y = lane > 0 ? 0 : Math.PI; g.add(car); this.cars.push(c);
+    }
+    // --- lighting for the street
+    this.hemi = new THREE.HemisphereLight(0x9fb0ff, 0x1a1420, 0.42); g.add(this.hemi);
+    const moon = (this.moon = new THREE.DirectionalLight(0xaec4ff, 0.42));
+    moon.position.set(-6, 14, 9); moon.castShadow = true; moon.shadow.mapSize.set(1024, 1024);
+    const sc = moon.shadow.camera; sc.left = -11; sc.right = 11; sc.top = 9; sc.bottom = -9; sc.near = 2; sc.far = 40; moon.shadow.bias = -0.0008;
+    g.add(moon); g.add(moon.target);
+  },
+  makeCar(color, moving) {
+    const car = new THREE.Group();
+    const body = new THREE.Group(); car.add(body); // the car's length runs along local X
+    vox(body, 2.1, 0.5, 0.98, color, 0, 0.42, 0);
+    vox(body, 1.15, 0.42, 0.9, shade(color, 0.85), -0.1, 0.88, 0);
+    vox(body, 1.0, 0.32, 0.92, '#1b2433', -0.1, 0.88, 0, { outline: false }); // windows
+    for (const wx of [-0.68, 0.68]) for (const wz of [-0.46, 0.46]) vox(body, 0.36, 0.36, 0.14, '#111216', wx, 0.2, wz);
+    const hl = new THREE.MeshBasicMaterial({ color: '#fff3c4' }), tl = new THREE.MeshBasicMaterial({ color: '#ff2a2a' });
+    for (const hz of [-0.32, 0.32]) {
+      const h1 = new THREE.Mesh(boxGeo(0.04, 0.12, 0.2), hl); h1.position.set(1.06, 0.5, hz); body.add(h1);
+      const t1 = new THREE.Mesh(boxGeo(0.04, 0.1, 0.2), tl); t1.position.set(-1.06, 0.5, hz); body.add(t1);
+    }
+    if (moving) { const beam = new THREE.Mesh(new THREE.PlaneGeometry(3, 1.2), new THREE.MeshBasicMaterial({ color: '#fff0b0', transparent: true, opacity: 0.12, depthWrite: false })); beam.rotation.x = -Math.PI / 2; beam.position.set(2.5, 0.02, 0); body.add(beam); }
+    car.rotation.order = 'YXZ';
+    body.rotation.y = 0; car.userData.body = body;
+    // parked cars sit along the curb (length along world X); moving ones turn to run along Z
+    if (moving) body.rotation.y = -Math.PI / 2;
+    return car;
+  },
+  setTime(t) {
+    const T = CITY_TIMES[t] || CITY_TIMES.night; this.time = t;
+    if (!this.built) return;
+    this.hemi.color.setHex(T.hemi[0]); this.hemi.groundColor.setHex(T.hemi[1]); this.hemi.intensity = T.hemi[2];
+    this.moon.color.setHex(T.moon[0]); this.moon.intensity = T.moon[1];
+    for (const L of this.lampLights) L.intensity = 0.9 * T.lamps;
+    for (const m of this.winMats) m.emissiveIntensity = 0.9 * T.win;
+    this.lampMats.forEach((m, i) => { if (m.transparent) m.opacity = 0.06 * T.lamps; else m.color.set(T.lamps > 0 ? (i === 0 ? '#ffe3a1' : '#ffb000') : '#9a9a8a'); });
+    if (Game.arena === 'city') { Game.scene.background.set(T.bg); Game.scene.fog.color.set(T.fog); }
+  },
+  update(dt, focus) {
+    if (!this.built || !this.group.visible) return;
+    for (const c of this.cars) {
+      c.z += c.v * dt; if (c.z > 45) c.z = -45; if (c.z < -45) c.z = 45;
+      c.o.position.set(c.x, 0, c.z);
+    }
+    if (focus) { // keep the moon's shadow box on the fight
+      this.moon.position.set(focus.x - 6, 14, focus.y + 9); this.moon.target.position.set(focus.x, 0, focus.y); this.moon.target.updateMatrixWorld();
+    }
+  },
+  // hide trees/lamps/cars on the camera side that would cover the fighters
+  fade(cam, look) {
+    if (!this.built) return;
+    for (const f of this.fadeables) {
+      const t = (f.z - look.z) / Math.max(0.01, cam.z - look.z);
+      const hide = t > 0.05 && t < 1.3 && Math.abs(f.x - lerp(look.x, cam.x, clamp(t, 0, 1))) < 2.2 + t * 4; // the view widens toward the camera
+      f.o.visible = !hide;
+    }
   },
 };
 /* =====================================================================
@@ -1875,6 +2168,7 @@ class Fighter {
     Game.hitstop(0.09);
     Arena.excite = Math.min(1, Arena.excite + 0.35); Sound.cheer(0.6);
     att.interrupt('parried', 0.6);
+    if (this.opp !== att) this.opp = att; // street fights: counter whoever I caught
     this.meter = Math.min(100, this.meter + 14 * this.D.meterMul);
     this.parryT = 0;
     // fire the counter that fits what I caught
@@ -2044,8 +2338,8 @@ class Fighter {
     }
   }
   // ===== striking =====
-  inFront(maxAng = 0.95) {
-    const d = this.dirTo();
+  inFront(maxAng = 0.95, tgt = null) {
+    const d = tgt ? new THREE.Vector2(tgt.pos.x - this.pos.x, tgt.pos.y - this.pos.y).normalize() : this.dirTo();
     const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw);
     return d.x * fx + d.y * fz > Math.cos(maxAng);
   }
@@ -2073,7 +2367,7 @@ class Fighter {
     // parried?
     if (O.parryOk(M)) { O.parrySuccess(this); return; }
     // blocked? how well depends on the defender's style vs this attack type
-    if (O.state === 'block' && O.blockW > 0.4 && !M.finisher && O.inFront(1.2)) {
+    if (O.state === 'block' && O.blockW > 0.4 && !M.finisher && O.inFront(1.2, this)) {
       const fam = famOf(M), red = BLOCK_SKILL[O.styleId][fam];
       const chip = M.dmg[i] * (1 - red) * this.D.dmg;
       const gcost = (M.stam * 0.6 + 3 + M.dmg[i] * 0.35) * (1.6 - red) * 1.6;
@@ -2186,7 +2480,7 @@ class Fighter {
     }
     if (O.parryOk(M)) { O.parrySuccess(this); return; }
     // blocked: a set guard sprawls on the shot; grapplers do it cheaply, strikers pay for it
-    if (O.state === 'block' && O.blockW > 0.4 && !M.finisher && O.inFront(1.2)) {
+    if (O.state === 'block' && O.blockW > 0.4 && !M.finisher && O.inFront(1.2, this)) {
       const cost = BLOCK_SKILL[O.styleId].grapple;
       O.guard -= cost * 2 + M.stam * 0.6; O.guardDelay = 0.9; O.stam = Math.max(0, O.stam - cost * 0.4); O.stats_.blocked++;
       if (O.guard > 0) {
@@ -2351,10 +2645,11 @@ const AI_TABLE = [
 ];
 const PREF_RANGE = { boxing: 1.05, muaythai: 1.15, karate: 1.3, bjj: 1.1, wrestling: 1.0 };
 class AI {
-  constructor(f, diff, mode = 'fight') {
-    this.f = f; this.diff = diff; this.mode = mode;
+  constructor(f, diff, mode = 'fight', dna = null) {
+    this.f = f; this.diff = diff; this.mode = mode; this.dna = dna && dna.n ? dna : null;
     const r = AI_TABLE[Math.min(diff, 5)];
     this.p = { react: r[0], block: r[1], parry: r[2], aggr: r[3], combo: r[4], think: r[5], punish: r[6], dash: r[7], idle: r[8] };
+    if (this.dna) DNA.tune(this);
     this.next = rand(0.3, 0.8); this.reacted = -1; this.pending = null; this.holdBlock = 0;
     this.plan = []; this.circle = Math.random() < 0.5 ? 1 : -1; this.circleT = 0; this.wantFwd = 0; this.wantSide = 0;
     this.evadeT = 0; this.pauseT = 0; this.oppBlocks = 0;
@@ -2368,7 +2663,7 @@ class AI {
     const now = Game.time;
     const d = f.dist();
     // ---- defence: notice a new attack and schedule a response
-    if (o.state === 'attack' && o.anim && o.anim.move && o.anim.id !== this.reacted) {
+    if (o.state === 'attack' && o.anim && o.anim.move && o.anim.id !== this.reacted && o.opp === f) {
       this.reacted = o.anim.id;
       const M = o.anim.move;
       const hitT = (M.kind === 'grapple' ? M.grab : M.hits[0]) / o.anim.a.dur * o.anim.a.dur / o.anim.rate; // seconds until contact from start
@@ -2381,7 +2676,8 @@ class AI {
       const bs = BLOCK_SKILL[f.styleId][fam];
       const pBlock = this.p.block * (fam === 'grapple' ? (bs <= 8 ? 1.3 : bs <= 15 ? 0.9 : 0.55) : bs / 0.85) * (this.mode === 'counter' ? 1.5 : 1);
       let kind = 'none';
-      if (M.finisher || M.armor) kind = Math.random() < this.p.block ? 'evade' : 'none';
+      if (this.dna) kind = DNA.defend(this, fam, roll); // a clone defends the way its owner does
+      else if (M.finisher || M.armor) kind = Math.random() < this.p.block ? 'evade' : 'none';
       else if (roll < pParry) kind = 'parry';
       else if (roll < pParry + pBlock) kind = 'block';
       else if (roll < pParry + pBlock + this.p.block * 0.35) kind = 'evade';
@@ -2399,7 +2695,8 @@ class AI {
         if (pd.kind === 'parry') I.counter = true;
         else if (pd.kind === 'block') { if (f.guard > f.maxGuard * 0.15 && f.guardBrokenT <= 0) this.holdBlock = 0.45 + rand(0, 0.25); else this.evadeT = 0.3; }
         else if (pd.kind === 'evade') {
-          if (this.diff >= 1 && f.stam > 18 && Math.random() < 0.4 + this.diff * 0.1) { const fd = f.dirTo(); I.dodge = Math.random() < 0.45 ? new THREE.Vector2() : new THREE.Vector2(-fd.y * this.circle, fd.x * this.circle); }
+          if (this.dna && f.stam > 10) { I.dodge = DNA.dodgeDir(this); }
+          else if (this.diff >= 1 && f.stam > 18 && Math.random() < 0.4 + this.diff * 0.1) { const fd = f.dirTo(); I.dodge = Math.random() < 0.45 ? new THREE.Vector2() : new THREE.Vector2(-fd.y * this.circle, fd.x * this.circle); }
           else this.evadeT = 0.3;
         }
       }
@@ -2409,6 +2706,7 @@ class AI {
     I.block = false;
     if (this.evadeT > 0) { this.evadeT -= dt; I.fwd = -1; I.side = this.circle * 0.5; return; }
     if (this.mode === 'counter') { I.fwd = clamp((1.3 - d) * -2, -1, 1) * 0.3; I.side = 0; return; }
+    if (f.token === false && this.plan.length === 0 && f.canAct) { this.waitTurn(dt); return; }
     // ---- planned combo continuation
     if (this.plan.length && (f.state === 'attack' || f.canAct)) {
       const nx = this.plan[0];
@@ -2420,7 +2718,7 @@ class AI {
     if (o.state === 'down' && !o.pendingKO) { // follow up on the ground
       const hd = f.standPoint().distanceTo(f.pos);
       I.fwd = hd > 1.6 ? 1 : 0; I.side = 0;
-      if (hd < 2.0 && Math.random() < this.p.punish * dt * 6) f.tryAttack('light');
+      if (hd < 2.0 && Math.random() < (this.dna ? this.dna.ground : this.p.punish) * dt * 6) f.tryAttack('light');
       return;
     }
     // ---- offence / movement decisions
@@ -2442,7 +2740,8 @@ class AI {
         const slot = this.chooseSlot(d, punish);
         if (slot) {
           // maybe a combo
-          if (Math.random() < this.p.combo) {
+          if (this.dna) this.plan = DNA.chain(this, slot);
+          else if (Math.random() < this.p.combo) {
             const cands = f.st.combos.filter((c) => c.seq[0] === slot);
             if (cands.length) { const c = pick(cands); this.plan = c.seq.slice(1); }
           }
@@ -2451,7 +2750,7 @@ class AI {
         }
       }
       // movement plan
-      const want = lowGas ? pref + 0.9 : pref + rand(-0.1, 0.35);
+      const want = lowGas ? pref + 0.9 : (this.dna ? clamp(this.dna.range, 0.9, 2.6) : pref) + rand(-0.1, 0.35);
       this.wantFwd = clamp((d - want) * 2.2, -1, 1);
       this.wantSide = this.circle * (lowGas ? 0.9 : rand(0.2, 0.7));
       if (d > want + 1.2 && Math.random() < this.p.dash) I.dash = 1;
@@ -2460,6 +2759,19 @@ class AI {
     if (this.pauseT > 0) { this.pauseT -= dt; I.fwd = 0; I.side = 0; return; }
     I.fwd = lerp(I.fwd, this.wantFwd, 1 - Math.exp(-dt * 6));
     I.side = lerp(I.side, this.wantSide, 1 - Math.exp(-dt * 4));
+  }
+  // street fights: circle at a distance until it's my turn to jump in
+  waitTurn(dt) {
+    const f = this.f, o = f.opp, I = f.intent;
+    if (this.slotAng === undefined) this.slotAng = Math.atan2(f.pos.y - o.pos.y, f.pos.x - o.pos.x);
+    this.slotAng += dt * 0.25 * this.circle;
+    const R = 2.7 + (this.waitR || (this.waitR = rand(0, 0.9)));
+    const tx = o.pos.x + Math.cos(this.slotAng) * R, tz = o.pos.y + Math.sin(this.slotAng) * R;
+    const v = new THREE.Vector2(tx - f.pos.x, tz - f.pos.y);
+    const fd = f.dirTo(), s = new THREE.Vector2(-fd.y, fd.x);
+    const k = clamp(v.length() / 1.2, 0, 1) * 0.75; v.normalize();
+    I.fwd = lerp(I.fwd, v.dot(fd) * k, 1 - Math.exp(-dt * 5)); I.side = lerp(I.side, v.dot(s) * k, 1 - Math.exp(-dt * 5));
+    I.block = false;
   }
   chooseSlot(d, punish) {
     const f = this.f;
@@ -2472,7 +2784,8 @@ class AI {
       if (d < M.ideal - 0.45) continue;
       let w = s === 'light' ? 1.3 : s === 'medium' ? 1.0 : 0.8;
       if (punish) w = s === 'heavy' ? 2.5 : s === 'medium' ? 1.5 : 0.6;
-      if (M.kind === 'grapple' && this.diff < 2) w *= 0.6;
+      if (M.kind === 'grapple' && this.diff < 2 && !this.dna) w *= 0.6;
+      if (this.dna) w = (punish ? w * 0.5 : 0) + 0.05 + (this.dna.mix[s] || 0) * 3; // the owner's favourite moves
       if (f.stam < M.stam * 1.5) w *= 0.3;
       opts.push([s, w]);
     }
@@ -2480,6 +2793,169 @@ class AI {
     let sum = opts.reduce((a, b) => a + b[1], 0), r = Math.random() * sum;
     for (const [s, w] of opts) { if ((r -= w) <= 0) return s; }
     return opts[0][0];
+  }
+}
+/* =====================================================================
+   FIGHT DNA — the game watches how you fight and builds a CPU clone
+   that fights the same way: your favourite moves and chains, how often
+   you block, dodge or counter, how close you like to stand, how hard
+   you press after landing, whether you pound on a downed opponent.
+   ===================================================================== */
+const DNA_ATK = ['light', 'medium', 'heavy'];
+const DNA = {
+  rec: null,
+  blank() {
+    const row = () => ({ light: 0.34, medium: 0.33, heavy: 0.33 });
+    return { n: 0, mix: { light: 0.42, medium: 0.28, heavy: 0.2, super: 0.05, counter: 0.05 }, seq: { light: row(), medium: row(), heavy: row() }, chain: 0.3, aggr: 0.9, range: 1.2,
+      def: { block: 0.3, dodge: 0.15, counter: 0.05, none: 0.5 }, dodge: { still: 0.4, side: 0.4, back: 0.2 }, pressure: 0.4, ground: 0.4, dash: 0.6, fights: 0 };
+  },
+  // ---------- recording ----------
+  start(f) { this.rec = f ? new DnaRecorder(f) : null; },
+  stop() { this.rec = null; },
+  finish(prof) {
+    const R = this.rec; this.rec = null;
+    if (!R || !prof) return false;
+    const S = R.sample(); if (!S) return false;
+    const d = prof.dna || (prof.dna = DNA.blank());
+    const w = Math.max(0.25, 1 / (d.n + 1)); // learns fast at first, then keeps a rolling picture
+    const mixIn = (a, b) => { for (const k in b) a[k] = a[k] * (1 - w) + b[k] * w; };
+    mixIn(d.mix, S.mix);
+    for (const k of DNA_ATK) if (S.seq[k]) mixIn(d.seq[k], S.seq[k]);
+    for (const k of ['chain', 'aggr', 'range', 'dash']) if (S[k] !== null) d[k] = d[k] * (1 - w) + S[k] * w;
+    if (S.def) mixIn(d.def, S.def);
+    if (S.dodge) mixIn(d.dodge, S.dodge);
+    if (S.pressure !== null) d.pressure = d.pressure * (1 - w) + S.pressure * w;
+    if (S.ground !== null) d.ground = d.ground * (1 - w) + S.ground * w;
+    d.n++; d.fights = (d.fights || 0) + 1;
+    persist();
+    return true;
+  },
+  // ---------- playing ----------
+  tune(ai) { // turn habits into the AI's knobs
+    const d = ai.dna, p = ai.p;
+    p.aggr = clamp(1 - Math.exp(-d.aggr * p.think * 1.3), 0.12, 0.95);
+    p.punish = clamp(d.pressure, 0.05, 0.95);
+    p.dash = clamp(d.dash / 6, 0, 0.6);
+    p.idle = 0.02;
+  },
+  defend(ai, fam, roll) {
+    const D = ai.dna.def, f = ai.f;
+    // a counter only comes off if the clone's timing (owner's level) is good enough
+    const pc = D.counter * clamp(COUNTER_SKILL[f.styleId][fam] * 1.2, 0.4, 1.2);
+    if (roll < pc) return 'parry';
+    if (roll < pc + D.block) return 'block';
+    if (roll < pc + D.block + D.dodge) return 'evade';
+    return 'none';
+  },
+  dodgeDir(ai) {
+    const D = ai.dna.dodge, f = ai.f, fd = f.dirTo(), r = Math.random() * (D.still + D.side + D.back);
+    if (r < D.still) return new THREE.Vector2();
+    if (r < D.still + D.side) { const s = Math.random() < 0.5 ? 1 : -1; return new THREE.Vector2(-fd.y * s, fd.x * s); }
+    return new THREE.Vector2(-fd.x, -fd.y);
+  },
+  chain(ai, slot) {
+    const d = ai.dna, plan = []; let cur = slot;
+    while (DNA_ATK.includes(cur) && plan.length < 3 && Math.random() < d.chain) {
+      const row = d.seq[cur]; let r = Math.random() * (row.light + row.medium + row.heavy), nx = 'light';
+      for (const k of DNA_ATK) { if ((r -= row[k]) <= 0) { nx = k; break; } }
+      plan.push(nx); cur = nx;
+    }
+    return plan;
+  },
+  // a CPU copy of a fighter profile (used for sparring your clone and turf defenders)
+  cloneCfg(p, label) {
+    return { name: p.name + (label || ''), nick: p.nick || '', style: p.style, look: { ...p.look }, stats: { ...p.stats }, evolved: !!p.evolved, dna: p.dna || DNA.blank(), level: p.level || 1, clone: true };
+  },
+  cloneDiff(level) { return clamp(1 + Math.floor((level || 1) / 5), 1, 4); },
+  // ---------- describing it ----------
+  describe(p) {
+    const d = p.dna; if (!d || !d.n) return null;
+    const S = STYLES[p.style].moves;
+    const fav = DNA_ATK.slice().sort((a, b) => d.mix[b] - d.mix[a]);
+    let path = [fav[0]], cur = fav[0];
+    for (let i = 0; i < 2; i++) { const row = d.seq[cur]; const nx = DNA_ATK.slice().sort((a, b) => row[b] - row[a])[0]; if (d.chain < 0.15) break; path.push(nx); cur = nx; }
+    const kind = d.aggr > 1.3 ? 'Pressure fighter' : d.aggr > 0.75 ? 'Balanced' : 'Patient counter-striker';
+    const range = d.range < 1.1 ? 'in the pocket' : d.range < 1.5 ? 'mid range' : 'long range';
+    const topDef = Object.entries(d.def).sort((a, b) => b[1] - a[1])[0][0];
+    const defWord = { block: 'Shell up and block', dodge: 'Slip and dodge', counter: 'Look for the counter', none: 'Trade shots' }[topDef];
+    return { kind, range, chain: path.map((s) => MOVES[S[s]].name).join(' → '), defWord, d };
+  },
+};
+class DnaRecorder {
+  constructor(f) {
+    this.f = f; this.time = 0;
+    this.att = { light: 0, medium: 0, heavy: 0, super: 0, counter: 0 };
+    this.big = { light: { light: 0, medium: 0, heavy: 0 }, medium: { light: 0, medium: 0, heavy: 0 }, heavy: { light: 0, medium: 0, heavy: 0 } };
+    this.chainYes = 0; this.lastAtk = null; this.lastId = -1;
+    this.inRangeT = 0; this.inRangeAtk = 0; this.rangeSum = 0; this.rangeN = 0; this.sampleT = 0;
+    this.threats = new Map(); this.def = { block: 0, dodge: 0, counter: 0, none: 0 }; this.dodge = { still: 0, side: 0, back: 0 };
+    this.press = { yes: 0, n: 0 }; this.pressUntil = 0; this.gnd = { yes: 0, n: 0 }; this.gndOpen = false;
+    this.dashes = 0; this.prevDash = 0; this.oppPrev = new Map();
+  }
+  update(dt) {
+    const f = this.f, o = f.opp; if (!o || f.state === 'ko') return;
+    this.time += dt;
+    const now = Game.time, d = f.dist();
+    // my own actions
+    const A = f.anim;
+    if (A && A.id !== this.lastId && ['attack', 'parry', 'dodge'].includes(f.state)) {
+      this.lastId = A.id;
+      if (f.state === 'parry') this.att.counter++;
+      else if (f.state === 'dodge') { const n = A.a && A.a.name || ''; this.dodge[/bob_/.test(n) ? 'still' : /dodgeB/.test(n) ? 'back' : 'side']++; }
+      else if (A.move && A.move.ground) { if (this.gndOpen) { this.gnd.yes++; this.gndOpen = false; } }
+      else if (A.slot && this.att[A.slot] !== undefined && A.slot !== 'counter') {
+        this.att[A.slot]++;
+        if (d < 2.6) this.inRangeAtk++;
+        if (DNA_ATK.includes(A.slot)) {
+          if (this.lastAtk && now - this.lastAtk.t < 1.1 && DNA_ATK.includes(this.lastAtk.slot)) { this.big[this.lastAtk.slot][A.slot]++; this.chainYes++; }
+          this.lastAtk = { slot: A.slot, t: now };
+        }
+        if (this.pressUntil && now < this.pressUntil) { this.press.yes++; this.pressUntil = 0; }
+      }
+    }
+    if (f.dashT > 0 && this.prevDash <= 0) this.dashes++;
+    this.prevDash = f.dashT;
+    // incoming attacks: what did I do about them?
+    for (const x of Game.fighters) {
+      if (x === f) continue;
+      const prev = this.oppPrev.get(x);
+      if (x.opp === f && x.state === 'hit' && prev !== 'hit') { this.press.n++; this.pressUntil = now + 0.75; }
+      if (x.state === 'down' && prev !== 'down') { this.gnd.n++; this.gndOpen = true; }
+      this.oppPrev.set(x, x.state);
+      if (x.opp === f && x.state === 'attack' && x.anim && x.anim.move && !x.anim.move.ground && !this.threats.has(x.anim.id)) {
+        const M = x.anim.move, first = (M.kind === 'grapple' ? M.grab : M.hits[0]);
+        this.threats.set(x.anim.id, { until: now + Math.max(0.1, (first - x.anim.t) / x.anim.rate) + 0.08, done: false });
+      }
+    }
+    for (const [id, t] of this.threats) {
+      if (t.done) { if (now > t.until + 2) this.threats.delete(id); continue; }
+      const k = f.state === 'block' ? 'block' : f.state === 'dodge' ? 'dodge' : f.state === 'parry' ? 'counter' : null;
+      if (k) { this.def[k]++; t.done = true; } else if (now > t.until) { this.def.none++; t.done = true; }
+    }
+    // spacing and work rate
+    this.sampleT -= dt;
+    if (this.sampleT <= 0) { this.sampleT = 0.2; if (f.canAct && d < 4 && o.state !== 'down' && o.state !== 'ko') { this.rangeSum += d; this.rangeN++; } }
+    if (d < 2.4 && !['hit', 'down', 'getup', 'grappled'].includes(f.state)) this.inRangeT += dt;
+  }
+  sample() {
+    const A = this.att, tot = A.light + A.medium + A.heavy + A.super + A.counter;
+    if (tot < 6) return null; // not enough to learn from
+    const norm = (o) => { const s = Object.values(o).reduce((a, b) => a + b, 0); if (!s) return null; const r = {}; for (const k in o) r[k] = o[k] / s; return r; };
+    const seq = {}; for (const k of DNA_ATK) seq[k] = norm(this.big[k]);
+    const atk3 = A.light + A.medium + A.heavy;
+    const threats = Object.values(this.def).reduce((a, b) => a + b, 0);
+    const dodges = this.dodge.still + this.dodge.side + this.dodge.back;
+    return {
+      mix: norm(A), seq,
+      chain: atk3 ? clamp(this.chainYes / atk3, 0, 0.9) : null,
+      aggr: this.inRangeT > 4 ? clamp(this.inRangeAtk / this.inRangeT, 0.1, 3) : null,
+      range: this.rangeN > 10 ? this.rangeSum / this.rangeN : null,
+      dash: this.time > 10 ? clamp(this.dashes / this.time * 60, 0, 12) : null,
+      def: threats >= 4 ? norm(this.def) : null,
+      dodge: dodges >= 2 ? norm(this.dodge) : null,
+      pressure: this.press.n >= 3 ? this.press.yes / this.press.n : null,
+      ground: this.gnd.n >= 1 ? this.gnd.yes / this.gnd.n : null,
+    };
   }
 }
 /* =====================================================================
@@ -2606,12 +3082,26 @@ const Cam = {
       let perp = new THREE.Vector2(-ax.y, ax.x);
       if (this.side && perp.dot(this.side) < 0) perp.negate();
       if (!this.side && this.flip) perp.negate(); // online guest sees themselves on the left
+      if (Game.arena === 'city' && perp.y < -0.2) perp.negate(); // keep the camera on the open park side
       this.side = this.side ? this.side.lerp(perp, 1 - Math.exp(-dt * 3)).normalize() : perp.clone();
       const dist = clamp(3.3 + sep * 1.05, 4.3, 9.5) * (1 - this.zoomPunch * 0.25);
       wantPos.set(mid.x + this.side.x * dist, 1.55 + sep * 0.16, mid.y + this.side.y * dist);
       // pull the camera in a little toward the centre so the far fence frames the action
       wantPos.x -= mid.x * 0.12; wantPos.z -= mid.y * 0.12;
       wantLook.set(mid.x, 1.05, mid.y);
+    } else if (this.mode === 'street' && F.length) {
+      // brawl camera: fixed angle from the park side, framing me and whoever is close
+      const P = Game.match && Game.match.P ? Game.match.P : F[0];
+      let cx = P.pos.x, cz = P.pos.y, n = 1, spread = 0;
+      for (const f of F) {
+        if (f === P || f.state === 'ko') continue;
+        const d = f.pos.distanceTo(P.pos); if (d > 6) continue;
+        const w = f === P.opp ? 1.2 : 0.6; cx += f.pos.x * w; cz += f.pos.y * w; n += w; spread = Math.max(spread, d);
+      }
+      cx /= n; cz /= n;
+      const dist = clamp(7.2 + spread * 0.5, 7.6, 11) * (1 - this.zoomPunch * 0.2);
+      wantPos.set(cx * 0.9 - 1.0, 4.1 + spread * 0.25, cz + dist);
+      wantLook.set(cx, 1.0, cz - 0.4);
     } else if (this.mode === 'replay' && Replay.focus) {
       // tight, low, slowly orbiting shot of the final blow
       const fp = Replay.focus, ax = Replay.axis || new THREE.Vector2(1, 0);
@@ -2651,7 +3141,7 @@ const Cam = {
     }
     this.zoomPunch *= Math.exp(-dt * 3);
     cam.lookAt(this.look);
-    Arena.fadeFence(cam.position);
+    if (Game.arena === 'city') City.fade(cam.position, this.look); else Arena.fadeFence(cam.position);
   },
 };
 
@@ -2660,7 +3150,7 @@ const Replay = {
   buf: [], t: 0, active: false, koT: 0, speed: 0.28,
   reset() { this.buf = []; this.t = 0; this.active = false; this.koT = 0; },
   record(dt) {
-    if (dt <= 0 || this.active || Game.fighters.length < 2) return;
+    if (dt <= 0 || this.active || Game.fighters.length !== 2) return;
     this.t += dt;
     this.buf.push({ t: this.t, f: Game.fighters.map((f) => ({ x: f.pos.x, z: f.pos.y, yaw: f.yaw, P: Float32Array.from(f.P), aim: { head: f.aim.head.clone(), body: f.aim.body.clone(), leg: f.aim.leg.clone() } })) });
     while (this.buf.length && this.t - this.buf[0].t > 2.4) this.buf.shift();
@@ -2756,7 +3246,22 @@ const allMaxed = (p) => STATS.every((s) => p.stats[s.id] >= STAT_MAX);
 const Game = {
   time: 0, stopT: 0, slowT: 0, slowScale: 1, paused: false,
   scene: null, camera: null, renderer: null,
-  fighters: [], ais: [], match: null, mode: 'menu',
+  fighters: [], ais: [], match: null, mode: 'menu', arena: 'octagon',
+  setArena(name) {
+    if (name === 'city') City.build(this.scene);
+    this.arena = name;
+    const city = name === 'city';
+    Arena.group.visible = !city; Arena.hemi.visible = !city; for (const L of Arena.lights) L.visible = !city;
+    if (City.group) City.group.visible = city;
+    if (city) City.setTime(City.time); else { this.scene.background.set('#0a0c12'); this.scene.fog.color.set('#0a0c12'); }
+    this.scene.fog.near = city ? 24 : 16; this.scene.fog.far = city ? 80 : 44;
+  },
+  clampPos(p) { return this.arena === 'city' ? City.clamp(p) : clampToOctagon(p); },
+  // is this fighter slowed by someone's perfect dodge? (in a street fight, all the attackers are)
+  slowedBy(f) {
+    const W = this.witchWho; if (!(this.witchT > 0) || !W || f === W) return false;
+    return f === W.opp || (this.match && this.match.multi && W === this.match.P);
+  },
   practiceDummy: null, practiceInfinite: false, exhibition: false,
   onHit: null, onKO: null, onCombo: null,
   hitstop(t) { if (this.mode !== 'fight') return; this.stopT = Math.max(this.stopT, t); },
@@ -2782,7 +3287,7 @@ const Game = {
     A.pos.set(-1.4, 0); B.pos.set(1.4, 0); A.yaw = Math.PI / 2; B.yaw = -Math.PI / 2;
     this.scene.add(A.rig.root); this.scene.add(B.rig.root);
     this.fighters = [A, B];
-    this.ais = [aiA ? new AI(A, aiA.diff, aiA.mode) : null, aiB ? new AI(B, aiB.diff, aiB.mode) : null];
+    this.ais = [aiA ? new AI(A, aiA.diff, aiA.mode, cfgA.dna) : null, aiB ? new AI(B, aiB.diff, aiB.mode, cfgB.dna) : null];
     return [A, B];
   },
 };
@@ -2802,6 +3307,8 @@ class Match {
     Cam.flip = false;
     this.P = P; this.C = C;
     if (o.mode === 'practice') { Game.practiceDummy = C; C.D.dmg *= 0.5; }
+    if (o.arena) { City.setTime(o.time || 'night'); Game.setArena(o.arena); }
+    if (o.mode !== 'online') DNA.start(P); else DNA.stop(); // learn how this player fights
     Game.mode = 'fight'; Cam.mode = 'fight'; Cam.side = null; Cam.snap();
     Game.onKO = (att, vic, kind, M) => this.ko(att, vic, kind, M);
     Game.onHit = (att, vic, dmg) => { if (o.mode === 'practice' && att === P) { this.practiceHits++; this.addPXP(1); } };
@@ -2916,6 +3423,7 @@ class Match {
     if (won && hpPct >= 0.7) lines.push(['DOMINATION bonus', Math.round(90 * m)]);
     if (won && hpPct >= 0.999) lines.push(['FLAWLESS', Math.round(120 * m)]);
     if (won && hpPct < 0.15) lines.push(['Comeback', 40]);
+    if (won && this.o.mode === 'turf') lines.push(['TURF TAKEN', Math.round(120 * m)]);
     // mode extras
     let extra = null;
     if (this.o.mode === 'tourney') extra = Tourney.afterFight(prof, won, lines, m);
@@ -2927,12 +3435,15 @@ class Match {
     const total = lines.reduce((a, b) => a + b[1], 0);
     if (won) prof.wins++; else prof.losses++;
     if (won && r.method !== 'DEC') prof.kos++;
+    DNA.finish(prof);
     const lvBefore = prof.level;
     const ups = grantXP(prof, total);
+    if (this.o.onReport) this.o.onReport(won, this);
     UI.results({ r, lines, total, ups, lvBefore, prof, mode: this.o.mode, extra, opp: this.C, bossIdx: this.o.bossIdx });
   }
   exitPractice() {
     const prof = this.o.profile;
+    DNA.finish(prof);
     const ups = this.practiceXP > 0 ? grantXP(prof, this.practiceXP) : 0;
     return { xp: this.practiceXP, ups };
   }
@@ -2982,6 +3493,402 @@ const Tourney = {
 };
 const nameOf = (id) => (id === 'P' ? (activeFighter() || {}).name : (ROSTER.find((r) => r.id === id) || {}).name || id);
 /* =====================================================================
+   STREET FIGHT — you get jumped on a closed-off city street.
+   Waves of attackers; at most a few swing at once (the rest circle and
+   wait their turn), the last wave brings the crew's leader.
+   ===================================================================== */
+const THUG_NAMES = ['Spike', 'Knuckles', 'Dre', 'Vinnie', 'Mack', 'Rico', 'Tank', 'Slim', 'Bones', 'Ziggy', 'Duke', 'Hector', 'Lefty', 'Nico', 'Brick', 'Sully', 'Jojo', 'Kane', 'Marco', 'Ty', 'Rook', 'Vex', 'Gus', 'Pike', 'Benny', 'Cruz', 'Moose', 'Flint'];
+const GANGS = [
+  { id: 'vipers', name: 'Neon Vipers', color: '#3dfc9a', boss: 'Viper Queen' },
+  { id: 'kings', name: 'Harbor Kings', color: '#ffd23f', boss: 'Dock King' },
+  { id: 'ghosts', name: 'Alley Ghosts', color: '#c7c7d9', boss: 'The Phantom' },
+  { id: 'reds', name: 'Red Lanterns', color: '#ff4d6d', boss: 'Lantern Boss' },
+  { id: 'wolves', name: 'Iron Wolves', color: '#4dd2ff', boss: 'Alpha' },
+  { id: 'saints', name: 'Night Saints', color: '#c77dff', boss: 'The Bishop' },
+];
+const STREET_WAVES = [{ n: 2 }, { n: 3 }, { n: 3 }, { n: 4 }, { n: 3, leader: true }];
+function thugLook(gang, leader) {
+  const ri = (n) => (Math.random() * n) | 0;
+  const shirts = ['#2b2f3a', '#1c1c22', '#5a5f6e', '#7a2a2a', '#2a4a7a', '#3a5a3a', '#d9d9d9', '#6b4a2a'];
+  const pants = ['#2b3d6b', '#1c1c22', '#3a3f4c', '#4a3b2a', '#2a4a5a', '#3b5a8a'];
+  const hood = Math.random() < 0.35;
+  return { skin: ri(8), hair: pick(HAIR), hairCol: ri(7), beard: pick(BEARD), shorts: 0, gloves: 2, build: leader ? 'heavy' : pick(BUILDS), height: leader ? 'tall' : pick(HEIGHTS), top: 'none',
+    street: { shirt: leader || Math.random() < 0.45 ? gang.color : pick(shirts), pants: pick(pants), shoes: pick(['#e9e6dc', '#1b1b1f', '#c0262e', '#2a5bd7']), hood,
+      cap: !hood && Math.random() < 0.3 ? pick([gang.color, '#1b1b1f', '#c0262e']) : null, beanie: !hood && Math.random() < 0.15 ? pick(['#1b1b1f', '#7a2a2a']) : null,
+      shades: leader || Math.random() < 0.12, print: Math.random() < 0.4 ? shade(gang.color, 0.6) : null } };
+}
+function thugCfg(gang, tier, leader) {
+  const style = pick(STYLE_IDS), rank = DIFFS[tier].rank;
+  return { name: leader ? gang.boss : pick(THUG_NAMES), nick: gang.name, style, look: thugLook(gang, leader), stats: botStats(style, leader ? rank + 1 : Math.max(1, rank - 2)), evolved: leader && tier >= 3, thug: true, leader };
+}
+const Street = {
+  ehp: null,
+  clearHud() { if (this.ehp) this.ehp.innerHTML = ''; },
+  bars(match) { // little health bars over each attacker's head
+    if (!this.ehp) { this.ehp = document.createElement('div'); this.ehp.id = 'ehp'; document.body.appendChild(this.ehp); }
+    const E = match.enemies;
+    while (this.ehp.children.length < E.length) { const d = document.createElement('div'); d.className = 'ehb'; d.innerHTML = '<span></span><b><i></i></b>'; this.ehp.appendChild(d); }
+    [...this.ehp.children].forEach((el, i) => {
+      const f = E[i];
+      if (!f || f.state === 'ko' || !f.rig.root.visible || match.over) { el.style.display = 'none'; return; }
+      const s = FX.project(new THREE.Vector3(f.pos.x, 2.25, f.pos.y));
+      if (!s.ok) { el.style.display = 'none'; return; }
+      el.style.display = ''; el.style.left = s.x + 'px'; el.style.top = s.y + 'px';
+      el.classList.toggle('tgt', f === match.P.opp); el.classList.toggle('boss', !!f.cfg.leader);
+      el.firstChild.textContent = f.name; el.querySelector('i').style.width = clamp(f.hp / f.maxHp, 0, 1) * 100 + '%';
+    });
+  },
+};
+class StreetMatch {
+  constructor(o) {
+    this.o = o; this.multi = true;
+    this.tier = o.tier; this.gang = o.gang || pick(GANGS); this.waves = o.waves || STREET_WAVES;
+    this.wave = 0; this.phase = 'intro'; this.phaseT = 0; this.over = false; this.result = null; this.kos = 0; this.t = 0;
+    this.round = 1; this.rounds = this.waves.length; this.clock = 0;
+    Replay.reset();
+    Game.setArena('city'); City.setTime(o.time || 'night');
+    const P = new Fighter(playerCfg(o.profile));
+    P.pos.set(0, 0.6); P.yaw = 0;
+    Game.scene.add(P.rig.root);
+    Game.fighters = [P]; Game.ais = [null];
+    this.P = P; this.enemies = []; this.C = null;
+    this.spawnWave(true);
+    Game.mode = 'fight'; Cam.mode = 'street'; Cam.side = null; Cam.flip = false; Cam.snap();
+    Game.onKO = (att, vic) => this.ko(att, vic);
+    Game.onHit = null; Game.onCombo = null;
+    DNA.start(P);
+    UI.hud(true, this);
+    UI.banner(o.title || 'STREET FIGHT', o.sub || `The ${esc(this.gang.name)} jumped you. Survive ${this.waves.length} waves.`);
+    Sound.crowd(0); Sound.bell(1);
+  }
+  spawnWave(first) {
+    const W = this.waves[this.wave], P = this.P;
+    const n = W.n + (W.leader ? 1 : 0);
+    for (let i = 0; i < n; i++) {
+      const leader = W.leader && i === 0;
+      const cfg = thugCfg(this.gang, this.tier, leader);
+      const f = new Fighter(cfg);
+      // regular thugs have less health than real fighters; the leader is the real deal
+      const hpK = leader ? 1.0 : 0.5 + this.tier * 0.04;
+      f.maxHp = Math.round(f.maxHp * hpK); f.hp = f.maxHp;
+      f.opp = P;
+      // first wave surrounds you; later ones run in from the road ends
+      if (first) { const a = (i / n) * TAU + rand(-0.3, 0.3) + Math.PI / 2; f.pos.set(P.pos.x + Math.cos(a) * 3.6, P.pos.y + Math.sin(a) * 2.6); }
+      else { const sx = i % 2 ? 1 : -1; f.pos.set(sx * rand(7.2, 8.2), rand(-2.6, 2.6)); }
+      Game.clampPos(f.pos);
+      f.yaw = Math.atan2(P.pos.x - f.pos.x, P.pos.y - f.pos.y);
+      Game.scene.add(f.rig.root);
+      Game.fighters.push(f);
+      const ai = new AI(f, leader ? Math.min(5, this.tier + 1) : Math.max(0, this.tier - 1), 'fight');
+      ai.p.react *= leader ? 1 : 1.15;
+      Game.ais.push(ai);
+      this.enemies.push(f);
+    }
+    if (!P.opp || P.opp.state === 'ko') P.opp = this.nearest();
+    this.C = P.opp;
+  }
+  get live() { return this.phase === 'fight' || this.phase === 'wave'; }
+  alive() { return this.enemies.filter((f) => f.state !== 'ko'); }
+  nearest() {
+    let best = null, bd = 1e9;
+    for (const f of this.alive()) { const d = f.pos.distanceTo(this.P.pos); if (d < bd) { bd = d; best = f; } }
+    return best || this.enemies[this.enemies.length - 1] || null;
+  }
+  // pick who my attacks go to: close, in front of me, and in the direction I'm pushing
+  retarget() {
+    const P = this.P, cur = P.opp;
+    if (['attack', 'parry', 'grappled', 'dodge'].includes(P.state) || P.grapple) { if (cur && cur.state !== 'ko') return; }
+    const fx = Math.sin(P.yaw), fz = Math.cos(P.yaw);
+    const I = P.intent; const mv = P.vel.length() > 0.3 ? P.vel.clone().normalize() : null;
+    let best = null, bs = 1e9;
+    for (const f of this.alive()) {
+      const dx = f.pos.x - P.pos.x, dz = f.pos.y - P.pos.y, d = Math.hypot(dx, dz) || 1e-3;
+      const facing = (dx * fx + dz * fz) / d, push = mv ? (dx * mv.x + dz * mv.y) / d : 0;
+      let s = d - facing * 0.9 - push * 0.6;
+      if (f === cur) s -= 0.6; // sticky
+      if (f.state === 'down') s += 1.2;
+      if (s < bs) { bs = s; best = f; }
+    }
+    if (best && best !== cur) { P.opp = best; this.C = best; }
+    void I;
+  }
+  tokens() { // who's allowed to swing right now
+    const W = this.waves[this.wave] || {}, K = (this.tier >= 2 ? 2 : 1) + (W.leader ? 1 : 0);
+    const A = this.alive().sort((a, b) => a.pos.distanceTo(this.P.pos) - b.pos.distanceTo(this.P.pos));
+    let used = 0;
+    for (const f of this.enemies) if (f.state === 'ko') f.token = false;
+    for (const f of A) if (f.state === 'attack' || f.grapple) { f.token = true; used++; }
+    for (const f of A) { if (f.state === 'attack' || f.grapple) continue; f.token = used < K; if (f.token) used++; }
+  }
+  update(dt, real) {
+    this.phaseT += real; this.t += dt;
+    const P = this.P;
+    if (this.phase === 'intro') {
+      for (const f of Game.fighters) { f.intent.fwd = 0; f.intent.side = 0; f.intent.block = false; f.intent.attack = null; }
+      if (this.phaseT > 2.0 && !this.goShown) { this.goShown = true; UI.banner('FIGHT!', ''); Sound.cheer(0.4); }
+      if (this.phaseT > 2.6) { this.phase = 'fight'; UI.banner(''); }
+      return false;
+    }
+    if (this.phase === 'wave') {
+      if (this.phaseT > 2.6) { this.phase = 'fight'; this.phaseT = 0; UI.banner(''); this.spawnWave(false); }
+      return true;
+    }
+    if (this.phase === 'fight') {
+      if (!this.alive().length) {
+        this.wave++;
+        if (this.wave >= this.waves.length) { this.win(); return false; }
+        this.phase = 'wave'; this.phaseT = 0;
+        P.hp = Math.min(P.maxHp, P.hp + P.maxHp * 0.25); P.stam = P.maxStam; P.guard = P.maxGuard;
+        const last = this.wave === this.waves.length - 1 && this.waves[this.wave].leader;
+        UI.banner('WAVE ' + (this.wave + 1), last ? esc(this.gang.boss) + ' is coming. +25% health' : 'More of them. +25% health');
+        Sound.bell(1);
+      }
+      return true;
+    }
+    if (this.phase === 'end') {
+      if (this.phaseT > 0.9 && !this.celebrated) {
+        this.celebrated = true;
+        const w = this.result.playerWon ? P : (this.alive()[0] || P.opp);
+        if (this.result.playerWon && P.state !== 'ko') { P.state = 'victory'; P.playAnim('victory'); }
+        Cam.mode = 'ko'; Cam.focus = w; Cam.t = 0;
+        const sp = Cam.pos.clone().sub(new THREE.Vector3(w.pos.x, 0, w.pos.y)); Cam.koA = Math.atan2(sp.z, sp.x);
+      }
+      if (this.phaseT > 4.2 && !this.reported) { this.reported = true; this.report(); }
+    }
+    return false;
+  }
+  afterStep() {
+    if (this.over && this.phase === 'end') return;
+    this.retarget(); this.tokens();
+    // clear away knocked-out attackers after a moment
+    for (let i = this.enemies.length - 1; i >= 0; i--) {
+      const f = this.enemies[i];
+      if (f.state === 'ko' && f.koT > 2.6 && f !== this.P.opp) {
+        f.rig.dispose();
+        const k = Game.fighters.indexOf(f); Game.fighters.splice(k, 1); Game.ais.splice(k, 1);
+        this.enemies.splice(i, 1);
+      }
+    }
+    if (this.P.opp && this.P.opp.state === 'ko' && this.alive().length) { this.P.opp = this.nearest(); this.C = this.P.opp; }
+  }
+  ko(att, vic) {
+    if (this.over) return;
+    if (vic === this.P) {
+      this.finish(false);
+      UI.banner('YOU GOT DROPPED', 'Wave ' + (this.wave + 1) + ' of ' + this.waves.length);
+      Game.slowmo(1.0, 0.3); Sound.slam(); Cam.shake(0.4);
+      return;
+    }
+    this.kos++;
+    FX.text(vic, vic.cfg.leader ? 'LEADER DOWN!' : 'K.O.', vic.cfg.leader ? '#f3b928' : '#ff7a1a', vic.cfg.leader ? 1.4 : 1);
+    Sound.slam(); Cam.shake(0.2); Game.hitstop(0.08);
+    if (vic.cfg.leader) Game.slowmo(0.8, 0.3);
+    vic.intent.fwd = vic.intent.side = 0;
+  }
+  win() {
+    this.finish(true);
+    UI.banner('STREETS CLEARED', esc(this.gang.name) + ' ran off');
+    Sound.bell(3); Sound.cheer(1);
+  }
+  finish(won) {
+    this.over = true; this.phase = 'end'; this.phaseT = 0;
+    this.result = { playerWon: won, winner: won ? this.P : (this.P.opp || this.P), loser: won ? (this.enemies[0] || this.P) : this.P, method: won ? 'CLEARED' : 'KO', round: this.wave + 1, time: this.t };
+    for (let i = 0; i < Game.ais.length; i++) if (Game.ais[i]) { Game.ais[i] = null; }
+    for (const f of Game.fighters) { f.intent.fwd = 0; f.intent.side = 0; f.intent.block = false; f.intent.attack = null; }
+    Street.clearHud();
+  }
+  afterReplay() {}
+  report() {
+    const prof = this.o.profile, P = this.P, won = this.result.playerWon;
+    const m = DIFFS[this.tier].xp, lines = [];
+    const cleared = won ? this.waves.length : this.wave;
+    lines.push(['Attackers knocked out (' + this.kos + ')', Math.round(this.kos * 12 * m)]);
+    if (cleared) lines.push(['Waves cleared (' + cleared + '/' + this.waves.length + ')', Math.round(cleared * 30 * m)]);
+    if (won) lines.push([this.o.district ? 'TURF TAKEN' : 'STREETS CLEARED', Math.round(150 * m)]);
+    if (won && P.hp / P.maxHp >= 0.6) lines.push(['Untouchable bonus', Math.round(80 * m)]);
+    lines.push(['Strikes landed (' + P.stats_.landed + ')', Math.min(80, P.stats_.landed)]);
+    if (P.stats_.combos) lines.push(['Combos (' + P.stats_.combos + ')', P.stats_.combos * 5]);
+    if (P.stats_.parries) lines.push(['Counters (' + P.stats_.parries + ')', P.stats_.parries * 6]);
+    const total = lines.reduce((a, b) => a + b[1], 0);
+    if (!this.o.district) { prof.street = prof.street || {}; prof.street[this.tier] = Math.max(prof.street[this.tier] || 0, cleared); }
+    DNA.finish(prof);
+    const lvBefore = prof.level; const ups = grantXP(prof, total);
+    if (this.o.onReport) this.o.onReport(won, this);
+    UI.streetResult = { won, lines, total, ups, lvBefore, prof, kos: this.kos, cleared, waves: this.waves.length, gang: this.gang, tier: this.tier, district: this.o.district, opts: this.o };
+    UI.hud(false); UI.banner('');
+    UI.go('streetResults');
+  }
+}
+function startStreet(opts) {
+  Sound.init();
+  UI.lastStreetOpts = opts;
+  UI.hide(); Preview.clear(); cleanupFight();
+  Sound.fx = true; FX.enabled = true; $('#pops').innerHTML = '';
+  Game.match = new StreetMatch(opts);
+}
+/* =====================================================================
+   TURF WARS — one city, twenty blocks. Beat the local crew to claim a
+   block; players' blocks are guarded by a CPU clone of the owner that
+   uses their style, stats and learned Fight DNA. Shared through the
+   Supabase project when the "turf" table exists, otherwise a local city
+   where rival crews hold some blocks.
+   ===================================================================== */
+const TURF_COLS = 5, TURF_ROWS = 4;
+const TURF_NAMES = [
+  'Harbor', 'Fish Market', 'Old Docks', 'Lighthouse', 'Shipyard',
+  'Chinatown', 'Neon Row', 'Central Park', 'Arcade Strip', 'Little Italy',
+  'Riverside', 'Downtown', 'City Hall', 'Financial', 'Uptown',
+  'Railyard', 'The Projects', 'Midtown', 'Skid Row', 'Hillside',
+];
+const TURF = TURF_NAMES.map((name, i) => {
+  const c = i % TURF_COLS, r = (i / TURF_COLS) | 0;
+  const core = Math.hypot(c - 2, (r - 1.5) * 1.3); // the middle of the map is the hardest
+  const tier = clamp(Math.round(4 - core * 1.45), 0, 4);
+  return { id: 'd' + i, i, name, c, r, tier, gang: GANGS[(i * 7 + 3) % GANGS.length], time: ['night', 'dusk', 'night', 'day'][(i * 5 + 1) % 4] };
+});
+const TURF_SQL = `-- Pixel Octagon: shared Turf Wars city (run once)
+create table if not exists public.turf (
+  id text primary key,
+  owner_id text,
+  owner_name text,
+  fighter jsonb,
+  dna jsonb,
+  claimed_at timestamptz default now(),
+  defenses int default 0,
+  last_event text
+);
+alter table public.turf enable row level security;
+drop policy if exists "turf read" on public.turf;
+drop policy if exists "turf write" on public.turf;
+create policy "turf read" on public.turf for select using (true);
+create policy "turf write" on public.turf for update using (true) with check (true);
+grant select, update on public.turf to anon;
+insert into public.turf (id) select 'd' || g from generate_series(0, 19) g on conflict do nothing;`;
+const TURF_LOCAL_KEY = 'pixelOctagon.turf.v1';
+// talk to the project's REST API directly: one quick request, no extra library
+async function sbRest(method, query, body) {
+  const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 7000);
+  try {
+    const res = await fetch(SB_URL + '/rest/v1/turf' + query, { method, signal: ctl.signal,
+      headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+      body: body ? JSON.stringify(body) : undefined });
+    const txt = await res.text(); let data = null; try { data = txt ? JSON.parse(txt) : null; } catch (e) { data = null; }
+    if (!res.ok) { const m = data && (data.message || data.hint) || ('HTTP ' + res.status); throw new Error(res.status === 404 || /does not exist|schema cache/i.test(m) ? 'the turf table isn\'t set up yet' : m); }
+    return data;
+  } catch (e) { throw e && e.name === 'AbortError' ? new Error('timed out') : e; } finally { clearTimeout(to); }
+}
+const Turf = {
+  rows: {}, mode: 'loading', err: '', sel: null, loadedAt: 0, note: '', busy: false,
+  hue(id) { let h = 0; for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) % 360; return h; },
+  me() { return activeFighter(); },
+  isMine(row) { const p = this.me(); return !!(row && p && row.owner_id === p.id); },
+  fighterOf(p) { return { name: p.name, nick: p.nick, style: p.style, look: p.look, stats: p.stats, evolved: p.evolved, level: p.level }; },
+  // ---------- storage ----------
+  async load() {
+    if (this.busy) return; this.busy = true;
+    this.mode = 'loading'; this.refresh();
+    let ok = false;
+    try {
+      const data = await sbRest('GET', '?select=*');
+      if (!Array.isArray(data) || data.length < TURF.length) throw new Error('the turf table has no blocks yet');
+      this.rows = {}; for (const r of data) this.rows[r.id] = r;
+      this.mode = 'shared'; ok = true;
+    } catch (e) {
+      this.err = (e && e.message) === 'Failed to fetch' ? 'can\'t reach the online service from here' : (e && e.message) || 'unreachable';
+      this.loadLocal(); this.mode = 'local';
+    }
+    this.loadedAt = Date.now(); this.busy = false;
+    this.checkLosses();
+    if (ok) this.syncClones();
+    this.refresh();
+  },
+  loadLocal() {
+    let st = null;
+    try { st = JSON.parse(localStorage.getItem(TURF_LOCAL_KEY) || 'null'); } catch (e) { st = null; }
+    if (!st || !st.rows) { st = { rows: {} }; this.seedLocal(st.rows); }
+    this.rows = st.rows;
+  },
+  saveLocal() { try { localStorage.setItem(TURF_LOCAL_KEY, JSON.stringify({ rows: this.rows })); } catch (e) { /* storage blocked */ } },
+  // offline: rival crews (roster fighters with their own habits) already hold some blocks
+  seedLocal(rows) {
+    for (const d of TURF) rows[d.id] = { id: d.id, owner_id: null, owner_name: null, fighter: null, dna: null, defenses: 0, last_event: null };
+    const rivals = [...ROSTER].sort(() => Math.random() - 0.5).slice(0, 6);
+    const spots = [...TURF].sort(() => Math.random() - 0.5).slice(0, 6);
+    spots.forEach((d, k) => {
+      const r = rivals[k], lvl = 3 + d.tier * 5 + ((Math.random() * 3) | 0);
+      const dna = DNA.blank(); dna.n = 3;
+      dna.aggr = rand(0.6, 1.6); dna.range = PREF_RANGE[r.style] + rand(-0.1, 0.2); dna.chain = rand(0.15, 0.55);
+      dna.def = { block: rand(0.15, 0.45), dodge: rand(0.05, 0.3), counter: rand(0.02, 0.15), none: 0 }; dna.def.none = Math.max(0.1, 1 - dna.def.block - dna.def.dodge - dna.def.counter);
+      const stats = botStats(r.style, clamp(2 + d.tier * 4, 1, 20));
+      rows[d.id] = { id: d.id, owner_id: 'cpu-' + r.id, owner_name: r.name, fighter: { name: r.name, nick: r.nick, style: r.style, look: r.look, stats, evolved: d.tier >= 4, level: lvl }, dna, defenses: (Math.random() * 4) | 0, last_event: null };
+    });
+  },
+  // ---------- actions ----------
+  async claim(d, prevOwner) {
+    const p = this.me(); const row = this.rows[d.id];
+    const upd = { owner_id: p.id, owner_name: p.name, fighter: this.fighterOf(p), dna: p.dna || DNA.blank(), claimed_at: new Date().toISOString(), defenses: 0, last_event: prevOwner ? 'Taken from ' + (row && row.owner_name || 'someone') + ' by ' + p.name : 'Taken from the ' + d.gang.name + ' by ' + p.name };
+    if (this.mode === 'shared') {
+      try {
+        const data = await sbRest('PATCH', '?id=eq.' + d.id + '&owner_id=' + (prevOwner ? 'eq.' + encodeURIComponent(prevOwner) : 'is.null'), upd);
+        if (!data || !data.length) { this.note = 'Someone else grabbed ' + d.name + ' first. The map is refreshed.'; await this.load(); return false; }
+        this.rows[d.id] = data[0];
+      } catch (e) { this.note = 'Couldn\'t save the claim (' + ((e && e.message) || 'network') + ').'; return false; }
+    } else { this.rows[d.id] = { ...row, ...upd }; this.saveLocal(); }
+    p.turf = p.turf || {}; p.turf[d.id] = 1; persist();
+    return true;
+  },
+  async defended(d, challenger) {
+    const row = this.rows[d.id]; if (!row) return;
+    const upd = { defenses: (row.defenses || 0) + 1, last_event: row.owner_name + '\'s clone beat ' + challenger };
+    if (this.mode === 'shared') { try { await sbRest('PATCH', '?id=eq.' + d.id + '&owner_id=eq.' + encodeURIComponent(row.owner_id), upd); Object.assign(row, upd); } catch (e) { /* not critical */ } }
+    else { Object.assign(row, upd); this.saveLocal(); }
+  },
+  // keep my clones up to date with my latest stats and habits
+  async syncClones() {
+    const p = this.me(); if (!p || this.mode !== 'shared') return;
+    const mine = Object.values(this.rows).filter((r) => r.owner_id === p.id); if (!mine.length) return;
+    try { await sbRest('PATCH', '?owner_id=eq.' + encodeURIComponent(p.id), { fighter: this.fighterOf(p), dna: p.dna || DNA.blank(), owner_name: p.name }); } catch (e) { /* next time */ }
+  },
+  checkLosses() {
+    const p = this.me(); if (!p) return;
+    const had = Object.keys(p.turf || {}), lost = [];
+    for (const id of had) { const r = this.rows[id]; if (!r || r.owner_id !== p.id) { lost.push(TURF.find((d) => d.id === id)); delete p.turf[id]; } }
+    for (const r of Object.values(this.rows)) if (r.owner_id === p.id) { p.turf = p.turf || {}; p.turf[r.id] = 1; }
+    if (lost.length) { this.note = 'While you were away you lost ' + lost.filter(Boolean).map((d) => d.name).join(', ') + '.'; persist(); }
+  },
+  owned() { const p = this.me(); return p ? Object.values(this.rows).filter((r) => r.owner_id === p.id) : []; },
+  // blocks pay a little XP while you hold them (20 an hour each, up to 8 hours banked)
+  tribute() {
+    const p = this.me(); const n = this.owned().length; if (!p || !n) return 0;
+    const since = p.turfCollected || Date.now();
+    return Math.floor(Math.min(8, (Date.now() - since) / 3.6e6) * 20 * n);
+  },
+  collect() {
+    const p = this.me(); const x = this.tribute(); if (!x) return 0;
+    p.turfCollected = Date.now(); grantXP(p, x); return x;
+  },
+  attack(d) {
+    const p = this.me(), row = this.rows[d.id];
+    if (!p || this.isMine(row)) return;
+    if (!p.turfCollected) { p.turfCollected = Date.now(); persist(); }
+    const ownerId = row && row.owner_id;
+    if (!ownerId) { // the local crew holds it: street fight, two waves and their leader
+      startStreet({ mode: 'street', profile: p, tier: d.tier, gang: d.gang, time: d.time, district: d.id, waves: [{ n: 2 }, { n: 2, leader: true }],
+        title: d.name.toUpperCase(), sub: `Take the block from the ${esc(d.gang.name)}`,
+        onReport: (won) => { if (won) Turf.claim(d, null); } });
+      return;
+    }
+    // another player's block: fight their clone one on one, in their street
+    const F = row.fighter || {};
+    const cfg = { ...DNA.cloneCfg({ name: F.name || row.owner_name, nick: F.nick, style: F.style || 'boxing', look: F.look || defaultLook('boxing'), stats: F.stats || botStats('boxing', 4), evolved: F.evolved, level: F.level, dna: row.dna }), name: (F.name || row.owner_name) };
+    cfg.look = { ...cfg.look };
+    const diff = DNA.cloneDiff(F.level);
+    startFight({ mode: 'turf', profile: p, opp: cfg, diff, arena: 'city', time: d.time, label: d.name + ' · ' + row.owner_name + '\'s block',
+      onReport: (won) => { if (won) Turf.claim(d, ownerId); else Turf.defended(d, p.name); } });
+  },
+  refresh() { if (UI.screen === 'turf' && Game.mode !== 'fight' && !UI.el.hidden) { const sc = UI.el.querySelector('.scroll'); const top = sc ? sc.scrollTop : 0; UI.show(SCREENS.turf()); const s2 = UI.el.querySelector('.scroll'); if (s2) s2.scrollTop = top; } },
+};
+/* =====================================================================
    UI — menus, creator, training, HUD, results
    ===================================================================== */
 const KEYCAP = { light: 'J', medium: 'K', heavy: 'L', block: 'I', counter: 'O', super: 'U', dodge: 'SPACE', finisher: 'F' };
@@ -3025,10 +3932,11 @@ const UI = {
   hud(show, match) {
     $('#hud').hidden = !show;
     $('#touch').hidden = !(show && IS_TOUCH);
-    if (!show) { $('#prac').hidden = true; return; }
+    if (!show) { $('#prac').hidden = true; Street.clearHud(); return; }
+    this.hudEls = null;
     const P = match.P, C = match.C;
     $('#nL').textContent = P.name; $('#sL').textContent = STYLES[P.styleId].name + (P.evolved ? ' ★' : '');
-    $('#nR').textContent = C.name; $('#sR').textContent = (C.cfg.boss ? 'BOSS · ' : '') + STYLES[C.styleId].name;
+    $('#nR').textContent = C.name; $('#sR').textContent = foeTag(C);
     $('#supL').innerHTML = '<b></b>'.repeat(5); $('#supR').innerHTML = '<b></b>'.repeat(5);
     const slots = ['light', 'medium', 'heavy', 'block', 'counter', 'super', 'dodge'];
     if (P.evolved) slots.push('finisher');
@@ -3043,7 +3951,7 @@ const UI = {
       ghostL: 1, ghostR: 1,
       sh: [{ el: $('#shL'), cl: $('#clL'), v: $('#svL'), x: 0, y: 0 }, { el: $('#shR'), cl: $('#clR'), v: $('#svR'), x: 0, y: 0 }],
     };
-    $('#dots').innerHTML = match.o.mode === 'practice' ? '' : '<i></i><i></i><i></i>';
+    $('#dots').innerHTML = match.o.mode === 'practice' ? '' : match.multi ? '<i></i>'.repeat(match.waves.length) : '<i></i><i></i><i></i>';
     $('#prac').hidden = match.o.mode !== 'practice';
     if (match.o.mode === 'practice') this.pracPanel(match);
     this.buildTouch();
@@ -3069,7 +3977,11 @@ const UI = {
   pracXP(x, cap) { const a = $('#pxp'), b = $('#pxpbar'); if (a) a.textContent = x; if (b) b.style.width = (x / cap) * 100 + '%'; },
   updateHud(match, dt) {
     const H = this.hudEls; if (!H) return;
-    const P = match.P, C = match.C;
+    const P = match.P, C = match.C; if (!P || !C) return;
+    if (H.lastC !== C) { // street fights: the right-hand bars follow whoever you're targeting
+      if (H.lastC) { $('#nR').textContent = C.name; $('#sR').textContent = foeTag(C); H.ghostR = clamp(C.hp / C.maxHp, 0, 1); }
+      H.lastC = C;
+    }
     const pl = clamp(P.hp / P.maxHp, 0, 1), cl = clamp(C.hp / C.maxHp, 0, 1);
     H.hL.style.width = pl * 100 + '%'; H.hR.style.width = cl * 100 + '%';
     H.hL.classList.toggle('low', pl < 0.3); H.hR.classList.toggle('low', cl < 0.3);
@@ -3090,10 +4002,15 @@ const UI = {
     H.kR.classList.toggle('hot', C.powered || C.streak >= need(C) - 2);
     if (!H.ni) H.ni = $('#ni');
     if (Net.active && match.o.mode === 'online') {
-      const r = Net.rtt; H.ni.textContent = (r ? 'PING ' + r + 'MS' : 'PING …') + (Net.route ? ' · ' + Net.route : '');
+      const r = Net.rtt; H.ni.textContent = (r ? 'PING ' + r + ' ms' : 'PING …') + (Net.route ? ' · ' + Net.route : '');
       H.ni.className = 'ni ' + (!r ? '' : r < 80 ? 'good' : r < 160 ? 'mid' : 'bad');
     } else if (H.ni.textContent) { H.ni.textContent = ''; H.ni.className = 'ni'; }
-    if (match.o.mode === 'practice') { H.clk.textContent = '∞'; H.rd.textContent = 'PRACTICE'; }
+    if (match.multi) {
+      H.rd.textContent = 'WAVE ' + Math.min(match.wave + 1, match.waves.length) + '/' + match.waves.length;
+      H.clk.textContent = match.alive().length + ' LEFT';
+      [...H.dots.children].forEach((d, i) => d.classList.toggle('on', i <= match.wave));
+      Street.bars(match);
+    } else if (match.o.mode === 'practice') { H.clk.textContent = '∞'; H.rd.textContent = 'PRACTICE'; }
     else {
       const t = Math.ceil(match.clock); H.clk.textContent = Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0');
       H.rd.textContent = 'ROUND ' + match.round;
@@ -3145,6 +4062,7 @@ const UI = {
   results(d) { UI.lastResult = d; UI.hud(false); UI.banner(''); UI.go('results', d); },
 };
 const IS_TOUCH = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+const foeTag = (C) => (C.cfg.boss ? 'BOSS · ' : C.cfg.leader ? 'LEADER · ' : C.cfg.clone ? 'CLONE · ' : C.cfg.thug ? (C.cfg.nick || 'Street') + ' · ' : '') + STYLES[C.styleId].name;
 
 /* ---------- small templates ---------- */
 const chip = (t, cls = '') => `<span class="chip ${cls}">${esc(t)}</span>`;
@@ -3185,6 +4103,8 @@ const SCREENS = {
         <button class="btn ${has ? 'primary' : ''}" data-act="go" data-to="quick" ${has ? '' : 'disabled'}>Quick Fight <small>Any opponent, any difficulty</small></button>
         <button class="btn" data-act="go" data-to="tourney" ${has ? '' : 'disabled'}>Tournament <small>16-fighter bracket, 4 fights, harder every round</small></button>
         <button class="btn" data-act="go" data-to="boss" ${has ? '' : 'disabled'}>Boss Mode <small>Five monsters. Earn it.</small></button>
+        <button class="btn" data-act="go" data-to="street" ${has ? '' : 'disabled'}>Street Fight <small>Get jumped in the city. Survive the waves</small></button>
+        <button class="btn" data-act="go" data-to="turf" ${has ? '' : 'disabled'}>Turf Wars <small>Claim city blocks. Your clone defends them</small></button>
         <button class="btn" data-act="go" data-to="online" ${has ? '' : 'disabled'}>Online <small>Private match with a friend, join by code</small></button>
         <button class="btn" data-act="practice" ${has ? '' : 'disabled'}>Practice <small>Drill moves, earn XP</small></button>
         <button class="btn" data-act="go" data-to="fighters">My Fighters <small>Train stats, evolve, customize</small></button>
@@ -3264,6 +4184,7 @@ const SCREENS = {
           <div class="card"><span class="small muted">COMBO DMG</span><span class="nm">+${Math.round((D.comboMul - 1) * 100)}%</span></div>
         </div>
         ${evo}
+        ${dnaCard(p)}
       </div>
       <div class="row">${backBtn('fighters')}<button class="btn" data-act="go" data-to="title">Main Menu</button></div>
     </div>`;
@@ -3412,7 +4333,8 @@ const SCREENS = {
     const { r, lines, total, ups, lvBefore, prof, mode, extra } = d;
     const won = r.playerWon;
     const mm = Math.floor(r.time / 60), ss = String(Math.floor(r.time % 60)).padStart(2, '0');
-    const btns = mode === 'tourney'
+    const btns = mode === 'turf' ? `<button class="btn primary" data-act="go" data-to="turf">Back to the map</button>`
+      : mode === 'tourney'
       ? `<button class="btn primary" data-act="go" data-to="tourney">${extra && extra.champion ? 'Raise the belt' : prof.tourney && !prof.tourney.done ? 'Next fight' : 'Back to tournaments'}</button>`
       : mode === 'boss' ? `<button class="btn primary" data-act="go" data-to="boss">Boss list</button><button class="btn" data-act="bossFight" data-v="${d.bossIdx}">Rematch</button>`
         : `<button class="btn primary" data-act="rematch">Rematch</button><button class="btn" data-act="go" data-to="quick">New opponent</button>`;
@@ -3542,6 +4464,118 @@ const ACT = {
   quitFight: () => { togglePause(false); endFightToMenu(); },
   pexit: () => { togglePause(false); endPractice(); },
 };
+/* =====================================================================
+   SCREENS for Street Fight, Turf Wars and Fight DNA
+   ===================================================================== */
+function dnaCard(p) {
+  const D = DNA.describe(p);
+  if (!D) return `<div class="card"><h3>Fight DNA</h3><p class="small">Fight a few times and the game learns <b>how you fight</b>: your favourite moves and chains, how you defend, how close you like to stand. It builds a CPU clone from that. Your clone guards your Turf Wars blocks, so the better you fight, the harder your blocks are to take.</p></div>`;
+  const d = D.d, S = STYLES[p.style].moves;
+  const bar = (label, v, col) => `<div class="dnab"><span>${esc(label)}</span><b><i style="width:${Math.round(v * 100)}%;background:${col}"></i></b><em>${Math.round(v * 100)}%</em></div>`;
+  const mixT = d.mix.light + d.mix.medium + d.mix.heavy + d.mix.super + d.mix.counter || 1;
+  return `<div class="card"><h3>Fight DNA <span class="small muted">· learned from ${d.fights || d.n} fight${(d.fights || d.n) === 1 ? '' : 's'}</span></h3>
+    <p class="small"><b style="color:var(--gold)">${esc(D.kind)}</b>, likes to fight at ${esc(D.range)}. Go-to chain: <b>${esc(D.chain)}</b>. When attacked: <b>${esc(D.defWord)}</b>.</p>
+    <div class="dna">
+      <div><div class="small muted">MOVE MIX</div>
+        ${bar(MOVES[S.light].name, d.mix.light / mixT, 'var(--green)')}${bar(MOVES[S.medium].name, d.mix.medium / mixT, 'var(--green)')}${bar(MOVES[S.heavy].name, d.mix.heavy / mixT, 'var(--green)')}${bar('Counter', d.mix.counter / mixT, 'var(--gold)')}${bar('Super', d.mix.super / mixT, 'var(--gold)')}</div>
+      <div><div class="small muted">DEFENCE</div>
+        ${bar('Block', d.def.block, 'var(--blue, #2f6bff)')}${bar('Dodge', d.def.dodge, 'var(--blue, #2f6bff)')}${bar('Counter', d.def.counter, 'var(--blue, #2f6bff)')}${bar('Takes it', d.def.none, 'var(--red)')}</div>
+    </div>
+    <p class="small muted">Your clone copies this. It updates after every fight (not online ones).</p>
+    <button class="btn" data-act="sparClone" data-id="${p.id}">Spar your clone <small>Fight a CPU that fights like you</small></button></div>`;
+}
+Object.assign(SCREENS, {
+  street() {
+    const p = activeFighter(); if (!p) return SCREENS.title();
+    const sel = UI.sel.street || (UI.sel.street = { tier: 0, time: 'night' });
+    const best = p.street || {};
+    const tiers = DIFFS.slice(0, 5).map((d, i) => `<button class="card ${sel.tier === i ? 'sel' : ''}" data-act="stTier" data-v="${i}">
+      <span class="nm" style="color:${d.color}">${d.name}</span><span class="small">×${d.xp} XP</span>
+      <span class="small muted">${best[i] >= STREET_WAVES.length ? '✓ Survived all 5 waves' : best[i] ? 'Best: ' + best[i] + '/5 waves' : 'Not tried'}</span></button>`).join('');
+    const times = [['night', 'Night'], ['dusk', 'Dusk'], ['day', 'Day']].map(([k, n]) => `<button class="${sel.time === k ? 'sel' : ''}" data-act="stTime" data-v="${k}">${n}</button>`).join('');
+    return `<div class="panel wide"><h2>Street Fight</h2>
+      <p class="muted">You're walking home and a crew jumps you on a closed-off street. Five waves, more of them each time, and the leader shows up last. Only a couple swing at once while the rest circle, so keep moving and don't get surrounded.</p>
+      <div class="scroll"><div class="grid3">${tiers}</div></div>
+      <label class="f">Time of day</label><div class="opt">${times}</div>
+      <p class="small muted">Your attacks go to whoever is closest in front of you; push toward someone to switch targets. You get 25% health back between waves.</p>
+      <div class="row"><button class="btn primary" data-act="streetGo">Hit the streets</button>${backBtn()}</div></div>`;
+  },
+  streetResults() {
+    const d = UI.streetResult; if (!d) return SCREENS.street();
+    const T = d.district ? TURF.find((x) => x.id === d.district) : null;
+    const btns = T ? `<button class="btn primary" data-act="go" data-to="turf">Back to the map</button>`
+      : `<button class="btn primary" data-act="streetAgain">Run it back</button><button class="btn" data-act="go" data-to="street">Street menu</button>`;
+    return `<div class="panel" style="margin:auto;width:min(600px,100%)">
+      <h1 class="logo" style="font-size:clamp(24px,5vw,40px)">${d.won ? (T ? 'BLOCK TAKEN' : 'SURVIVED') : '<span style="color:#9aa3c0">DROPPED</span>'}</h1>
+      <p style="font-family:var(--f-name);font-size:24px;text-transform:uppercase">${T ? esc(T.name) + ' · ' : ''}${esc(d.gang.name)} · ${d.cleared}/${d.waves} waves · ${d.kos} knocked out</p>
+      ${T && d.won ? `<div class="card sel"><h3>${esc(T.name)} is yours</h3><p class="small">Your clone guards it now. Anyone who wants it has to beat a CPU that fights like you.</p></div>` : ''}
+      <div class="mvlist">${d.lines.map(([n, v]) => `<b style="font-size:18px">+${v}</b><span>${esc(n)}</span>`).join('')}</div>
+      <p style="font-family:var(--f-display);font-size:14px;color:var(--gold)">TOTAL +${d.total} XP</p>
+      ${d.ups ? `<div class="card sel"><h3>Level up! ${d.lvBefore} → ${d.prof.level}</h3><p>+${d.ups * PTS_PER_LEVEL} stat points ready to spend.</p></div>` : ''}
+      ${fighterCard(d.prof)}
+      <div class="row">${btns}${d.ups || d.prof.points ? `<button class="btn" data-act="go" data-to="train" data-id="${d.prof.id}">Spend points</button>` : ''}<button class="btn ghost" data-act="go" data-to="title">Menu</button></div></div>`;
+  },
+  turf() {
+    const p = activeFighter(); if (!p) return SCREENS.title();
+    if (!Turf.busy && (!Turf.loadedAt || Date.now() - Turf.loadedAt > 20000)) setTimeout(() => Turf.load(), 0);
+    if (Turf.mode === 'loading' && !Turf.loadedAt) return `<div class="panel wide"><h2>Turf Wars</h2><p class="muted">Loading the city…</p>${backBtn()}</div>`;
+    const R = Turf.rows;
+    const tiles = TURF.map((d) => {
+      const r = R[d.id] || {}, mine = Turf.isMine(r), owned = !!r.owner_id;
+      const bg = mine ? 'rgba(243,185,40,.35)' : owned ? `hsla(${Turf.hue(r.owner_id)},60%,45%,.45)` : shade(d.gang.color, 0.35);
+      const who = mine ? 'YOU' : owned ? r.owner_name : d.gang.name;
+      return `<button class="tile ${Turf.sel === d.id ? 'sel' : ''} ${mine ? 'mine' : owned ? 'player' : 'gang'}" data-act="turfSel" data-id="${d.id}" style="background:${bg}">
+        <span class="tn">${esc(d.name)}</span><span class="tw">${esc(who || '')}</span><span class="tt" style="color:${DIFFS[d.tier].color}">${'★'.repeat(d.tier + 1)}</span></button>`;
+    }).join('');
+    const d = TURF.find((x) => x.id === Turf.sel);
+    let side = `<p class="small">Pick a block on the map.</p><p class="small muted">Gold blocks are yours. Coloured ones belong to other players and are guarded by their clone. Dark ones are held by a local crew: beat the crew and their leader to take it.</p>`;
+    if (d) {
+      const r = R[d.id] || {}, mine = Turf.isMine(r);
+      const F = r.fighter || {};
+      side = `<h3>${esc(d.name)}</h3>
+        <p class="small"><span style="color:${DIFFS[d.tier].color}">${DIFFS[d.tier].name}</span> block · ${d.time}</p>
+        ${mine ? `<p>Yours. Your clone guards it${r.defenses ? ` and has held it <b>${r.defenses}</b> time${r.defenses === 1 ? '' : 's'}` : ''}.</p>`
+          : r.owner_id ? `<p>Held by <b>${esc(r.owner_name)}</b>${F.style ? ` · ${esc(STYLES[F.style].name)} · LV ${F.level || '?'}` : ''}${r.defenses ? ` · defended ${r.defenses}×` : ''}</p><p class="small muted">You fight their clone: same style, stats and habits as them.</p>`
+            : `<p>Held by the <b style="color:${d.gang.color}">${esc(d.gang.name)}</b>.</p><p class="small muted">Street fight: two waves, then their leader.</p>`}
+        ${r.last_event ? `<p class="small muted">Last: ${esc(r.last_event)}</p>` : ''}
+        ${mine ? '' : `<button class="btn primary" data-act="turfGo">${r.owner_id ? 'Challenge for it' : 'Take it'}</button>`}`;
+    }
+    const counts = {};
+    for (const r of Object.values(R)) if (r.owner_id) { const k = r.owner_id; counts[k] = counts[k] || { n: 0, name: r.owner_name, me: Turf.isMine(r) }; counts[k].n++; }
+    const board = Object.values(counts).sort((a, b) => b.n - a.n).slice(0, 6).map((c, i) => `<div class="lbrow ${c.me ? 'me' : ''}"><b>${i + 1}</b><span>${esc(c.name)}</span><em>${c.n} block${c.n === 1 ? '' : 's'}</em></div>`).join('') || '<p class="small muted">Nobody holds any blocks yet.</p>';
+    const mineN = Turf.owned().length, trib = Turf.tribute();
+    const status = Turf.mode === 'shared' ? `<p class="small" style="color:var(--green)">● Shared city: everyone playing this game fights over the same map.</p>`
+      : Turf.mode === 'loading' ? `<p class="small muted">○ Refreshing…</p>`
+        : `<p class="small" style="color:var(--gold)">○ Offline city: only on this device, with CPU rival crews. Set up the shared city below to play against real people.</p>`;
+    const setup = Turf.mode === 'local' ? `<details class="card"><summary><b>Make the city shared</b> (one time, about a minute)</summary>
+      <ol class="small"><li>Open your Supabase project, then <b>SQL Editor → New query</b>.</li><li>Paste the code below and press <b>Run</b>.</li><li>Come back here and press <b>Refresh</b>.</li></ol>
+      <pre class="sql" id="turf-sql">${esc(TURF_SQL)}</pre><div class="row"><button class="btn" data-act="turfCopy">Copy code</button><button class="btn" data-act="turfRefresh">Refresh</button></div>
+      <p class="small muted">Reason it's offline: ${esc(Turf.err || 'not set up')}</p></details>` : '';
+    return `<div class="panel wide"><h2>Turf Wars</h2>${status}
+      ${Turf.note ? `<div class="confirm"><p>${esc(Turf.note)}</p></div>` : ''}
+      <div class="scroll"><div class="turfwrap"><div class="turfmap">${tiles}</div><div class="card turfside">${side}</div></div>
+        <div class="grid2" style="margin-top:12px"><div class="card"><h3>Top crews</h3>${board}</div>
+          <div class="card"><h3>Your blocks: ${mineN}</h3><p class="small">Each block pays 20 XP an hour while you hold it (up to 8 hours banked).</p>
+            ${trib ? `<button class="btn primary" data-act="turfCollect">Collect ${trib} XP</button>` : `<p class="small muted">${mineN ? 'Nothing to collect yet.' : 'Take a block to start earning.'}</p>`}</div></div>
+        ${setup}${dnaCard(p)}</div>
+      <div class="row"><button class="btn" data-act="turfRefresh">Refresh map</button>${backBtn()}</div></div>`;
+  },
+});
+Object.assign(ACT, {
+  stTier: (d) => { UI.sel.street.tier = +d.v; UI.show(SCREENS.street()); },
+  stTime: (d) => { UI.sel.street.time = d.v; UI.show(SCREENS.street()); },
+  streetGo: () => { const s = UI.sel.street || { tier: 0, time: 'night' }; startStreet({ mode: 'street', profile: activeFighter(), tier: s.tier, time: s.time, gang: pick(GANGS) }); },
+  streetAgain: () => { const o = UI.lastStreetOpts; if (o) startStreet({ ...o, gang: o.district ? o.gang : pick(GANGS) }); },
+  sparClone: (d) => {
+    const p = SAVE.fighters.find((f) => f.id === d.id) || activeFighter(); if (!p) return;
+    startFight({ mode: 'quick', profile: p, opp: DNA.cloneCfg(p, ' (Clone)'), diff: DNA.cloneDiff(p.level), label: 'Mirror match · your clone' });
+  },
+  turfSel: (d) => { Turf.sel = d.id; Turf.note = ''; Turf.refresh(); },
+  turfGo: () => { const d = TURF.find((x) => x.id === Turf.sel); if (d) { Turf.note = ''; Turf.attack(d); } },
+  turfRefresh: () => { Turf.note = ''; Turf.load(); },
+  turfCollect: () => { const x = Turf.collect(); Turf.note = x ? '+' + x + ' XP collected from your blocks.' : ''; Sound.levelUp(); Turf.refresh(); },
+  turfCopy: () => { try { navigator.clipboard.writeText(TURF_SQL).catch(() => {}); } catch (e) { /* select it instead */ } const el = $('#turf-sql'); if (el) { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } },
+});
 /* =====================================================================
    ONLINE — private matches with a join code (Supabase Realtime)
    Host runs the real fight; the guest sends inputs and draws the host's
@@ -3717,7 +4751,7 @@ const Net = {
     if (m.t === 'start' && this.role === 'guest') { this.guestStart(m); return; }
     if (m.t === 'lobby' && this.role === 'guest') { this.even = m.even; this.refresh(); return; }
     if (m.t === 'png') { this.send({ t: 'pong', at: m.at }); return; }
-    if (m.t === 'pong' && this.role === 'host') { this.rtt = Math.round(performance.now() - m.at); this.send({ t: 'rtt', v: this.rtt }); return; }
+    if (m.t === 'pong' && this.role === 'host') { this.rtt = Math.max(1, Math.round(performance.now() - m.at)); this.send({ t: 'rtt', v: this.rtt }); return; }
     if (m.t === 'rtt') { this.rtt = m.v; return; }
     if (m.t === 'i' && this.role === 'host') {
       this.remoteIn = m;
@@ -3978,7 +5012,7 @@ const Ref = {
   reset() { this.anim = null; },
   update(dt) {
     const F = Game.fighters; if (!this.rig) return;
-    this.rig.root.visible = F.length === 2 && F[0].rig.root.visible;
+    this.rig.root.visible = F.length === 2 && F[0].rig.root.visible && Game.arena === 'octagon';
     if (F.length < 2) return;
     const a = F[0].pos, b = F[1].pos;
     const mid = new THREE.Vector2((a.x + b.x) / 2, (a.y + b.y) / 2);
@@ -3991,7 +5025,7 @@ const Ref = {
       if (Cam.side && perp.dot(Cam.side) > 0) perp.negate();
       want = mid.clone().addScaledVector(perp, 2.6);
     }
-    clampToOctagon(want);
+    Game.clampPos(want);
     const d = want.clone().sub(this.pos); const dist = d.length();
     if (!(dt > 0)) dt = 0;
     const sp = Math.min(dist, 2.6 * dt * (dist > 0.3 ? 1 : dist / 0.3));
@@ -4039,6 +5073,9 @@ function setMenuScene(kind) {
 }
 function cleanupFight() {
   Game.match = null; Game.clearFighters(); UI.hud(false); UI.banner(''); Game.mode = 'menu';
+  if (Game.arena !== 'octagon') Game.setArena('octagon');
+  DNA.stop();
+  Street.clearHud();
   Game.paused = false; Game.stopT = 0; Game.slowT = 0;
 }
 function startFight(opts) {
@@ -4073,7 +5110,7 @@ function togglePause(on) {
 // make UI.go tear down a finished fight before showing a menu
 const _go = UI.go.bind(UI);
 UI.go = function (name, arg) {
-  const keep = name === 'results' || name === 'netResults';
+  const keep = name === 'results' || name === 'netResults' || name === 'streetResults';
   if (Game.mode === 'fight' && Game.match && Game.match.over && !keep) cleanupFight();
   if (Game.mode === 'fight' && Game.match && !Game.match.over && !keep) return;
   _go(name, arg);
@@ -4139,22 +5176,30 @@ function playerIntent(P) {
 /* ---------------- physics helpers ---------------- */
 function separate() {
   const F = Game.fighters; if (F.length < 2) return;
-  const [a, b] = F;
-  const g = a.grapple ? a : b.grapple ? b : null;
-  if (g) {
-    const v = g.grapple.victim, tmp = v.pos.clone(); clampToOctagon(tmp);
-    const cx = tmp.x - v.pos.x, cz = tmp.y - v.pos.y;
-    v.pos.x += cx; v.pos.y += cz; g.pos.x += cx; g.pos.y += cz; clampToOctagon(g.pos);
-    return;
-  }
   const lying = (f) => ['down', 'ko', 'getup'].includes(f.state);
-  const minD = lying(a) || lying(b) ? 0.42 : 0.6;
-  const dx = b.pos.x - a.pos.x, dz = b.pos.y - a.pos.y; const d = Math.hypot(dx, dz);
-  if (d < minD) {
-    const nx = d > 1e-4 ? dx / d : 1, nz = d > 1e-4 ? dz / d : 0, push = (minD - d) / 2;
-    a.pos.x -= nx * push; a.pos.y -= nz * push; b.pos.x += nx * push; b.pos.y += nz * push;
+  const locked = new Set(); // a grapple pair moves as one
+  for (const g of F) {
+    if (!g.grapple) continue;
+    const v = g.grapple.victim, tmp = v.pos.clone(); Game.clampPos(tmp);
+    const cx = tmp.x - v.pos.x, cz = tmp.y - v.pos.y;
+    v.pos.x += cx; v.pos.y += cz; g.pos.x += cx; g.pos.y += cz; Game.clampPos(g.pos);
+    locked.add(g); locked.add(v);
   }
-  clampToOctagon(a.pos); clampToOctagon(b.pos);
+  for (let i = 0; i < F.length; i++) for (let j = i + 1; j < F.length; j++) {
+    const a = F[i], b = F[j];
+    if (locked.has(a) && locked.has(b)) continue;
+    if (a.state === 'ko' && b.state === 'ko') continue;
+    // knocked-out bodies in a street fight don't block anyone
+    if (F.length > 2 && (a.state === 'ko' || b.state === 'ko')) continue;
+    const minD = lying(a) || lying(b) ? 0.42 : 0.6;
+    const dx = b.pos.x - a.pos.x, dz = b.pos.y - a.pos.y; const d = Math.hypot(dx, dz);
+    if (d < minD) {
+      const nx = d > 1e-4 ? dx / d : 1, nz = d > 1e-4 ? dz / d : 0, push = (minD - d) / 2;
+      const wa = locked.has(a) ? 0 : locked.has(b) ? 2 : 1, wb = 2 - wa;
+      a.pos.x -= nx * push * wa; a.pos.y -= nz * push * wa; b.pos.x += nx * push * wb; b.pos.y += nz * push * wb;
+    }
+  }
+  for (const f of F) if (!locked.has(f)) Game.clampPos(f.pos);
 }
 
 /* ---------------- render loop ---------------- */
@@ -4199,8 +5244,11 @@ function tick(real, render) {
   let oppScale = 1;
   if (Game.witchT > 0 && !Game.paused) { Game.witchT -= real; oppScale = Game.witchScale; }
   if (Game.mode !== 'fight') Game.witchT = 0;
-  const slowed = Game.witchT > 0 && Game.witchWho ? Game.witchWho.opp : null;
-  const wv = $('#witch'); if (wv) wv.classList.toggle('on', Game.witchT > 0 && (!M || Game.witchWho === M.P));
+  const wv = $('#witch');
+  if (wv) { // blue edge when I made them miss; red edge when I'm the one slowed (online, both players see it)
+    const mine = Game.witchT > 0 && (!M || Game.witchWho === M.P), slow = !!(M && M.P && Game.slowedBy(M.P));
+    wv.classList.toggle('on', mine || slow); wv.classList.toggle('slow', slow && !mine);
+  }
   if (M instanceof GuestMatch) { // online guest: draw the host's fight, send my controls
     M.update(real);
     if (M.live) playerIntent(M.P); else { M.P.intent.fwd = 0; M.P.intent.side = 0; M.P.intent.block = false; }
@@ -4218,10 +5266,12 @@ function tick(real, render) {
     let live = false;
     if (!Game.paused) live = M.update(dt, real);
     const P = M.P;
-    if (live && !Game.paused) { playerIntent(P); if (Net.role === 'host') Net.applyRemote(M.C); Game.ais.forEach((ai) => ai && ai.update(ai.f === slowed ? dt * oppScale : dt)); }
+    if (live && !Game.paused) { playerIntent(P); if (Net.role === 'host') Net.applyRemote(M.C); Game.ais.forEach((ai) => ai && ai.update(Game.slowedBy(ai.f) ? dt * oppScale : dt)); }
     else if (!Game.paused) { P.intent.fwd = 0; P.intent.side = 0; P.intent.block = false; P.queued = null; M.C.intent.attack = null; }
   } else if (Game.exhibition) Game.ais.forEach((ai) => ai && ai.update(dt));
-  if (dt > 0) for (const f of Game.fighters) f.update(f === slowed ? dt * oppScale : dt);
+  if (dt > 0) for (const f of Game.fighters) f.update(Game.slowedBy(f) ? dt * oppScale : dt);
+  if (M && M.afterStep && !Game.paused) M.afterStep(dt, real);
+  if (DNA.rec && M && M.phase === 'fight' && !Game.paused && dt > 0) DNA.rec.update(dt);
   separate();
   for (const f of Game.fighters) f.pose(dt || 1e-4);
   if (Game.mode === 'fight' && M && !Game.paused) Replay.record(dt);
@@ -4234,7 +5284,7 @@ function tick(real, render) {
   Preview.update(real);
   Ref.update(dt);
   FX.update(dt);
-  Arena.update(real, Game.time);
+  if (Game.arena === 'city') City.update(real, M && M.P ? M.P.pos : null); else Arena.update(real, Game.time);
   Cam.update(real);
   if (M && Game.mode === 'fight') UI.updateHud(M, real);
   if (render) Game.renderer.render(Game.scene, Game.camera);
@@ -4264,7 +5314,7 @@ function boot() {
   $('#loadmsg').remove();
   UI.go('title');
   requestAnimationFrame(loop); startBgTimer();
-  window.__PO = { Game, UI, SAVE: () => SAVE, ACT, startFight, MOVES, STYLES, KEYS, keyDown, keyUp, Net,
+  window.__PO = { Game, UI, SAVE: () => SAVE, ACT, startFight, MOVES, STYLES, KEYS, keyDown, keyUp, Net, AI, DNA, Street, Turf, City, TURF, startStreet, Cam, SCREENS,
     step(n, dt = 1 / 60, render = true) { Game.manual = true; for (let i = 0; i < n; i++) tick(dt, render && i === n - 1); },
     auto() { Game.manual = false; } };
 }
