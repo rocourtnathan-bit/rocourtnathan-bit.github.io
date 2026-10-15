@@ -3543,7 +3543,7 @@ const ACT = {
   pexit: () => { togglePause(false); endPractice(); },
 };
 /* =====================================================================
-   ONLINE — private matches with a join code (PeerJS / WebRTC)
+   ONLINE — private matches with a join code (Supabase Realtime)
    Host runs the real fight; the guest sends inputs and draws the host's
    snapshots. Sounds, sparks, popups and the KO replay are relayed.
    ===================================================================== */
@@ -3563,7 +3563,6 @@ function sbConn(room, myId) {
   conn.ch = Net.client().channel(ROOM_PREFIX + room, { config: { broadcast: { self: false, ack: false } } });
   conn.ch.on('broadcast', { event: 'm' }, (msg) => {
     const pl = msg && msg.payload; if (!pl || pl.from === myId) return;
-    Net.lastRecv = performance.now();
     h.data.forEach((f) => f(pl.d, pl.from));
   });
   conn.ch.subscribe((status, err) => {
@@ -3575,7 +3574,7 @@ function sbConn(room, myId) {
 }
 const Net = {
   role: null, status: 'idle', msg: '', code: '', conn: null, opp: null, even: false, sb: null, myId: Math.random().toString(36).slice(2, 10), peerId: null,
-  relaying: false, out: [], snaps: [], evq: [], gClock: 0, hClock: 0, sendAcc: 0, pingT: 0, rtt: 0, route: '', remoteIn: null, presses: [], lastEnd: null, testRes: null, lastRecv: 0,
+  relaying: false, out: [], snaps: [], evq: [], gClock: 0, hClock: 0, sendAcc: 0, pingT: 0, rtt: 0, route: '', remoteIn: null, presses: [], lastEnd: null, testRes: null, lastRecv: 0, lastSent: 0, alive: false, jit: 0.02, gDelay: 0.12, lastSig: '',
   get active() { return !!this.role; },
   get peerReady() { return !!(this.sb && this.sb.realtime && this.sb.realtime.isConnected && this.sb.realtime.isConnected()); },
   local() { return location.hash === '#localnet'; }, // two tabs on one machine, for testing
@@ -3656,19 +3655,17 @@ const Net = {
     c.on('data', (m, from) => this.onData(m, from));
     c.on('close', () => { if (this.conn === c) this.onClose(); });
   },
-  send(m) { try { if (this.conn) this.conn.send(m); } catch (e) { /* dropped */ } },
+  send(m) { try { if (this.conn) { this.conn.send(m); this.lastSent = performance.now(); } } catch (e) { /* dropped */ } },
   sendFast(m) { this.send(m); },
-  // both sides talk at least once a second; 8 quiet seconds means the other player is gone
-  keepAlive() {
-    clearInterval(this._alive);
-    this._alive = setInterval(() => {
-      if (!this.conn) { clearInterval(this._alive); return; }
-      if (!Game.match || Game.mode !== 'fight') this.send({ t: 'hb' });
-      if (this.peerId && performance.now() - this.lastRecv > 8000) { clearInterval(this._alive); this.onClose(); }
-    }, 1000);
+  // both sides talk at least once a second, even from a hidden tab; 12 quiet seconds means the other player is gone
+  keepAlive() { this.alive = true; this.lastRecv = performance.now(); },
+  pulse(now) { // called ~30 times a second from a worker timer, which browsers don't freeze in background tabs
+    if (!this.alive || !this.conn) return;
+    if (now - this.lastSent > 900) this.send({ t: 'hb' });
+    if (this.peerId && now - this.lastRecv > 12000) { this.alive = false; this.onClose(); }
   },
   endConn() {
-    this.relaying = false; clearInterval(this._alive);
+    this.relaying = false; this.alive = false;
     try { if (this.conn) this.conn.close(); } catch (e) { /* ignore */ }
     this.conn = null; this.role = null; this.opp = null; this.peerId = null; this.snaps = []; this.evq = []; this.out = []; this.remoteIn = null; this.presses = [];
     this.rtt = 0; this.route = ''; this.lastIn = null;
@@ -3709,6 +3706,7 @@ const Net = {
   onData(m, from) {
     if (!m || !m.t) return;
     if (from && this.peerId && from !== this.peerId) return; // someone else using the same code
+    this.lastRecv = performance.now();
     if (m.t === 'hello' && this.role === 'host') {
       if (this.opp && this.peerId) { this.send({ t: 'welcome' }); return; }
       this.peerId = from || 'local'; this.opp = m.p; this.send({ t: 'welcome' }); this.setStatus('ready'); this.keepAlive(); return;
@@ -3730,6 +3728,9 @@ const Net = {
     }
     if (m.t === 's' && this.role === 'guest') {
       if (m.ev && m.ev.length) this.evq.push({ ht: m.ht, ev: m.ev });
+      const now = performance.now() / 1000; // how unevenly snapshots arrive decides how far behind we draw
+      if (this.lastSnapAt && m.ht > this.lastSnapHt) { const d = Math.abs((now - this.lastSnapAt) - (m.ht - this.lastSnapHt)); this.jit += (Math.min(d, 0.25) - this.jit) * 0.08; }
+      if (!this.lastSnapHt || m.ht > this.lastSnapHt) { this.lastSnapAt = now; this.lastSnapHt = m.ht; }
       const S = this.snaps; // unordered lane: keep the buffer sorted by host time, drop stale ones
       if (!S.length || m.ht > S[S.length - 1].ht) S.push(m);
       else if (m.ht > S[0].ht) { let i = S.length - 1; while (i > 0 && S[i - 1].ht > m.ht) i--; if (S[i - 1] && S[i - 1].ht === m.ht) return; S.splice(i, 0, m); }
@@ -3757,7 +3758,7 @@ const Net = {
     Game.match = new Match({ mode: 'online', profile: fakeProf, realProfile: prof, opp: guestCfg, diff: 2, label: 'Online · Private match' });
     prof.stats = savedStats; prof.evolved = savedEvo;
     Ref.reset(); Ref.pos.set(0, 3.2);
-    this.hClock = 0; this.sendAcc = 0; this.presses = []; this.remoteIn = null;
+    this.hClock = 0; this.sendAcc = 0; this.presses = []; this.remoteIn = null; this.lastSig = '';
     this.relaying = true; UI.screen = 'fight';
     this.send({ t: 'start', host: hostCfg, guest: { ...guestCfg, isPlayer: true, remote: false }, hostAsOpp: { ...hostCfg, isPlayer: false, remote: true }, round: SAVE.settings.round });
   },
@@ -3769,13 +3770,14 @@ const Net = {
     if (this.pendDash) { I.dash = this.pendDash; this.pendDash = 0; }
     while (this.presses.length) { C.queued = { slot: this.presses.shift(), t: Game.time }; }
   },
-  // host: snapshot ~30 times a second
+  // host: snapshot 15 times a second, plus right away when someone starts a move or gets hit
   hostSend(real) {
     if (this.role !== 'host' || !this.conn) return;
     this.hClock += real; this.sendAcc += real; this.pingT += real;
     if (this.pingT >= 1) { this.pingT = 0; this.send({ t: 'png', at: performance.now() }); }
-    if (this.sendAcc < 1 / 15) return; // ~15 updates a second keeps us well inside the free plan
-    this.sendAcc = 0;
+    const sig = Game.fighters.map((x) => x.state + (x.anim ? x.anim.id : '')).join();
+    if (this.sendAcc < (sig !== this.lastSig ? 0.025 : 1 / 15)) return; // ~15 a second keeps us inside the free plan
+    this.sendAcc = 0; this.lastSig = sig;
     const M = Game.match;
     const r2 = (v) => Math.round(v * 100) / 100;
     const f = Game.fighters.map((x) => ({
@@ -3791,7 +3793,7 @@ const Net = {
   // ---------- guest side ----------
   guestStart(m) {
     UI.hide(); Preview.clear(); cleanupFight(); Sound.fx = true; FX.enabled = true; $('#pops').innerHTML = '';
-    this.snaps = []; this.evq = []; this.gClock = -1;
+    this.snaps = []; this.evq = []; this.gClock = -1; this.lastSnapAt = 0; this.lastSnapHt = 0; this.jit = 0.02; this.gDelay = 0.12;
     Game.match = new GuestMatch(m); UI.screen = 'fight';
     Ref.reset(); Ref.pos.set(0, 3.2);
   },
@@ -3812,7 +3814,9 @@ const Net = {
   },
   guestApply(real) {
     const S = this.snaps; if (!S.length) return false;
-    const latest = S[S.length - 1].ht, target = latest - 0.15;
+    // draw just far enough behind the newest snapshot to always have the next one in hand
+    this.gDelay += (clamp(1 / 15 + 0.015 + 2.5 * this.jit, 0.08, 0.22) - this.gDelay) * Math.min(1, real * 2);
+    const latest = S[S.length - 1].ht, target = latest - this.gDelay;
     if (this.gClock < 0 || Math.abs(this.gClock - target) > 0.3) this.gClock = target;
     else this.gClock += real + (target - this.gClock) * 0.1;
     // effects play in step with the picture; after a resync, stale ones are skipped
@@ -4154,12 +4158,28 @@ function separate() {
 }
 
 /* ---------------- render loop ---------------- */
-let last = performance.now();
+let last = performance.now(), lastFrame = 0, bgLast = 0;
 function loop(now) {
-  requestAnimationFrame(loop);
+  requestAnimationFrame(loop); lastFrame = performance.now();
   const real = Math.min(0.05, Math.max(0.0001, (now - last) / 1000)); last = now;
   if (Game.manual) return;
   tick(real, true);
+}
+// background tabs get no animation frames, so a worker timer keeps an online fight (and its connection) going
+function bgTick() {
+  const now = performance.now();
+  Net.pulse(now);
+  const prev = bgLast; bgLast = now;
+  if (!Net.active || Game.manual || now - lastFrame < 250 || !prev) return;
+  let real = Math.min(1, (now - prev) / 1000);
+  while (real > 1e-4) { const s = Math.min(0.05, real); tick(s, false); real -= s; }
+}
+function startBgTimer() {
+  let fell = false; const fallback = () => { if (!fell) { fell = true; setInterval(bgTick, 33); } };
+  try {
+    const w = new Worker(URL.createObjectURL(new Blob(['setInterval(function(){postMessage(0)},33)'], { type: 'text/javascript' })));
+    w.onmessage = bgTick; w.onerror = () => { w.terminate(); fallback(); };
+  } catch (e) { fallback(); }
 }
 function tick(real, render) {
   Game.time += real;
@@ -4243,7 +4263,7 @@ function boot() {
   document.addEventListener('visibilitychange', () => { if (document.hidden && !Net.active && Game.mode === 'fight' && Game.match && !Game.match.over && !Game.paused) togglePause(true); });
   $('#loadmsg').remove();
   UI.go('title');
-  requestAnimationFrame(loop);
+  requestAnimationFrame(loop); startBgTimer();
   window.__PO = { Game, UI, SAVE: () => SAVE, ACT, startFight, MOVES, STYLES, KEYS, keyDown, keyUp, Net,
     step(n, dt = 1 / 60, render = true) { Game.manual = true; for (let i = 0; i < n; i++) tick(dt, render && i === n - 1); },
     auto() { Game.manual = false; } };
