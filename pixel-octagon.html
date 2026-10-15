@@ -417,33 +417,39 @@ svg.citymap .mt-star{font-size:7px}
 h1.logo.hoops span{color:#ff8a3d;text-shadow:3px 3px 0 #7a2a0a,6px 6px 0 rgba(0,0,0,.5)}
 #bbhud{position:fixed;inset:0;z-index:4;pointer-events:none}
 #bbhud[hidden]{display:none}
-.bbtop{position:absolute;left:0;right:0;top:0;padding-top:max(12px,env(safe-area-inset-top,0px));display:flex;justify-content:center;align-items:stretch;gap:0}
-.bbteam{display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.72);border:2px solid #000;padding:4px 12px;min-width:150px;border-bottom:4px solid var(--tc,#fff)}
-.bbteam.a{justify-content:flex-end}
-.bbteam .nm{font-family:var(--f-name);font-size:24px;text-transform:uppercase;letter-spacing:1px;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--tc,#fff)}
-.bbteam .sc{font-family:var(--f-display);font-size:24px;font-variant-numeric:tabular-nums;min-width:52px;text-align:center}
-.bbteam .pz{font-style:normal;color:var(--gold);opacity:0;font-size:14px}
-.bbteam .pz.on{opacity:1}
-.bbmid{display:flex;flex-direction:column;align-items:center;justify-content:center;background:#05060a;border:2px solid #000;padding:2px 12px;min-width:92px}
-.bbmid .to{font-family:var(--f-name);font-size:14px;letter-spacing:2px;color:var(--dim)}
-.bbmid .sclk{font-family:var(--f-display);font-size:20px;color:#ff5a3a}
-.bbmid .sclk.low{animation:pulse3 .4s infinite alternate}
+.bbside .nameplate .n{color:var(--tc)}
+.bbscore{position:relative;width:100%;height:50px;background:linear-gradient(90deg,rgba(0,0,0,.85),rgba(10,12,20,.85));border:2px solid #000;border-left:12px solid var(--tc);transform:skewX(-18deg);box-shadow:3px 3px 0 rgba(0,0,0,.6);display:flex;align-items:center;gap:12px;padding:0 14px}
+.side.r .bbscore{transform:skewX(18deg);border-left:2px solid #000;border-right:12px solid var(--tc);flex-direction:row-reverse}
+.bbscore b{font-family:var(--f-display);font-size:32px;font-variant-numeric:tabular-nums;transform:skewX(18deg);text-shadow:2px 2px 0 #000}
+.side.r .bbscore b{transform:skewX(-18deg)}
+.bbscore .pz,.bbscore .fire{font-family:var(--f-name);font-size:17px;letter-spacing:1px;opacity:0;white-space:nowrap;transition:opacity .2s}
+.bbscore .pz{color:var(--gold)}.bbscore .fire{color:var(--fire);text-shadow:0 0 8px var(--fire)}
+.bbscore .pz.on,.bbscore .fire.on{opacity:1}
+.bbens{display:flex;flex-direction:column;gap:3px;width:85%}
+.side.r .bbens{align-items:flex-end}
+.bben{display:flex;align-items:center;gap:8px;width:100%}
+.side.r .bben{flex-direction:row-reverse}
+.bben span{font-family:var(--f-name);font-size:15px;letter-spacing:1px;text-transform:uppercase;color:var(--dim);min-width:84px;white-space:nowrap}
+.side.r .bben span{text-align:right}
+.bben .st{flex:1;width:auto}
+.st i.low{background:var(--red)}
+.clock .t.low{color:#ff5a3a;animation:pulse3 .4s infinite alternate}
 @keyframes pulse3{to{color:#fff}}
-.bbmid .ping{font-family:var(--f-display);font-size:8px;color:var(--dim)}
-#bbclear{position:absolute;left:50%;top:84px;transform:translateX(-50%);font-family:var(--f-display);font-size:12px;color:#000;background:var(--gold);padding:6px 10px;border:2px solid #000;opacity:0;transition:opacity .2s}
-#bbclear.on{opacity:1;animation:pulse4 .6s infinite alternate}
-@keyframes pulse4{to{background:#fff1b8}}
-#bbhint{position:absolute;left:50%;top:118px;transform:translateX(-50%);font-family:var(--f-name);font-size:22px;letter-spacing:1px;text-transform:uppercase;color:#fff;text-shadow:2px 2px 0 #000;opacity:0;white-space:nowrap}
-#bbhint.on{animation:hint 1.6s ease-out}
-@keyframes hint{0%{opacity:0;transform:translate(-50%,8px)}12%{opacity:1;transform:translate(-50%,0)}75%{opacity:1}100%{opacity:0}}
-#bbmeter{position:absolute;width:16px;height:86px;background:rgba(0,0,0,.75);border:2px solid #000;box-shadow:0 0 0 2px rgba(255,255,255,.25)}
+#bbmeter{position:absolute;width:26px;height:170px;background:rgba(0,0,0,.8);border:3px solid #000;box-shadow:0 0 0 2px rgba(255,255,255,.3),4px 4px 0 rgba(0,0,0,.5)}
 #bbmeter[hidden]{display:none}
-#bbmeter .g{position:absolute;left:0;right:0;background:var(--green);box-shadow:0 0 8px var(--green)}
-#bbmeter .f{position:absolute;left:3px;right:3px;bottom:0;background:#fff;opacity:.92}
-#bbmeter b{position:absolute;left:24px;top:50%;transform:translateY(-50%);font-family:var(--f-name);font-size:22px;white-space:nowrap;text-shadow:2px 2px 0 #000;letter-spacing:1px}
+#bbmeter .g{position:absolute;left:0;right:0;background:var(--green);box-shadow:0 0 10px var(--green)}
+#bbmeter .f{position:absolute;left:4px;right:4px;bottom:0;background:#fff;opacity:.95}
+#bbmeter .tick{position:absolute;left:-7px;right:-7px;height:2px;margin-bottom:-1px;background:#fff;box-shadow:0 0 0 1px #000}
+#bbmeter b{position:absolute;left:38px;top:50%;transform:translateY(-50%);font-family:var(--f-name);font-size:30px;white-space:nowrap;text-shadow:2px 2px 0 #000;letter-spacing:1px}
 #bbmeter.green .f{background:var(--green)}#bbmeter.green b{color:var(--green)}
 #bbmeter.miss .f{background:var(--red)}#bbmeter.miss b{color:#ff8a8a}
-#bbtags{position:absolute;inset:0}
+#bbclear{position:absolute;left:50%;bottom:86px;transform:translateX(-50%);font-family:var(--f-display);font-size:12px;color:#000;background:var(--gold);padding:6px 10px;border:2px solid #000;opacity:0;transition:opacity .2s}
+#bbclear.on{opacity:1;animation:pulse4 .6s infinite alternate}
+@keyframes pulse4{to{background:#fff1b8}}
+#bbhint{position:absolute;left:50%;bottom:122px;transform:translateX(-50%);font-family:var(--f-name);font-size:22px;letter-spacing:1px;text-transform:uppercase;color:#fff;text-shadow:2px 2px 0 #000;opacity:0;white-space:nowrap}
+#bbhint.on{animation:hint 1.6s ease-out}
+@keyframes hint{0%{opacity:0;transform:translate(-50%,8px)}12%{opacity:1;transform:translate(-50%,0)}75%{opacity:1}100%{opacity:0}}
+#bbmeter.green .f{background:var(--green)}#bbmeter.miss .f{background:var(--red)}#bbtags{position:absolute;inset:0}
 .bbtag{position:absolute;left:0;top:0;font-family:var(--f-name);font-size:17px;letter-spacing:1px;text-transform:uppercase;color:var(--tc,#fff);text-shadow:2px 2px 0 #000;white-space:nowrap}
 .bbtag.me{color:#fff;font-size:15px;background:var(--tc);padding:0 5px;text-shadow:none;border:2px solid #000}
 table.box{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
@@ -460,7 +466,11 @@ table.box tr.me td{color:var(--gold)}
 .lslot.me{border-color:var(--gold)}
 .lslot small{font-size:13px;color:var(--dim)}
 .lname{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-@media (max-width:640px){.bbteam{min-width:0;padding:4px 8px}.bbteam .nm{font-size:18px;max-width:70px}.bbteam .sc{font-size:18px;min-width:34px}}
+/* MacBook Air and bigger: menus scale up so they fill the screen properly (still never taller than the window) */
+@media (min-width:1300px) and (min-height:760px){
+  .screen>.panel{zoom:1.16}
+  .screen>.panel:not(.titlep){max-height:calc((100dvh - 40px) / 1.16)}
+}
 @media (prefers-reduced-motion:reduce){.pghost{display:none}.panel.tx-in,.panel.tx-back,.panel.tx-pop,.panel *{animation:none!important}#wipe{display:none}}
 </style>
 <canvas id="gl"></canvas>
@@ -518,7 +528,7 @@ var supabase=(function(e){function t(e,t){var n={};for(var r in e)Object.prototy
 Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/auth-js: Invalid SIWE message field "resources". Every resource must be a valid string. Provided value: ${t}`);e+=`\n- ${t}`}m+=e}return`${p}\n${m}`}var Q=class extends Error{constructor({message:e,code:t,cause:n,name:r}){super(e,{cause:n}),this.__isWebAuthnError=!0,this.name=r??(n instanceof Error?n.name:void 0)??`Unknown Error`,this.code=t}toJSON(){return{name:this.name,message:this.message,code:this.code}}},Di=class extends Q{constructor(e,t){super({code:`ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY`,cause:t,message:e}),this.name=`WebAuthnUnknownError`,this.originalError=t}};function Oi({error:e,options:t}){let{publicKey:n}=t;if(!n)throw Error(`options was missing required publicKey property`);if(e.name===`AbortError`){if(t.signal instanceof AbortSignal)return new Q({message:`Registration ceremony was sent an abort signal`,code:`ERROR_CEREMONY_ABORTED`,cause:e})}else if(e.name===`ConstraintError`){if(n.authenticatorSelection?.requireResidentKey===!0)return new Q({message:`Discoverable credentials were required but no available authenticator supported it`,code:`ERROR_AUTHENTICATOR_MISSING_DISCOVERABLE_CREDENTIAL_SUPPORT`,cause:e});if(t.mediation===`conditional`&&n.authenticatorSelection?.userVerification===`required`)return new Q({message:`User verification was required during automatic registration but it could not be performed`,code:`ERROR_AUTO_REGISTER_USER_VERIFICATION_FAILURE`,cause:e});if(n.authenticatorSelection?.userVerification===`required`)return new Q({message:`User verification was required but no available authenticator supported it`,code:`ERROR_AUTHENTICATOR_MISSING_USER_VERIFICATION_SUPPORT`,cause:e})}else if(e.name===`InvalidStateError`)return new Q({message:`The authenticator was previously registered`,code:`ERROR_AUTHENTICATOR_PREVIOUSLY_REGISTERED`,cause:e});else if(e.name===`NotAllowedError`)return new Q({message:e.message,code:`ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY`,cause:e});else if(e.name===`NotSupportedError`)return n.pubKeyCredParams.filter(e=>e.type===`public-key`).length===0?new Q({message:`No entry in pubKeyCredParams was of type "public-key"`,code:`ERROR_MALFORMED_PUBKEYCREDPARAMS`,cause:e}):new Q({message:`No available authenticator supported any of the specified pubKeyCredParams algorithms`,code:`ERROR_AUTHENTICATOR_NO_SUPPORTED_PUBKEYCREDPARAMS_ALG`,cause:e});else if(e.name===`SecurityError`){let t=window.location.hostname;if(Fi(t)){if(n.rp.id!==t)return new Q({message:`The RP ID "${n.rp.id}" is invalid for this domain`,code:`ERROR_INVALID_RP_ID`,cause:e})}else return new Q({message:`${window.location.hostname} is an invalid domain`,code:`ERROR_INVALID_DOMAIN`,cause:e})}else if(e.name===`TypeError`){if(n.user.id.byteLength<1||n.user.id.byteLength>64)return new Q({message:`User ID was not between 1 and 64 characters`,code:`ERROR_INVALID_USER_ID_LENGTH`,cause:e})}else if(e.name===`UnknownError`)return new Q({message:`The authenticator was unable to process the specified options, or could not create a new credential`,code:`ERROR_AUTHENTICATOR_GENERAL_ERROR`,cause:e});return new Q({message:`a Non-Webauthn related error has occurred`,code:`ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY`,cause:e})}function ki({error:e,options:t}){let{publicKey:n}=t;if(!n)throw Error(`options was missing required publicKey property`);if(e.name===`AbortError`){if(t.signal instanceof AbortSignal)return new Q({message:`Authentication ceremony was sent an abort signal`,code:`ERROR_CEREMONY_ABORTED`,cause:e})}else if(e.name===`NotAllowedError`)return new Q({message:e.message,code:`ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY`,cause:e});else if(e.name===`SecurityError`){let t=window.location.hostname;if(Fi(t)){if(n.rpId!==t)return new Q({message:`The RP ID "${n.rpId}" is invalid for this domain`,code:`ERROR_INVALID_RP_ID`,cause:e})}else return new Q({message:`${window.location.hostname} is an invalid domain`,code:`ERROR_INVALID_DOMAIN`,cause:e})}else if(e.name===`UnknownError`)return new Q({message:`The authenticator was unable to process the specified options, or could not create a new assertion signature`,code:`ERROR_AUTHENTICATOR_GENERAL_ERROR`,cause:e});return new Q({message:`a Non-Webauthn related error has occurred`,code:`ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY`,cause:e})}let Ai=new class{createNewAbortSignal(){if(this.controller){let e=Error(`Cancelling existing WebAuthn API call for new one`);e.name=`AbortError`,this.controller.abort(e)}let e=new AbortController;return this.controller=e,e.signal}cancelCeremony(){if(this.controller){let e=Error(`Manually cancelling existing WebAuthn API call`);e.name=`AbortError`,this.controller.abort(e),this.controller=void 0}}};function ji(e){if(!e)throw Error(`Credential creation options are required`);if(typeof PublicKeyCredential<`u`&&`parseCreationOptionsFromJSON`in PublicKeyCredential&&typeof PublicKeyCredential.parseCreationOptionsFromJSON==`function`)return PublicKeyCredential.parseCreationOptionsFromJSON(e);let{challenge:n,user:r,excludeCredentials:i}=e,a=t(e,[`challenge`,`user`,`excludeCredentials`]),o=Sr(n).buffer,s=Object.assign(Object.assign({},r),{id:Sr(r.id).buffer}),c=Object.assign(Object.assign({},a),{challenge:o,user:s});if(i&&i.length>0){c.excludeCredentials=Array(i.length);for(let e=0;e<i.length;e++){let t=i[e];c.excludeCredentials[e]=Object.assign(Object.assign({},t),{id:Sr(t.id).buffer,type:t.type||`public-key`,transports:t.transports})}}return c}function Mi(e){if(!e)throw Error(`Credential request options are required`);if(typeof PublicKeyCredential<`u`&&`parseRequestOptionsFromJSON`in PublicKeyCredential&&typeof PublicKeyCredential.parseRequestOptionsFromJSON==`function`)return PublicKeyCredential.parseRequestOptionsFromJSON(e);let{challenge:n,allowCredentials:r}=e,i=t(e,[`challenge`,`allowCredentials`]),a=Sr(n).buffer,o=Object.assign(Object.assign({},i),{challenge:a});if(r&&r.length>0){o.allowCredentials=Array(r.length);for(let e=0;e<r.length;e++){let t=r[e];o.allowCredentials[e]=Object.assign(Object.assign({},t),{id:Sr(t.id).buffer,type:t.type||`public-key`,transports:t.transports})}}return o}function Ni(e){if(`toJSON`in e&&typeof e.toJSON==`function`)return e.toJSON();let t=e;return{id:e.id,rawId:e.id,response:{attestationObject:z(new Uint8Array(e.response.attestationObject)),clientDataJSON:z(new Uint8Array(e.response.clientDataJSON))},type:`public-key`,clientExtensionResults:e.getClientExtensionResults(),authenticatorAttachment:t.authenticatorAttachment??void 0}}function Pi(e){if(`toJSON`in e&&typeof e.toJSON==`function`)return e.toJSON();let t=e,n=e.getClientExtensionResults(),r=e.response;return{id:e.id,rawId:e.id,response:{authenticatorData:z(new Uint8Array(r.authenticatorData)),clientDataJSON:z(new Uint8Array(r.clientDataJSON)),signature:z(new Uint8Array(r.signature)),userHandle:r.userHandle?z(new Uint8Array(r.userHandle)):void 0},type:`public-key`,clientExtensionResults:n,authenticatorAttachment:t.authenticatorAttachment??void 0}}function Fi(e){return e===`localhost`||/^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$/i.test(e)}function Ii(){return!!(B()&&`PublicKeyCredential`in window&&window.PublicKeyCredential&&`credentials`in navigator&&typeof(navigator==null?void 0:navigator.credentials)?.create==`function`&&typeof(navigator==null?void 0:navigator.credentials)?.get==`function`)}async function Li(e){try{let t=await navigator.credentials.create(e);return t?t instanceof PublicKeyCredential?{data:t,error:null}:{data:null,error:new Di(`Browser returned unexpected credential type`,t)}:{data:null,error:new Di(`Empty credential response`,t)}}catch(t){return{data:null,error:Oi({error:t,options:e})}}}async function Ri(e){try{let t=await navigator.credentials.get(e);return t?t instanceof PublicKeyCredential?{data:t,error:null}:{data:null,error:new Di(`Browser returned unexpected credential type`,t)}:{data:null,error:new Di(`Empty credential response`,t)}}catch(t){return{data:null,error:ki({error:t,options:e})}}}let zi={hints:[`security-key`],authenticatorSelection:{authenticatorAttachment:`cross-platform`,requireResidentKey:!1,userVerification:`preferred`,residentKey:`discouraged`},attestation:`direct`},Bi={userVerification:`preferred`,hints:[`security-key`],attestation:`direct`};function Vi(...e){let t=e=>typeof e==`object`&&!!e&&!Array.isArray(e),n=e=>e instanceof ArrayBuffer||ArrayBuffer.isView(e),r={};for(let i of e)if(i)for(let e in i){let a=i[e];if(a!==void 0)if(Array.isArray(a))r[e]=a;else if(n(a))r[e]=a;else if(t(a)){let n=r[e];t(n)?r[e]=Vi(n,a):r[e]=Vi(a)}else r[e]=a}return r}function Hi(e,t){return Vi(zi,e,t||{})}function Ui(e,t){return Vi(Bi,e,t||{})}var Wi=class{constructor(e){this.client=e,this.enroll=this._enroll.bind(this),this.challenge=this._challenge.bind(this),this.verify=this._verify.bind(this),this.authenticate=this._authenticate.bind(this),this.register=this._register.bind(this)}async _enroll(e){return this.client.mfa.enroll(Object.assign(Object.assign({},e),{factorType:`webauthn`}))}async _challenge({factorId:e,webauthn:t,friendlyName:n,signal:r},i){try{let{data:a,error:o}=await this.client.mfa.challenge({factorId:e,webauthn:t});if(!a)return{data:null,error:o};let s=r??Ai.createNewAbortSignal();if(a.webauthn.type===`create`){let{user:e}=a.webauthn.credential_options.publicKey;if(!e.name){let t=n;if(t)e.name=`${e.id}:${t}`;else{let t=(await this.client.getUser()).data.user,n=t?.user_metadata?.name||t?.email||t?.id||`User`;e.name=`${e.id}:${n}`}}e.displayName||=e.name}switch(a.webauthn.type){case`create`:{let{data:t,error:n}=await Li({publicKey:Hi(a.webauthn.credential_options.publicKey,i?.create),signal:s});return t?{data:{factorId:e,challengeId:a.id,webauthn:{type:a.webauthn.type,credential_response:t}},error:null}:{data:null,error:n}}case`request`:{let t=Ui(a.webauthn.credential_options.publicKey,i?.request),{data:n,error:r}=await Ri(Object.assign(Object.assign({},a.webauthn.credential_options),{publicKey:t,signal:s}));return n?{data:{factorId:e,challengeId:a.id,webauthn:{type:a.webauthn.type,credential_response:n}},error:null}:{data:null,error:r}}}}catch(e){return P(e)?{data:null,error:e}:{data:null,error:new F(`Unexpected error in challenge`,e)}}}async _verify({challengeId:e,factorId:t,webauthn:n}){return this.client.mfa.verify({factorId:t,challengeId:e,webauthn:n})}async _authenticate({factorId:e,webauthn:{rpId:t=typeof window<`u`?window.location.hostname:void 0,rpOrigins:n=typeof window<`u`?[window.location.origin]:void 0,signal:r}={}},i){if(!t)return{data:null,error:new Xn(`rpId is required for WebAuthn authentication`)};try{if(!Ii())return{data:null,error:new F(`Browser does not support WebAuthn`,null)};let{data:a,error:o}=await this.challenge({factorId:e,webauthn:{rpId:t,rpOrigins:n},signal:r},{request:i});if(!a)return{data:null,error:o};let{webauthn:s}=a;return this._verify({factorId:e,challengeId:a.challengeId,webauthn:{type:s.type,rpId:t,rpOrigins:n,credential_response:s.credential_response}})}catch(e){return P(e)?{data:null,error:e}:{data:null,error:new F(`Unexpected error in authenticate`,e)}}}async _register({friendlyName:e,webauthn:{rpId:t=typeof window<`u`?window.location.hostname:void 0,rpOrigins:n=typeof window<`u`?[window.location.origin]:void 0,signal:r}={}},i){if(!t)return{data:null,error:new Xn(`rpId is required for WebAuthn registration`)};try{if(!Ii())return{data:null,error:new F(`Browser does not support WebAuthn`,null)};let{data:a,error:o}=await this._enroll({friendlyName:e});if(!a)return await this.client.mfa.listFactors().then(t=>t.data?.all.find(t=>t.factor_type===`webauthn`&&t.friendly_name===e&&t.status===`unverified`)).then(e=>e?this.client.mfa.unenroll({factorId:e?.id}):void 0),{data:null,error:o};let{data:s,error:c}=await this._challenge({factorId:a.id,friendlyName:a.friendly_name,webauthn:{rpId:t,rpOrigins:n},signal:r},{create:i});return s?this._verify({factorId:a.id,challengeId:s.challengeId,webauthn:{rpId:t,rpOrigins:n,type:s.webauthn.type,credential_response:s.webauthn.credential_response}}):{data:null,error:c}}catch(e){return P(e)?{data:null,error:e}:{data:null,error:new F(`Unexpected error in register`,e)}}}};Si();let Gi={url:`http://localhost:9999`,storageKey:`supabase.auth.token`,autoRefreshToken:!0,persistSession:!0,detectSessionInUrl:!0,headers:Kn,flowType:`implicit`,debug:!1,hasCustomAuthorizationHeader:!1,throwOnError:!1,lockAcquireTimeout:5e3,skipAutoInitialize:!1,experimental:{}},$={},Ki=!1;var qi=class e{get jwks(){return $[this.storageKey]?.jwks??{keys:[]}}set jwks(e){$[this.storageKey]=Object.assign(Object.assign({},$[this.storageKey]),{jwks:e})}get jwks_cached_at(){return $[this.storageKey]?.cachedAt??-(2**53-1)}set jwks_cached_at(e){$[this.storageKey]=Object.assign(Object.assign({},$[this.storageKey]),{cachedAt:e})}constructor(t){var n;this.userStorage=null,this.memoryStorage=null,this.stateChangeEmitters=new Map,this.autoRefreshTicker=null,this.autoRefreshTickTimeout=null,this.visibilityChangedCallback=null,this.refreshingDeferred=null,this.lastRefreshFailure=null,this._sessionRemovalEpoch=0,this.initializePromise=null,this._pendingInitNotifications=null,this.detectSessionInUrl=!0,this.hasCustomAuthorizationHeader=!1,this.suppressGetSessionWarning=!1,this.lock=null,this.lockAcquired=!1,this.pendingInLock=[],this.broadcastChannel=null,this.logger=console.log;let r=Object.assign(Object.assign({},Gi),t);if(this.storageKey=r.storageKey,this.instanceID=e.nextInstanceID[this.storageKey]??0,e.nextInstanceID[this.storageKey]=this.instanceID+1,this.logDebugMessages=!!r.debug,typeof r.debug==`function`&&(this.logger=r.debug),this.instanceID>0&&B()){let e=`${this._logPrefix()} Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.`;console.warn(e),this.logDebugMessages&&console.trace(e)}if(this.persistSession=r.persistSession,this.autoRefreshToken=r.autoRefreshToken,this.experimental=r.experimental??{},this.admin=new mi({url:r.url,headers:r.headers,fetch:r.fetch,experimental:this.experimental}),this.url=r.url,this.headers=r.headers,this.fetch=Or(r.fetch),this.detectSessionInUrl=r.detectSessionInUrl,this.flowType=r.flowType,this.hasCustomAuthorizationHeader=r.hasCustomAuthorizationHeader,this.throwOnError=r.throwOnError,this.lockAcquireTimeout=r.lockAcquireTimeout,r.lock!=null&&(this.lock=r.lock,Ki||(Ki=!0,console.warn(`${this._logPrefix()} The "lock" option is deprecated and will be removed in v3. The client now coordinates session refreshes without a lock, so most apps can drop the option. See https://github.com/supabase/supabase-js/blob/master/packages/core/auth-js/migrations/lockless-coordination.md`))),this.jwks||(this.jwks={keys:[]},this.jwks_cached_at=-(2**53-1)),this.mfa={verify:this._verify.bind(this),enroll:this._enroll.bind(this),unenroll:this._unenroll.bind(this),challenge:this._challenge.bind(this),listFactors:this._listFactors.bind(this),challengeAndVerify:this._challengeAndVerify.bind(this),getAuthenticatorAssuranceLevel:this._getAuthenticatorAssuranceLevel.bind(this),webauthn:new Wi(this),recoveryCodes:{getStatus:this._getRecoveryCodesStatus.bind(this),generate:this._generateRecoveryCodes.bind(this),verify:this._verifyRecoveryCode.bind(this),regenerate:this._regenerateRecoveryCodes.bind(this),unenroll:this._unenrollRecoveryCodes.bind(this)}},this.oauth={getAuthorizationDetails:this._getAuthorizationDetails.bind(this),approveAuthorization:this._approveAuthorization.bind(this),denyAuthorization:this._denyAuthorization.bind(this),listGrants:this._listOAuthGrants.bind(this),revokeGrant:this._revokeOAuthGrant.bind(this)},this.passkey={startRegistration:this._startPasskeyRegistration.bind(this),verifyRegistration:this._verifyPasskeyRegistration.bind(this),startAuthentication:this._startPasskeyAuthentication.bind(this),verifyAuthentication:this._verifyPasskeyAuthentication.bind(this),list:this._listPasskeys.bind(this),update:this._updatePasskey.bind(this),delete:this._deletePasskey.bind(this)},this.persistSession?(r.storage?this.storage=r.storage:Er()?this.storage=globalThis.localStorage:(this.memoryStorage={},this.storage=hi(this.memoryStorage)),r.userStorage&&(this.userStorage=r.userStorage)):(this.memoryStorage={},this.storage=hi(this.memoryStorage)),B()&&globalThis.BroadcastChannel&&this.persistSession&&this.storageKey){try{this.broadcastChannel=new globalThis.BroadcastChannel(this.storageKey)}catch(e){console.error(`Failed to create a new BroadcastChannel, multi-tab state changes will not be available`,e)}(n=this.broadcastChannel)==null||n.addEventListener(`message`,async e=>{this._debug(`received broadcast notification from other tab or client`,e),(e.data.event===`TOKEN_REFRESHED`||e.data.event===`SIGNED_IN`)&&(this.lastRefreshFailure=null);try{await this._notifyAllSubscribers(e.data.event,e.data.session,!1)}catch(e){this._debug(`#broadcastChannel`,`error`,e)}})}r.skipAutoInitialize||this.initialize().catch(e=>{this._debug(`#initialize()`,`error`,e)})}isThrowOnErrorEnabled(){return this.throwOnError}_returnResult(e){if(this.throwOnError&&e&&e.error)throw e.error;return e}_logPrefix(){return`GoTrueClient@${this.storageKey}:${this.instanceID} (${Wn}) ${new Date().toISOString()}`}_debug(...e){return this.logDebugMessages&&this.logger(this._logPrefix(),...e),this}async initialize(){if(this.initializePromise)return await this.initializePromise;this._pendingInitNotifications=[],this.initializePromise=(async()=>this.lock==null?await this._initialize():await this._acquireLock(this.lockAcquireTimeout,async()=>await this._initialize()))();let e=await this.initializePromise,t=this._pendingInitNotifications??[];this._pendingInitNotifications=null;for(let e of t)await this._notifyAllSubscribers(e.event,e.session,e.broadcast);return e}async _initialize(){try{let e={},t=`none`;if(B()&&(e=Dr(window.location.href),this._isImplicitGrantCallback(e)?t=`implicit`:await this._isPKCECallback(e)&&(t=`pkce`)),B()&&this.detectSessionInUrl&&t!==`none`){let{data:n,error:r}=await this._getSessionFromURL(e,t);if(r){if(this._debug(`#_initialize()`,`error detecting session from URL`,r),nr(r)){let e=r.details?.code;if(e===`identity_already_exists`||e===`identity_not_found`||e===`single_identity_not_deletable`)return{error:r}}return{error:r}}let{session:i,redirectType:a}=n;return this._debug(`#_initialize()`,`detected session in URL`,i,`redirect type`,a),await this._saveSession(i),setTimeout(async()=>{a===`recovery`?await this._notifyAllSubscribers(`PASSWORD_RECOVERY`,i):await this._notifyAllSubscribers(`SIGNED_IN`,i)},0),{error:null}}return await this._recoverAndRefresh(),{error:null}}catch(e){return P(e)?this._returnResult({error:e}):this._returnResult({error:new F(`Unexpected error during initialization`,e)})}finally{await this._handleVisibilityChange(),this._debug(`#_initialize()`,`end`)}}async signInAnonymously(e){try{let{data:t,error:n}=await J(this.fetch,`POST`,`${this.url}/signup`,{headers:this.headers,body:{data:e?.options?.data??{},gotrue_meta_security:{captcha_token:e?.options?.captchaToken}},xform:Y});if(n||!t)return this._returnResult({data:{user:null,session:null},error:n});let r=t.session,i=t.user;return t.session&&(await this._saveSession(t.session),await this._notifyAllSubscribers(`SIGNED_IN`,r)),this._returnResult({data:{user:i,session:r},error:null})}catch(e){if(P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async signUp(e){let t=null;try{let n;if(`email`in e){let{email:r,password:i,options:a}=e,o=null,s=null;this.flowType===`pkce`&&([o,s,t]=await this._getCodeChallengeAndMethod()),n=await J(this.fetch,`POST`,`${this.url}/signup`,{headers:this.headers,redirectTo:this._maybeAppendFlowIdToRedirect(a?.emailRedirectTo,t),body:{email:r,password:i,data:a?.data??{},gotrue_meta_security:{captcha_token:a?.captchaToken},code_challenge:o,code_challenge_method:s},xform:Y})}else if(`phone`in e){let{phone:t,password:r,options:i}=e;n=await J(this.fetch,`POST`,`${this.url}/signup`,{headers:this.headers,body:{phone:t,password:r,data:i?.data??{},channel:i?.channel??`sms`,gotrue_meta_security:{captcha_token:i?.captchaToken}},xform:Y})}else throw new er(`You must provide either an email or phone number and a password`);let{data:r,error:i}=n;if(i||!r)return await G(this.storage,this.storageKey,t),this._returnResult({data:{user:null,session:null},error:i});let a=r.session,o=r.user;return r.session&&(await this._saveSession(r.session),await this._notifyAllSubscribers(`SIGNED_IN`,a)),this._returnResult({data:{user:o,session:a},error:null})}catch(e){if(await G(this.storage,this.storageKey,t),P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async signInWithPassword(e){try{let t;if(`email`in e){let{email:n,password:r,options:i}=e;t=await J(this.fetch,`POST`,`${this.url}/token?grant_type=password`,{headers:this.headers,body:{email:n,password:r,gotrue_meta_security:{captcha_token:i?.captchaToken}},xform:ci})}else if(`phone`in e){let{phone:n,password:r,options:i}=e;t=await J(this.fetch,`POST`,`${this.url}/token?grant_type=password`,{headers:this.headers,body:{phone:n,password:r,gotrue_meta_security:{captcha_token:i?.captchaToken}},xform:ci})}else throw new er(`You must provide either an email or phone number and a password`);let{data:n,error:r}=t;if(r)return this._returnResult({data:{user:null,session:null},error:r});if(!n||!n.session||!n.user){let e=new R;return this._returnResult({data:{user:null,session:null},error:e})}return n.session&&(await this._saveSession(n.session),await this._notifyAllSubscribers(`SIGNED_IN`,n.session)),this._returnResult({data:Object.assign({user:n.user,session:n.session},n.weak_password?{weakPassword:n.weak_password}:null),error:r})}catch(e){if(P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async signInWithOAuth(e){return await this._handleProviderSignIn(e.provider,{redirectTo:e.options?.redirectTo,scopes:e.options?.scopes,queryParams:e.options?.queryParams,skipBrowserRedirect:e.options?.skipBrowserRedirect})}async exchangeCodeForSession(e,t){return await this.initializePromise,this.lock==null?this._exchangeCodeForSession(e,t):this._acquireLock(this.lockAcquireTimeout,async()=>this._exchangeCodeForSession(e,t))}async signInWithWeb3(e){let{chain:t}=e;switch(t){case`ethereum`:return await this.signInWithEthereum(e);case`solana`:return await this.signInWithSolana(e);default:throw Error(`@supabase/auth-js: Unsupported chain "${t}"`)}}async signInWithEthereum(e){let t,n;if(`message`in e)t=e.message,n=e.signature;else{let{chain:r,wallet:i,statement:a,options:o}=e,s;if(B())if(typeof i==`object`)s=i;else{let e=window;if(`ethereum`in e&&typeof e.ethereum==`object`&&`request`in e.ethereum&&typeof e.ethereum.request==`function`)s=e.ethereum;else throw Error(`@supabase/auth-js: No compatible Ethereum wallet interface on the window object (window.ethereum) detected. Make sure the user already has a wallet installed and connected for this app. Prefer passing the wallet interface object directly to signInWithWeb3({ chain: 'ethereum', wallet: resolvedUserWallet }) instead.`)}else{if(typeof i!=`object`||!o?.url)throw Error(`@supabase/auth-js: Both wallet and url must be specified in non-browser environments.`);s=i}let c=new URL(o?.url??window.location.href),l=await s.request({method:`eth_requestAccounts`}).then(e=>e).catch(()=>{throw Error(`@supabase/auth-js: Wallet method eth_requestAccounts is missing or invalid`)});if(!l||l.length===0)throw Error(`@supabase/auth-js: No accounts available. Please ensure the wallet is connected.`);let u=Ci(l[0]),d=o?.signInWithEthereum?.chainId;d||=wi(await s.request({method:`eth_chainId`})),t=Ei({domain:c.host,address:u,statement:a,uri:c.href,version:`1`,chainId:d,nonce:o?.signInWithEthereum?.nonce,issuedAt:o?.signInWithEthereum?.issuedAt??new Date,expirationTime:o?.signInWithEthereum?.expirationTime,notBefore:o?.signInWithEthereum?.notBefore,requestId:o?.signInWithEthereum?.requestId,resources:o?.signInWithEthereum?.resources}),n=await s.request({method:`personal_sign`,params:[Ti(t),u]})}try{let{data:r,error:i}=await J(this.fetch,`POST`,`${this.url}/token?grant_type=web3`,{headers:this.headers,body:Object.assign({chain:`ethereum`,message:t,signature:n},e.options?.captchaToken?{gotrue_meta_security:{captcha_token:e.options?.captchaToken}}:null),xform:Y});if(i)throw i;if(!r||!r.session||!r.user){let e=new R;return this._returnResult({data:{user:null,session:null},error:e})}return r.session&&(await this._saveSession(r.session),await this._notifyAllSubscribers(`SIGNED_IN`,r.session)),this._returnResult({data:Object.assign({},r),error:i})}catch(e){if(P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async signInWithSolana(e){let t,n;if(`message`in e)t=e.message,n=e.signature;else{let{chain:r,wallet:i,statement:a,options:o}=e,s;if(B())if(typeof i==`object`)s=i;else{let e=window;if(`solana`in e&&typeof e.solana==`object`&&(`signIn`in e.solana&&typeof e.solana.signIn==`function`||`signMessage`in e.solana&&typeof e.solana.signMessage==`function`))s=e.solana;else throw Error(`@supabase/auth-js: No compatible Solana wallet interface on the window object (window.solana) detected. Make sure the user already has a wallet installed and connected for this app. Prefer passing the wallet interface object directly to signInWithWeb3({ chain: 'solana', wallet: resolvedUserWallet }) instead.`)}else{if(typeof i!=`object`||!o?.url)throw Error(`@supabase/auth-js: Both wallet and url must be specified in non-browser environments.`);s=i}let c=new URL(o?.url??window.location.href);if(`signIn`in s&&s.signIn){let e=await s.signIn(Object.assign(Object.assign(Object.assign({issuedAt:new Date().toISOString()},o?.signInWithSolana),{version:`1`,domain:c.host,uri:c.href}),a?{statement:a}:null)),r;if(Array.isArray(e)&&e[0]&&typeof e[0]==`object`)r=e[0];else if(e&&typeof e==`object`&&`signedMessage`in e&&`signature`in e)r=e;else throw Error(`@supabase/auth-js: Wallet method signIn() returned unrecognized value`);if(`signedMessage`in r&&`signature`in r&&(typeof r.signedMessage==`string`||r.signedMessage instanceof Uint8Array)&&r.signature instanceof Uint8Array)t=typeof r.signedMessage==`string`?r.signedMessage:new TextDecoder().decode(r.signedMessage),n=r.signature;else throw Error(`@supabase/auth-js: Wallet method signIn() API returned object without signedMessage and signature fields`)}else{if(!(`signMessage`in s)||typeof s.signMessage!=`function`||!(`publicKey`in s)||typeof s!=`object`||!s.publicKey||!(`toBase58`in s.publicKey)||typeof s.publicKey.toBase58!=`function`)throw Error(`@supabase/auth-js: Wallet does not have a compatible signMessage() and publicKey.toBase58() API`);t=[`${c.host} wants you to sign in with your Solana account:`,s.publicKey.toBase58(),...a?[``,a,``]:[``],`Version: 1`,`URI: ${c.href}`,`Issued At: ${o?.signInWithSolana?.issuedAt??new Date().toISOString()}`,...o?.signInWithSolana?.notBefore?[`Not Before: ${o.signInWithSolana.notBefore}`]:[],...o?.signInWithSolana?.expirationTime?[`Expiration Time: ${o.signInWithSolana.expirationTime}`]:[],...o?.signInWithSolana?.chainId?[`Chain ID: ${o.signInWithSolana.chainId}`]:[],...o?.signInWithSolana?.nonce?[`Nonce: ${o.signInWithSolana.nonce}`]:[],...o?.signInWithSolana?.requestId?[`Request ID: ${o.signInWithSolana.requestId}`]:[],...o?.signInWithSolana?.resources?.length?[`Resources`,...o.signInWithSolana.resources.map(e=>`- ${e}`)]:[]].join(`
 `);let e=await s.signMessage(new TextEncoder().encode(t),`utf8`);if(!e||!(e instanceof Uint8Array))throw Error(`@supabase/auth-js: Wallet signMessage() API returned an recognized value`);n=e}}try{let{data:r,error:i}=await J(this.fetch,`POST`,`${this.url}/token?grant_type=web3`,{headers:this.headers,body:Object.assign({chain:`solana`,message:t,signature:z(n)},e.options?.captchaToken?{gotrue_meta_security:{captcha_token:e.options?.captchaToken}}:null),xform:Y});if(i)throw i;if(!r||!r.session||!r.user){let e=new R;return this._returnResult({data:{user:null,session:null},error:e})}return r.session&&(await this._saveSession(r.session),await this._notifyAllSubscribers(`SIGNED_IN`,r.session)),this._returnResult({data:Object.assign({},r),error:i})}catch(e){if(P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async _exchangeCodeForSession(e,t){let n=t?.flowId!=null,r=n?zr(t?.flowId):B()?zr(Dr(window.location.href)[N]):null;n&&!r&&this._debug(`#_exchangeCodeForSession()`,`provided flowId is not a valid flow id`,t?.flowId);let{verifier:i,flowId:a}=n&&!r?{verifier:null,flowId:null}:await Gr(this.storage,this.storageKey,r),[o,s]=(i??``).split(`/`);try{if(!o&&this.flowType===`pkce`)throw new ir;let{data:t,error:n}=await J(this.fetch,`POST`,`${this.url}/token?grant_type=pkce`,{headers:this.headers,body:{auth_code:e,code_verifier:o},xform:Y});if(await G(this.storage,this.storageKey,a),n)throw n;if(!t||!t.session||!t.user){let e=new R;return this._returnResult({data:{user:null,session:null,redirectType:null},error:e})}return t.session&&(await this._saveSession(t.session),await this._notifyAllSubscribers(s===`recovery`?`PASSWORD_RECOVERY`:`SIGNED_IN`,t.session)),this._returnResult({data:Object.assign(Object.assign({},t),{redirectType:s??null}),error:n})}catch(e){if(await G(this.storage,this.storageKey,a),P(e))return this._returnResult({data:{user:null,session:null,redirectType:null},error:e});throw e}}async signInWithIdToken(e){try{let{options:t,provider:n,token:r,access_token:i,nonce:a}=e,{data:o,error:s}=await J(this.fetch,`POST`,`${this.url}/token?grant_type=id_token`,{headers:this.headers,body:{provider:n,id_token:r,access_token:i,nonce:a,gotrue_meta_security:{captcha_token:t?.captchaToken}},xform:Y});if(s)return this._returnResult({data:{user:null,session:null},error:s});if(!o||!o.session||!o.user){let e=new R;return this._returnResult({data:{user:null,session:null},error:e})}return o.session&&(await this._saveSession(o.session),await this._notifyAllSubscribers(`SIGNED_IN`,o.session)),this._returnResult({data:o,error:s})}catch(e){if(P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async signInWithOtp(e){let t=null;try{if(`email`in e){let{email:n,options:r}=e,i=null,a=null;this.flowType===`pkce`&&([i,a,t]=await this._getCodeChallengeAndMethod());let{error:o}=await J(this.fetch,`POST`,`${this.url}/otp`,{headers:this.headers,body:{email:n,data:r?.data??{},create_user:r?.shouldCreateUser??!0,gotrue_meta_security:{captcha_token:r?.captchaToken},code_challenge:i,code_challenge_method:a},redirectTo:this._maybeAppendFlowIdToRedirect(r?.emailRedirectTo,t)});return this._returnResult({data:{user:null,session:null},error:o})}if(`phone`in e){let{phone:t,options:n}=e,{data:r,error:i}=await J(this.fetch,`POST`,`${this.url}/otp`,{headers:this.headers,body:{phone:t,data:n?.data??{},create_user:n?.shouldCreateUser??!0,gotrue_meta_security:{captcha_token:n?.captchaToken},channel:n?.channel??`sms`}});return this._returnResult({data:{user:null,session:null,messageId:r?.message_id},error:i})}throw new er(`You must provide either an email or phone number.`)}catch(e){if(await G(this.storage,this.storageKey,t),P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async verifyOtp(e){try{let t,n;`options`in e&&(t=e.options?.redirectTo,n=e.options?.captchaToken);let{data:r,error:i}=await J(this.fetch,`POST`,`${this.url}/verify`,{headers:this.headers,body:Object.assign(Object.assign({},e),{gotrue_meta_security:{captcha_token:n}}),redirectTo:t,xform:Y});if(i)throw i;if(!r)throw Error(`An error occurred on token verification.`);let a=r.session,o=r.user;return a?.access_token&&(await this._saveSession(a),await this._notifyAllSubscribers(e.type==`recovery`?`PASSWORD_RECOVERY`:`SIGNED_IN`,a)),this._returnResult({data:{user:o,session:a},error:null})}catch(e){if(P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async signInWithSSO(e){let t=null;try{let n=null,r=null;this.flowType===`pkce`&&([n,r,t]=await this._getCodeChallengeAndMethod());let i=await J(this.fetch,`POST`,`${this.url}/sso`,{body:Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({},`providerId`in e?{provider_id:e.providerId}:null),`domain`in e?{domain:e.domain}:null),{redirect_to:this._maybeAppendFlowIdToRedirect(e.options?.redirectTo,t)}),e?.options?.captchaToken?{gotrue_meta_security:{captcha_token:e.options.captchaToken}}:null),{skip_http_redirect:!0,code_challenge:n,code_challenge_method:r}),headers:this.headers,xform:li});return i.data?.url&&B()&&!e.options?.skipBrowserRedirect&&window.location.assign(i.data.url),this._returnResult(i)}catch(e){if(await G(this.storage,this.storageKey,t),P(e))return this._returnResult({data:null,error:e});throw e}}async reauthenticate(){return await this.initializePromise,this.lock==null?await this._reauthenticate():await this._acquireLock(this.lockAcquireTimeout,async()=>await this._reauthenticate())}async _reauthenticate(){try{return await this._useSession(async e=>{let{data:{session:t},error:n}=e;if(n)throw n;if(!t)throw new L;let{error:r}=await J(this.fetch,`GET`,`${this.url}/reauthenticate`,{headers:this.headers,jwt:t.access_token});return this._returnResult({data:{user:null,session:null},error:r})})}catch(e){if(P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async resend(e){let t=null;try{let n=`${this.url}/resend`;if(`email`in e){let{email:r,type:i,options:a}=e,o=null,s=null;this.flowType===`pkce`&&([o,s,t]=await this._getCodeChallengeAndMethod());let{error:c}=await J(this.fetch,`POST`,n,{headers:this.headers,body:{email:r,type:i,gotrue_meta_security:{captcha_token:a?.captchaToken},code_challenge:o,code_challenge_method:s},redirectTo:this._maybeAppendFlowIdToRedirect(a?.emailRedirectTo,t)});return c&&await G(this.storage,this.storageKey,t),this._returnResult({data:{user:null,session:null},error:c})}else if(`phone`in e){let{phone:t,type:r,options:i}=e,{data:a,error:o}=await J(this.fetch,`POST`,n,{headers:this.headers,body:{phone:t,type:r,gotrue_meta_security:{captcha_token:i?.captchaToken}}});return this._returnResult({data:{user:null,session:null,messageId:a?.message_id},error:o})}throw new er(`You must provide either an email or phone number and a type`)}catch(e){if(await G(this.storage,this.storageKey,t),P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async getSession(){return await this.initializePromise,this.lock==null?await this._useSession(async e=>e):await this._acquireLock(this.lockAcquireTimeout,async()=>this._useSession(async e=>e))}async _acquireLock(e,t){this._debug(`#_acquireLock`,`begin`,e);try{if(this.lockAcquired){let e=this.pendingInLock.length?this.pendingInLock[this.pendingInLock.length-1]:Promise.resolve(),n=(async()=>(await e,await t()))();return this.pendingInLock.push((async()=>{try{await n}catch{}})()),n}return await this.lock(`lock:${this.storageKey}`,e,async()=>{this._debug(`#_acquireLock`,`lock acquired for storage key`,this.storageKey);try{this.lockAcquired=!0;let e=t();for(this.pendingInLock.push((async()=>{try{await e}catch{}})()),await e;this.pendingInLock.length;){let e=[...this.pendingInLock];await Promise.all(e),this.pendingInLock.splice(0,e.length)}return await e}finally{this._debug(`#_acquireLock`,`lock released for storage key`,this.storageKey),this.lockAcquired=!1}})}finally{this._debug(`#_acquireLock`,`end`)}}async _useSession(e){this._debug(`#_useSession`,`begin`);try{return await e(await this.__loadSession())}finally{this._debug(`#_useSession`,`end`)}}async __loadSession(){this._debug(`#__loadSession()`,`begin`),this.lock!=null&&!this.lockAcquired&&this._debug(`#__loadSession()`,`used outside of an acquired lock!`,Error().stack);try{let e=null,t=await U(this.storage,this.storageKey);if(this._debug(`#getSession()`,`session from storage`,t),t!==null&&(this._isValidSession(t)?e=t:(this._debug(`#getSession()`,`session from storage is not valid`),await this._removeSession())),!e)return{data:{session:null},error:null};let n=e.expires_at?e.expires_at*1e3-Date.now()<Gn:!1;if(this._debug(`#__loadSession()`,`session has${n?``:` not`} expired`,`expires_at`,e.expires_at),!n)return{data:{session:await this._hydrateSessionUser(e)},error:null};let{data:r,error:i}=await this._callRefreshToken(e.refresh_token);if(i){let e=await U(this.storage,this.storageKey);return e&&this._isValidSession(e)&&e.expires_at&&e.expires_at*1e3>Date.now()?this._returnResult({data:{session:await this._hydrateSessionUser(e)},error:null}):this._returnResult({data:{session:null},error:i})}return this._returnResult({data:{session:r},error:null})}finally{this._debug(`#__loadSession()`,`end`)}}async _hydrateSessionUser(e){if(this.userStorage){let t=await U(this.userStorage,this.storageKey+`-user`);e.user=t?.user?t.user:ti()}if(this.storage.isServer&&e.user&&!e.user.__isUserNotAvailableProxy){let t={value:this.suppressGetSessionWarning};e.user=ni(e.user,t),t.value&&(this.suppressGetSessionWarning=!0)}return e}async getUser(e){if(e)return await this._getUser(e);await this.initializePromise;let t;return t=this.lock==null?await this._getUser():await this._acquireLock(this.lockAcquireTimeout,async()=>await this._getUser()),t.data.user&&(this.suppressGetSessionWarning=!0),t}async _getUser(e){try{return e?await J(this.fetch,`GET`,`${this.url}/user`,{headers:this.headers,jwt:e,xform:X}):await this._useSession(async e=>{let{data:t,error:n}=e;if(n)throw n;return!t.session?.access_token&&!this.hasCustomAuthorizationHeader?{data:{user:null},error:new L}:await J(this.fetch,`GET`,`${this.url}/user`,{headers:this.headers,jwt:t.session?.access_token??void 0,xform:X})})}catch(e){if(P(e))return $n(e)&&await this._removeSession(),this._returnResult({data:{user:null},error:e});throw e}}async updateUser(e,t={}){return await this.initializePromise,this.lock==null?await this._updateUser(e,t):await this._acquireLock(this.lockAcquireTimeout,async()=>await this._updateUser(e,t))}async _updateUser(e,t={}){let n=null;try{return await this._useSession(async r=>{let{data:i,error:a}=r;if(a)throw a;if(!i.session)throw new L;let o=i.session,s=null,c=null;this.flowType===`pkce`&&e.email!=null&&([s,c,n]=await this._getCodeChallengeAndMethod());let{data:l,error:u}=await J(this.fetch,`PUT`,`${this.url}/user`,{headers:this.headers,redirectTo:this._maybeAppendFlowIdToRedirect(t?.emailRedirectTo,n),body:Object.assign(Object.assign({},e),{code_challenge:s,code_challenge_method:c}),jwt:o.access_token,xform:X});if(u)throw u;return o.user=l.user,await this._saveSession(o),await this._notifyAllSubscribers(`USER_UPDATED`,o),this._returnResult({data:{user:o.user},error:null})})}catch(e){if(await G(this.storage,this.storageKey,n),P(e))return this._returnResult({data:{user:null},error:e});throw e}}async setSession(e){return await this.initializePromise,this.lock==null?await this._setSession(e):await this._acquireLock(this.lockAcquireTimeout,async()=>await this._setSession(e))}async _setSession(e){try{if(!e.access_token||!e.refresh_token)throw new L;let t=Date.now()/1e3,n=t,r=!0,i=null,{payload:a}=jr(e.access_token);if(a.exp&&(n=a.exp,r=n<=t),r){let{data:t,error:n}=await this._callRefreshToken(e.refresh_token);if(n)return this._returnResult({data:{user:null,session:null},error:n});if(!t)return{data:{user:null,session:null},error:null};i=t}else{let{data:r,error:a}=await this._getUser(e.access_token);if(a)return this._returnResult({data:{user:null,session:null},error:a});i={access_token:e.access_token,refresh_token:e.refresh_token,user:r.user,token_type:`bearer`,expires_in:n-t,expires_at:n},await this._saveSession(i),await this._notifyAllSubscribers(`SIGNED_IN`,i)}return this._returnResult({data:{user:i.user,session:i},error:null})}catch(e){if(P(e))return this._returnResult({data:{session:null,user:null},error:e});throw e}}async refreshSession(e){return await this.initializePromise,this.lock==null?await this._refreshSession(e):await this._acquireLock(this.lockAcquireTimeout,async()=>await this._refreshSession(e))}async _refreshSession(e){try{return await this._useSession(async t=>{if(!e){let{data:n,error:r}=t;if(r)throw r;e=n.session??void 0}if(!e?.refresh_token)throw new L;let{data:n,error:r}=await this._callRefreshToken(e.refresh_token);return r?this._returnResult({data:{user:null,session:null},error:r}):n?this._returnResult({data:{user:n.user,session:n},error:null}):this._returnResult({data:{user:null,session:null},error:null})})}catch(e){if(P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async _getSessionFromURL(e,t){try{if(!B())throw new tr(`No browser detected.`);if(e.error||e.error_description||e.error_code)throw new tr(e.error_description||`Error in URL with unspecified error_description`,{error:e.error||`unspecified_error`,code:e.error_code||`unspecified_code`});switch(t){case`implicit`:if(this.flowType===`pkce`)throw new rr(`Not a valid PKCE flow url.`);break;case`pkce`:if(this.flowType===`implicit`)throw new tr(`Not a valid implicit grant flow url.`);break;default:}if(t===`pkce`){if(this._debug(`#_initialize()`,`begin`,`is PKCE flow`,!0),!e.code)throw new rr(`No code detected.`);let{data:t,error:n}=await this._exchangeCodeForSession(e.code,{flowId:e[N]});if(n)throw n;let r=new URL(window.location.href);return r.searchParams.delete(`code`),r.searchParams.delete(N),window.history.replaceState(window.history.state,``,r.toString()),{data:{session:t.session,redirectType:t.redirectType??null},error:null}}let{provider_token:n,provider_refresh_token:r,access_token:i,refresh_token:a,expires_in:o,expires_at:s,token_type:c}=e;if(!i||!o||!a||!c)throw new tr(`No session defined in URL`);let l=Math.round(Date.now()/1e3),u=parseInt(o),d=l+u;s&&(d=parseInt(s));let f=d-l;f*1e3<=M&&console.warn(`@supabase/gotrue-js: Session as retrieved from URL expires in ${f}s, should have been closer to ${u}s`);let p=d-u;l-p>=120?console.warn(`@supabase/gotrue-js: Session as retrieved from URL was issued over 120s ago, URL could be stale`,p,d,l):l-p<0&&console.warn(`@supabase/gotrue-js: Session as retrieved from URL was issued in the future? Check the device clock for skew`,p,d,l);let{data:m,error:h}=await this._getUser(i);if(h)throw h;let g={provider_token:n,provider_refresh_token:r,access_token:i,expires_in:u,expires_at:d,refresh_token:a,token_type:c,user:m.user};return window.location.hash=``,this._debug(`#_getSessionFromURL()`,`clearing window.location.hash`),this._returnResult({data:{session:g,redirectType:e.type},error:null})}catch(e){if(P(e))return this._returnResult({data:{session:null,redirectType:null},error:e});throw e}}_isImplicitGrantCallback(e){return typeof this.detectSessionInUrl==`function`?this.detectSessionInUrl(new URL(window.location.href),e):!!(e.access_token||e.error||e.error_description||e.error_code)}async _isPKCECallback(e){if(!e.code)return!1;let t=zr(e[N]);return t&&await U(this.storage,Vr(this.storageKey,t))?!0:!!await U(this.storage,`${this.storageKey}-code-verifier`)}async signOut(e={scope:`global`}){return await this.initializePromise,this.lock==null?await this._signOut(e):await this._acquireLock(this.lockAcquireTimeout,async()=>await this._signOut(e))}async _signOut({scope:e}={scope:`global`}){return await this._useSession(async t=>{let n=async()=>{await this._removeSession()},{data:r,error:i}=t;if(i&&!$n(i))return this._returnResult({error:i});let a=r.session?.access_token;if(a){let{error:t}=await this.admin.signOut(a,e);if(t&&!(Qn(t)&&(t.status===404||t.status===401||t.status===403)||$n(t)))return e!==`others`&&await n(),this._returnResult({error:t})}return e!==`others`&&await n(),this._returnResult({error:null})})}onAuthStateChange(e){let t=Tr(),n={id:t,callback:e,unsubscribe:()=>{this._debug(`#unsubscribe()`,`state change callback with id removed`,t),this.stateChangeEmitters.delete(t)}};return this._debug(`#onAuthStateChange()`,`registered callback with id`,t),this.stateChangeEmitters.set(t,n),(async()=>{await this.initializePromise,this.lock==null?await this._emitInitialSession(t):await this._acquireLock(this.lockAcquireTimeout,async()=>{this._emitInitialSession(t)})})(),{data:{subscription:n}}}async _emitInitialSession(e){return await this._useSession(async t=>{try{let{data:{session:n},error:r}=t;if(r)throw r;await this.stateChangeEmitters.get(e)?.callback(`INITIAL_SESSION`,n),this._debug(`INITIAL_SESSION`,`callback id`,e,`session`,n)}catch(t){if(await this.stateChangeEmitters.get(e)?.callback(`INITIAL_SESSION`,null),this._debug(`INITIAL_SESSION`,`callback id`,e,`error`,t),lr(t))return;$n(t)||sr(t)||Qn(t)&&(t.code===`refresh_token_not_found`||t.code===`refresh_token_already_used`||t.code===`session_expired`)?console.warn(t):console.error(t)}})}async resetPasswordForEmail(e,t={}){let n=null,r=null,i=null;this.flowType===`pkce`&&([n,r,i]=await this._getCodeChallengeAndMethod(!0));try{return await J(this.fetch,`POST`,`${this.url}/recover`,{body:{email:e,code_challenge:n,code_challenge_method:r,gotrue_meta_security:{captcha_token:t.captchaToken}},headers:this.headers,redirectTo:this._maybeAppendFlowIdToRedirect(t.redirectTo,i)})}catch(e){if(await G(this.storage,this.storageKey,i),P(e))return this._returnResult({data:null,error:e});throw e}}async getUserIdentities(){try{let{data:e,error:t}=await this.getUser();if(t)throw t;return this._returnResult({data:{identities:e.user.identities??[]},error:null})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async linkIdentity(e){return`token`in e?this.linkIdentityIdToken(e):this.linkIdentityOAuth(e)}async linkIdentityOAuth(e){let t=null;try{let{data:n,error:r}=await this._useSession(async n=>{let{data:r,error:i}=n;if(i)throw i;let{url:a,flowId:o}=await this._getUrlForProvider(`${this.url}/user/identities/authorize`,e.provider,{redirectTo:e.options?.redirectTo,scopes:e.options?.scopes,queryParams:e.options?.queryParams,skipBrowserRedirect:!0});return t=o,await J(this.fetch,`GET`,a,{headers:this.headers,jwt:r.session?.access_token??void 0})});if(r)throw r;return B()&&!e.options?.skipBrowserRedirect&&window.location.assign(n?.url),this._returnResult({data:{provider:e.provider,url:n?.url,flowId:t},error:null})}catch(n){if(P(n))return this._returnResult({data:{provider:e.provider,url:null,flowId:t},error:n});throw n}}async linkIdentityIdToken(e){return await this._useSession(async t=>{try{let{error:n,data:{session:r}}=t;if(n)throw n;let{options:i,provider:a,token:o,access_token:s,nonce:c}=e,{data:l,error:u}=await J(this.fetch,`POST`,`${this.url}/token?grant_type=id_token`,{headers:this.headers,jwt:r?.access_token??void 0,body:{provider:a,id_token:o,access_token:s,nonce:c,link_identity:!0,gotrue_meta_security:{captcha_token:i?.captchaToken}},xform:Y});return u?this._returnResult({data:{user:null,session:null},error:u}):!l||!l.session||!l.user?this._returnResult({data:{user:null,session:null},error:new R}):(l.session&&(await this._saveSession(l.session),await this._notifyAllSubscribers(`USER_UPDATED`,l.session)),this._returnResult({data:l,error:u}))}catch(e){if(await G(this.storage,this.storageKey,null),P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}})}async unlinkIdentity(e){try{return await this._useSession(async t=>{let{data:n,error:r}=t;if(r)throw r;return await J(this.fetch,`DELETE`,`${this.url}/user/identities/${e.identity_id}`,{headers:this.headers,jwt:n.session?.access_token??void 0})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _refreshAccessToken(e){let t=`#_refreshAccessToken()`;this._debug(t,`begin`);try{let n=Date.now();return await Nr(async n=>(n>0&&await Mr(200*2**(n-1)),this._debug(t,`refreshing attempt`,n),await J(this.fetch,`POST`,`${this.url}/token?grant_type=refresh_token`,{body:{refresh_token:e},headers:this.headers,xform:Y})),(e,t)=>{let r=200*2**e;return t&&sr(t)&&Date.now()+r-n<M})}catch(e){if(this._debug(t,`error`,e),P(e))return this._returnResult({data:{session:null,user:null},error:e});throw e}finally{this._debug(t,`end`)}}_isValidSession(e){return typeof e==`object`&&!!e&&`access_token`in e&&`refresh_token`in e&&`expires_at`in e}async _handleProviderSignIn(e,t){let{url:n,flowId:r}=await this._getUrlForProvider(`${this.url}/authorize`,e,{redirectTo:t.redirectTo,scopes:t.scopes,queryParams:t.queryParams});return this._debug(`#_handleProviderSignIn()`,`provider`,e,`options`,t,`url`,n),B()&&!t.skipBrowserRedirect&&window.location.assign(n),{data:{provider:e,url:n,flowId:r},error:null}}async _recoverAndRefresh(){let e=`#_recoverAndRefresh()`;this._debug(e,`begin`);try{let t=await U(this.storage,this.storageKey);if(t&&this.userStorage){let e=await U(this.userStorage,this.storageKey+`-user`);!this.storage.isServer&&Object.is(this.storage,this.userStorage)&&!e&&(e={user:t.user},await H(this.userStorage,this.storageKey+`-user`,e)),t.user=e?.user??ti()}else if(t&&!t.user&&!t.user){let e=await U(this.storage,this.storageKey+`-user`);e&&e?.user?(t.user=e.user,await W(this.storage,this.storageKey+`-user`),await H(this.storage,this.storageKey,t)):t.user=ti()}if(this._debug(e,`session from storage`,t),!this._isValidSession(t)){this._debug(e,`session is not valid`),t!==null&&await this._removeSession();return}let n=(t.expires_at??1/0)*1e3-Date.now()<Gn;if(this._debug(e,`session has${n?``:` not`} expired with margin of ${Gn}s`),n){if(this.autoRefreshToken&&t.refresh_token){let{error:n}=await this._callRefreshToken(t.refresh_token);n&&(lr(n)?this._debug(e,`refresh discarded by commit guard`,n):this._debug(e,`refresh failed`,n))}}else if(t.user&&t.user.__isUserNotAvailableProxy===!0)try{let{data:n,error:r}=await this._getUser(t.access_token);!r&&n?.user?(t.user=n.user,await this._saveSession(t),await this._notifyAllSubscribers(`SIGNED_IN`,t)):this._debug(e,`could not get user data, skipping SIGNED_IN notification`)}catch(t){console.error(`Error getting user data:`,t),this._debug(e,`error getting user data, skipping SIGNED_IN notification`,t)}else await this._notifyAllSubscribers(`SIGNED_IN`,t)}catch(t){this._debug(e,`error`,t),sr(t)?console.warn(t):console.error(t);return}finally{this._debug(e,`end`)}}async _callRefreshToken(e){var t,n;if(!e)throw new L;if(this.refreshingDeferred)return this.refreshingDeferred.promise;if(this.lastRefreshFailure&&this.lastRefreshFailure.refreshToken===e&&Date.now()<this.lastRefreshFailure.expiresAt)return this._debug(`#_callRefreshToken()`,`returning cached failure (cooldown active)`),this.lastRefreshFailure.result;let r=`#_callRefreshToken()`;this._debug(r,`begin`);try{this.refreshingDeferred=new Ar,this.refreshingDeferred.promise.then(void 0,()=>{});let t=await U(this.storage,this.storageKey),{data:n,error:i}=await this._refreshAccessToken(e);if(i)throw i;if(!n.session)throw new L;let a=await U(this.storage,this.storageKey);if(t!==null&&(a===null||a.refresh_token!==t.refresh_token)){this._debug(r,`commit guard: storage changed since refresh started, discarding rotated tokens`,{startedWith:`present`,nowHolds:a?`replaced`:`cleared`});let e={data:null,error:new cr};return this.refreshingDeferred.resolve(e),e}let o=this._sessionRemovalEpoch;if(await this._saveSession(n.session),this._sessionRemovalEpoch!==o){this._debug(r,`commit guard (post-save): _removeSession ran during _saveSession, undoing write`),await W(this.storage,this.storageKey),this.userStorage&&await W(this.userStorage,this.storageKey+`-user`);let e={data:null,error:new cr};return this.refreshingDeferred.resolve(e),e}await this._notifyAllSubscribers(`TOKEN_REFRESHED`,n.session);let s={data:n.session,error:null};return this.lastRefreshFailure=null,this.refreshingDeferred.resolve(s),s}catch(i){if(this._debug(r,`error`,i),P(i)){let n={data:null,error:i};if(!sr(i)){let e=await U(this.storage,this.storageKey);e?.expires_at&&e.expires_at*1e3>Date.now()?this._debug(r,`proactive refresh failed, access token still valid — preserving session`):await this._removeSession()}return this.lastRefreshFailure={refreshToken:e,result:n,expiresAt:Date.now()+6e4},(t=this.refreshingDeferred)==null||t.resolve(n),n}throw(n=this.refreshingDeferred)==null||n.reject(i),i}finally{this.refreshingDeferred=null,this._debug(r,`end`)}}async _notifyAllSubscribers(e,t,n=!0){if(this._pendingInitNotifications!==null&&n){this._pendingInitNotifications.push({event:e,session:t,broadcast:n});return}let r=`#_notifyAllSubscribers(${e})`;this._debug(r,`begin`,t,`broadcast = ${n}`);try{this.broadcastChannel&&n&&this.broadcastChannel.postMessage({event:e,session:t});let r=[],i=Array.from(this.stateChangeEmitters.values()).map(async n=>{try{await n.callback(e,t)}catch(e){r.push(e)}});if(await Promise.all(i),r.length>0){for(let e=0;e<r.length;e+=1)console.error(r[e]);throw r[0]}}finally{this._debug(r,`end`)}}async _saveSession(e){this._debug(`#_saveSession()`,e),this.suppressGetSessionWarning=!0;let t=Object.assign({},e),n=t.user&&t.user.__isUserNotAvailableProxy===!0;if(this.userStorage){!n&&t.user&&await H(this.userStorage,this.storageKey+`-user`,{user:t.user});let e=Object.assign({},t);delete e.user;let r=ri(e);await H(this.storage,this.storageKey,r)}else{let e=ri(t);await H(this.storage,this.storageKey,e)}}async _removeSession(){this._sessionRemovalEpoch+=1,this._debug(`#_removeSession()`),this.lastRefreshFailure=null,this.suppressGetSessionWarning=!1,await W(this.storage,this.storageKey),await Kr(this.storage,this.storageKey),await W(this.storage,this.storageKey+`-user`),this.userStorage&&await W(this.userStorage,this.storageKey+`-user`),await this._notifyAllSubscribers(`SIGNED_OUT`,null)}_removeVisibilityChangedCallback(){this._debug(`#_removeVisibilityChangedCallback()`);let e=this.visibilityChangedCallback;this.visibilityChangedCallback=null;try{e&&B()&&window!=null&&window.removeEventListener&&window.removeEventListener(`visibilitychange`,e)}catch(e){console.error(`removing visibilitychange callback failed`,e)}}async _startAutoRefresh(){await this._stopAutoRefresh(),this._debug(`#_startAutoRefresh()`);let e=setInterval(()=>this._autoRefreshTokenTick(),M);this.autoRefreshTicker=e,e&&typeof e==`object`&&typeof e.unref==`function`?e.unref():typeof Deno<`u`&&typeof Deno.unrefTimer==`function`&&Deno.unrefTimer(e);let t=setTimeout(async()=>{await this.initializePromise,await this._autoRefreshTokenTick()},0);this.autoRefreshTickTimeout=t,t&&typeof t==`object`&&typeof t.unref==`function`?t.unref():typeof Deno<`u`&&typeof Deno.unrefTimer==`function`&&Deno.unrefTimer(t)}async _stopAutoRefresh(){this._debug(`#_stopAutoRefresh()`);let e=this.autoRefreshTicker;this.autoRefreshTicker=null,e&&clearInterval(e);let t=this.autoRefreshTickTimeout;this.autoRefreshTickTimeout=null,t&&clearTimeout(t)}async startAutoRefresh(){this._removeVisibilityChangedCallback(),await this._startAutoRefresh()}async stopAutoRefresh(){this._removeVisibilityChangedCallback(),await this._stopAutoRefresh()}async dispose(){var e;this._removeVisibilityChangedCallback(),await this._stopAutoRefresh(),(e=this.broadcastChannel)==null||e.close(),this.broadcastChannel=null,this.stateChangeEmitters.clear()}async _autoRefreshTokenTick(){if(this._debug(`#_autoRefreshTokenTick()`,`begin`),this.lock!=null){try{await this._acquireLock(0,async()=>{try{let e=Date.now();try{return await this._useSession(async t=>{let{data:{session:n}}=t;if(!n||!n.refresh_token||!n.expires_at){this._debug(`#_autoRefreshTokenTick()`,`no session`);return}let r=Math.floor((n.expires_at*1e3-e)/M);this._debug(`#_autoRefreshTokenTick()`,`access token expires in ${r} ticks, a tick lasts ${M}ms, refresh threshold is 3 ticks`),r<=3&&await this._callRefreshToken(n.refresh_token)})}catch(e){console.error(`Auto refresh tick failed with error. This is likely a transient error.`,e)}}finally{this._debug(`#_autoRefreshTokenTick()`,`end`)}})}catch(e){if(e instanceof gi)this._debug(`auto refresh token tick lock not available`);else throw e}return}if(this.refreshingDeferred!==null){this._debug(`#_autoRefreshTokenTick()`,`refresh already in flight, skipping`);return}try{let e=Date.now();try{await this._useSession(async t=>{let{data:{session:n}}=t;if(!n||!n.refresh_token||!n.expires_at){this._debug(`#_autoRefreshTokenTick()`,`no session`);return}let r=Math.floor((n.expires_at*1e3-e)/M);this._debug(`#_autoRefreshTokenTick()`,`access token expires in ${r} ticks, a tick lasts ${M}ms, refresh threshold is 3 ticks`),r<=3&&await this._callRefreshToken(n.refresh_token)})}catch(e){console.error(`Auto refresh tick failed with error. This is likely a transient error.`,e)}}finally{this._debug(`#_autoRefreshTokenTick()`,`end`)}}async _handleVisibilityChange(){if(this._debug(`#_handleVisibilityChange()`),!B()||!(window!=null&&window.addEventListener))return this.autoRefreshToken&&this.startAutoRefresh(),!1;try{this.visibilityChangedCallback=async()=>{try{await this._onVisibilityChanged(!1)}catch(e){this._debug(`#visibilityChangedCallback`,`error`,e)}},window==null||window.addEventListener(`visibilitychange`,this.visibilityChangedCallback),await this._onVisibilityChanged(!0)}catch(e){console.error(`_handleVisibilityChange`,e)}}async _onVisibilityChanged(e){let t=`#_onVisibilityChanged(${e})`;if(this._debug(t,`visibilityState`,document.visibilityState),document.visibilityState===`visible`){if(this.autoRefreshToken&&this._startAutoRefresh(),!e)if(await this.initializePromise,this.lock!=null)await this._acquireLock(this.lockAcquireTimeout,async()=>{if(document.visibilityState!==`visible`){this._debug(t,`acquired the lock to recover the session, but the browser visibilityState is no longer visible, aborting`);return}await this._recoverAndRefresh()});else{if(document.visibilityState!==`visible`){this._debug(t,`visibilityState is no longer visible, skipping recovery`);return}await this._recoverAndRefresh()}}else document.visibilityState===`hidden`&&this.autoRefreshToken&&this._stopAutoRefresh()}async _getUrlForProvider(e,t,n){let r=n?.redirectTo,i=null,a=null,o=null;this.flowType===`pkce`&&([i,a,o]=await this._getCodeChallengeAndMethod(),r=this._maybeAppendFlowIdToRedirect(r,o));let s=[`provider=${encodeURIComponent(t)}`];if(r&&s.push(`redirect_to=${encodeURIComponent(r)}`),n?.scopes&&s.push(`scopes=${encodeURIComponent(n.scopes)}`),i!=null&&a!=null){let e=new URLSearchParams({code_challenge:`${encodeURIComponent(i)}`,code_challenge_method:`${encodeURIComponent(a)}`});s.push(e.toString())}if(n?.queryParams){let e=new URLSearchParams(n.queryParams);s.push(e.toString())}return n?.skipBrowserRedirect&&s.push(`skip_http_redirect=${n.skipBrowserRedirect}`),{url:`${e}?${s.join(`&`)}`,flowId:o}}_maybeAppendFlowIdToRedirect(e,t){return!e||!t||!this.experimental.appendPkceFlowIdToRedirects?e??void 0:qr(e,t)}async _getCodeChallengeAndMethod(e=!1){return Jr(this.storage,this.storageKey,e,e=>this._debug(`#_getCodeChallengeAndMethod()`,`evicted oldest pending PKCE verifier slot`,e))}async _unenroll(e){try{return await this._useSession(async t=>{let{data:n,error:r}=t;return r?this._returnResult({data:null,error:r}):await J(this.fetch,`DELETE`,`${this.url}/factors/${e.factorId}`,{headers:this.headers,jwt:n?.session?.access_token})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _enroll(e){try{return await this._useSession(async t=>{let{data:n,error:r}=t;if(r)return this._returnResult({data:null,error:r});let i=Object.assign({friendly_name:e.friendlyName,factor_type:e.factorType},e.factorType===`phone`?{phone:e.phone}:e.factorType===`totp`?{issuer:e.issuer}:{}),{data:a,error:o}=await J(this.fetch,`POST`,`${this.url}/factors`,{body:i,headers:this.headers,jwt:n?.session?.access_token});return o?this._returnResult({data:null,error:o}):(e.factorType===`totp`&&a.type===`totp`&&a?.totp?.qr_code&&(a.totp.qr_code=`data:image/svg+xml;utf-8,${a.totp.qr_code}`),this._returnResult({data:a,error:null}))})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _verify(e){let t=async()=>{try{return await this._useSession(async t=>{let{data:n,error:r}=t;if(r)return this._returnResult({data:null,error:r});let i=Object.assign({challenge_id:e.challengeId},`webauthn`in e?{webauthn:Object.assign(Object.assign({},e.webauthn),{credential_response:e.webauthn.type===`create`?Ni(e.webauthn.credential_response):Pi(e.webauthn.credential_response)})}:{code:e.code}),{data:a,error:o}=await J(this.fetch,`POST`,`${this.url}/factors/${e.factorId}/verify`,{body:i,headers:this.headers,jwt:n?.session?.access_token});return o?this._returnResult({data:null,error:o}):(await this._saveSession(Object.assign({expires_at:Math.round(Date.now()/1e3)+a.expires_in},a)),await this._notifyAllSubscribers(`MFA_CHALLENGE_VERIFIED`,a),this._returnResult({data:a,error:o}))})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}};return this.lock==null?t():this._acquireLock(this.lockAcquireTimeout,t)}async _challenge(e){let t=async()=>{try{return await this._useSession(async t=>{let{data:n,error:r}=t;if(r)return this._returnResult({data:null,error:r});let i=await J(this.fetch,`POST`,`${this.url}/factors/${e.factorId}/challenge`,{body:e,headers:this.headers,jwt:n?.session?.access_token});if(i.error)return i;let{data:a}=i;if(a.type!==`webauthn`)return{data:a,error:null};switch(a.webauthn.type){case`create`:return{data:Object.assign(Object.assign({},a),{webauthn:Object.assign(Object.assign({},a.webauthn),{credential_options:Object.assign(Object.assign({},a.webauthn.credential_options),{publicKey:ji(a.webauthn.credential_options.publicKey)})})}),error:null};case`request`:return{data:Object.assign(Object.assign({},a),{webauthn:Object.assign(Object.assign({},a.webauthn),{credential_options:Object.assign(Object.assign({},a.webauthn.credential_options),{publicKey:Mi(a.webauthn.credential_options.publicKey)})})}),error:null}}})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}};return this.lock==null?t():this._acquireLock(this.lockAcquireTimeout,t)}async _challengeAndVerify(e){let{data:t,error:n}=await this._challenge({factorId:e.factorId});return n?this._returnResult({data:null,error:n}):await this._verify({factorId:e.factorId,challengeId:t.id,code:e.code})}async _listFactors(){let{data:{user:e},error:t}=await this.getUser();if(t)return{data:null,error:t};let n={all:[],phone:[],totp:[],webauthn:[],recovery_code:[]};for(let t of e?.factors??[])n.all.push(t),t.status===`verified`&&t.factor_type in n&&Array.isArray(n[t.factor_type])&&n[t.factor_type].push(t);return{data:n,error:null}}async _getAuthenticatorAssuranceLevel(e){if(e)try{let{payload:t}=jr(e),n=null;t.aal&&(n=t.aal);let r=n,{data:{user:i},error:a}=await this.getUser(e);if(a)return this._returnResult({data:null,error:a});((i?.factors)?.filter(e=>e.status===`verified`)??[]).length>0&&(r=`aal2`);let o=t.amr||[];return{data:{currentLevel:n,nextLevel:r,currentAuthenticationMethods:o},error:null}}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}let{data:{session:t},error:n}=await this.getSession();if(n)return this._returnResult({data:null,error:n});if(!t)return{data:{currentLevel:null,nextLevel:null,currentAuthenticationMethods:[]},error:null};let{payload:r}=jr(t.access_token),i=null;r.aal&&(i=r.aal);let a=i;(t.user.factors?.filter(e=>e.status===`verified`)??[]).length>0&&(a=`aal2`);let o=r.amr||[];return{data:{currentLevel:i,nextLevel:a,currentAuthenticationMethods:o},error:null}}async _getRecoveryCodesStatus(){ei(this.experimental);try{return await this._useSession(async e=>{let{data:t,error:n}=e;if(n)return this._returnResult({data:null,error:n});let{data:r,error:i}=await J(this.fetch,`GET`,`${this.url}/factors/recovery-codes`,{headers:this.headers,jwt:t?.session?.access_token});return i?this._returnResult({data:null,error:i}):this._returnResult({data:r,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _generateRecoveryCodes(e){ei(this.experimental);try{return await this._useSession(async t=>{let{data:n,error:r}=t;if(r)return this._returnResult({data:null,error:r});let{data:i,error:a}=await J(this.fetch,`POST`,`${this.url}/factors/recovery-codes`,{body:e?.friendlyName?{friendly_name:e.friendlyName}:void 0,headers:this.headers,jwt:n?.session?.access_token});return a?this._returnResult({data:null,error:a}):this._returnResult({data:i,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _verifyRecoveryCode(e){ei(this.experimental);let t=async()=>{try{return await this._useSession(async t=>{let{data:n,error:r}=t;if(r)return this._returnResult({data:null,error:r});let{data:i,error:a}=await J(this.fetch,`POST`,`${this.url}/factors/recovery-codes/verify`,{body:{code:e.code},headers:this.headers,jwt:n?.session?.access_token});if(a)return this._returnResult({data:null,error:a});let o=Object.assign({expires_at:wr(i.expires_in)},i);return await this._saveSession(o),await this._notifyAllSubscribers(`MFA_CHALLENGE_VERIFIED`,o),this._returnResult({data:i,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}};return this.lock==null?t():this._acquireLock(this.lockAcquireTimeout,t)}async _regenerateRecoveryCodes(){ei(this.experimental);try{return await this._useSession(async e=>{let{data:t,error:n}=e;if(n)return this._returnResult({data:null,error:n});let{data:r,error:i}=await J(this.fetch,`POST`,`${this.url}/factors/recovery-codes/regenerate`,{headers:this.headers,jwt:t?.session?.access_token});return i?this._returnResult({data:null,error:i}):this._returnResult({data:r,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _unenrollRecoveryCodes(){ei(this.experimental);try{return await this._useSession(async e=>{let{data:t,error:n}=e;if(n)return this._returnResult({data:null,error:n});let{data:r,error:i}=await J(this.fetch,`DELETE`,`${this.url}/factors/recovery-codes`,{headers:this.headers,jwt:t?.session?.access_token});return i?this._returnResult({data:null,error:i}):this._returnResult({data:r,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _getAuthorizationDetails(e){try{return await this._useSession(async t=>{let{data:{session:n},error:r}=t;return r?this._returnResult({data:null,error:r}):n?await J(this.fetch,`GET`,`${this.url}/oauth/authorizations/${e}`,{headers:this.headers,jwt:n.access_token,xform:e=>({data:e,error:null})}):this._returnResult({data:null,error:new L})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _approveAuthorization(e,t){try{return await this._useSession(async n=>{let{data:{session:r},error:i}=n;if(i)return this._returnResult({data:null,error:i});if(!r)return this._returnResult({data:null,error:new L});let a=await J(this.fetch,`POST`,`${this.url}/oauth/authorizations/${e}/consent`,{headers:this.headers,jwt:r.access_token,body:{action:`approve`},xform:e=>({data:e,error:null})});return a.data&&a.data.redirect_url&&B()&&!t?.skipBrowserRedirect&&window.location.assign(a.data.redirect_url),a})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _denyAuthorization(e,t){try{return await this._useSession(async n=>{let{data:{session:r},error:i}=n;if(i)return this._returnResult({data:null,error:i});if(!r)return this._returnResult({data:null,error:new L});let a=await J(this.fetch,`POST`,`${this.url}/oauth/authorizations/${e}/consent`,{headers:this.headers,jwt:r.access_token,body:{action:`deny`},xform:e=>({data:e,error:null})});return a.data&&a.data.redirect_url&&B()&&!t?.skipBrowserRedirect&&window.location.assign(a.data.redirect_url),a})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _listOAuthGrants(){try{return await this._useSession(async e=>{let{data:{session:t},error:n}=e;return n?this._returnResult({data:null,error:n}):t?await J(this.fetch,`GET`,`${this.url}/user/oauth/grants`,{headers:this.headers,jwt:t.access_token,xform:e=>({data:e,error:null})}):this._returnResult({data:null,error:new L})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _revokeOAuthGrant(e){try{return await this._useSession(async t=>{let{data:{session:n},error:r}=t;return r?this._returnResult({data:null,error:r}):n?(await J(this.fetch,`DELETE`,`${this.url}/user/oauth/grants`,{headers:this.headers,jwt:n.access_token,query:{client_id:e.clientId},noResolveJson:!0}),{data:{},error:null}):this._returnResult({data:null,error:new L})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async fetchJwk(e,t={keys:[]}){let n=t.keys.find(t=>t.kid===e);if(n)return n;let r=Date.now();if(n=this.jwks.keys.find(t=>t.kid===e),n&&this.jwks_cached_at+6e5>r)return n;let{data:i,error:a}=await J(this.fetch,`GET`,`${this.url}/.well-known/jwks.json`,{headers:this.headers});if(a)throw a;return!i.keys||i.keys.length===0||(this.jwks=i,this.jwks_cached_at=r,n=i.keys.find(t=>t.kid===e),!n)?null:n}async getClaims(e,t={}){try{let n=e;if(!n){let{data:e,error:t}=await this.getSession();if(t||!e.session)return this._returnResult({data:null,error:t});n=e.session.access_token}let{header:r,payload:i,signature:a,raw:{header:o,payload:s}}=jr(n);if(!t?.allowExpired)try{Zr(i.exp)}catch(e){throw new fr(e instanceof Error?e.message:`JWT validation failed`)}let c=!r.alg||r.alg.startsWith(`HS`)||!r.kid||!(`crypto`in globalThis&&`subtle`in globalThis.crypto)?null:await this.fetchJwk(r.kid,t?.keys?{keys:t.keys}:t?.jwks);if(!c){let{error:e}=await this.getUser(n);if(e)throw e;return{data:{claims:i,header:r,signature:a},error:null}}let l=Qr(r.alg),u=await crypto.subtle.importKey(`jwk`,c,l,!0,[`verify`]);if(!await crypto.subtle.verify(l,u,a,Cr(`${o}.${s}`)))throw new fr(`Invalid JWT signature`);return{data:{claims:i,header:r,signature:a},error:null}}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async signInWithPasskey(e){try{if(!Ii())return this._returnResult({data:null,error:new F(`Browser does not support WebAuthn`,null)});let{data:t,error:n}=await this._startPasskeyAuthentication({options:{captchaToken:e?.options?.captchaToken}});if(n||!t)return this._returnResult({data:null,error:n});let{data:r,error:i}=await Ri({publicKey:Mi(t.options),signal:e?.options?.signal??Ai.createNewAbortSignal(),mediation:e?.options?.mediation});if(i||!r)return this._returnResult({data:null,error:i??new F(`WebAuthn ceremony failed`,null)});let a=Pi(r);return this._verifyPasskeyAuthentication({challengeId:t.challenge_id,credential:a})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async registerPasskey(e){try{if(!Ii())return this._returnResult({data:null,error:new F(`Browser does not support WebAuthn`,null)});let{data:t,error:n}=await this._startPasskeyRegistration();if(n||!t)return this._returnResult({data:null,error:n});let{data:r,error:i}=await Li({publicKey:ji(t.options),signal:e?.options?.signal??Ai.createNewAbortSignal()});if(i||!r)return this._returnResult({data:null,error:i??new F(`WebAuthn ceremony failed`,null)});let a=Ni(r);return this._verifyPasskeyRegistration({challengeId:t.challenge_id,credential:a})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _startPasskeyRegistration(){try{return await this._useSession(async e=>{let{data:{session:t},error:n}=e;if(n)return this._returnResult({data:null,error:n});if(!t)return this._returnResult({data:null,error:new L});let{data:r,error:i}=await J(this.fetch,`POST`,`${this.url}/passkeys/registration/options`,{headers:this.headers,jwt:t.access_token,body:{}});return i?this._returnResult({data:null,error:i}):this._returnResult({data:r,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _verifyPasskeyRegistration(e){try{return await this._useSession(async t=>{let{data:{session:n},error:r}=t;if(r)return this._returnResult({data:null,error:r});if(!n)return this._returnResult({data:null,error:new L});let{data:i,error:a}=await J(this.fetch,`POST`,`${this.url}/passkeys/registration/verify`,{headers:this.headers,jwt:n.access_token,body:{challenge_id:e.challengeId,credential:e.credential}});return a?this._returnResult({data:null,error:a}):this._returnResult({data:i,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _startPasskeyAuthentication(e){try{let{data:t,error:n}=await J(this.fetch,`POST`,`${this.url}/passkeys/authentication/options`,{headers:this.headers,body:{gotrue_meta_security:{captcha_token:e?.options?.captchaToken}}});return n?this._returnResult({data:null,error:n}):this._returnResult({data:t,error:null})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _verifyPasskeyAuthentication(e){try{let{data:t,error:n}=await J(this.fetch,`POST`,`${this.url}/passkeys/authentication/verify`,{headers:this.headers,body:{challenge_id:e.challengeId,credential:e.credential},xform:Y});return n?this._returnResult({data:null,error:n}):(t.session&&(await this._saveSession(t.session),await this._notifyAllSubscribers(`SIGNED_IN`,t.session)),this._returnResult({data:t,error:null}))}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _listPasskeys(){try{return await this._useSession(async e=>{let{data:{session:t},error:n}=e;if(n)return this._returnResult({data:null,error:n});if(!t)return this._returnResult({data:null,error:new L});let{data:r,error:i}=await J(this.fetch,`GET`,`${this.url}/passkeys`,{headers:this.headers,jwt:t.access_token,xform:e=>({data:e,error:null})});return i?this._returnResult({data:null,error:i}):this._returnResult({data:r,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _updatePasskey(e){try{return await this._useSession(async t=>{let{data:{session:n},error:r}=t;if(r)return this._returnResult({data:null,error:r});if(!n)return this._returnResult({data:null,error:new L});let{data:i,error:a}=await J(this.fetch,`PATCH`,`${this.url}/passkeys/${e.passkeyId}`,{headers:this.headers,jwt:n.access_token,body:{friendly_name:e.friendlyName}});return a?this._returnResult({data:null,error:a}):this._returnResult({data:i,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _deletePasskey(e){try{return await this._useSession(async t=>{let{data:{session:n},error:r}=t;if(r)return this._returnResult({data:null,error:r});if(!n)return this._returnResult({data:null,error:new L});let{error:i}=await J(this.fetch,`DELETE`,`${this.url}/passkeys/${e.passkeyId}`,{headers:this.headers,jwt:n.access_token,noResolveJson:!0});return i?this._returnResult({data:null,error:i}):this._returnResult({data:null,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}};qi.nextInstanceID={};var Ji=qi,Yi=mi,Xi=Ji,Zi=class extends Xi{constructor(e){super(e)}},Qi=class{constructor(e,t,n){this.supabaseUrl=e,this.supabaseKey=t;let r=Un(e);if(!t)throw Error(`supabaseKey is required.`);Nn(t),Vn(n),this.realtimeUrl=new URL(`realtime/v1`,r),this.realtimeUrl.protocol=this.realtimeUrl.protocol.replace(`http`,`ws`),this.authUrl=new URL(`auth/v1`,r),this.storageUrl=new URL(`storage/v1`,r),this.functionsUrl=new URL(`functions/v1`,r);let i=`sb-${r.hostname.split(`.`)[0]}-auth-token`,a={db:yn,realtime:xn,auth:{...bn,storageKey:i},global:vn,tracePropagation:Sn},o=Hn(n??{},a);this.settings=o,this.storageKey=o.auth.storageKey??``,this.headers=o.global.headers??{},o.accessToken?(this.accessToken=o.accessToken,this.auth=new Proxy({},{get:(e,t)=>{throw Error(`@supabase/supabase-js: Supabase Client is configured with the accessToken option, accessing supabase.auth.${String(t)} is not possible`)}})):this.auth=this._initSupabaseAuthClient(o.auth??{},this.headers,o.global.fetch),this.fetch=Pn(t,e,this._getSessionToken.bind(this),o.global.fetch,o.tracePropagation),this.functionsFetch=Pn(t,e,this._getSessionToken.bind(this),o.global.fetch,o.tracePropagation,{omitApiKeyAsBearer:!0}),this.realtime=this._initRealtimeClient({headers:this.headers,accessToken:this._getAccessToken.bind(this),fetch:this.fetch,...o.realtime}),this.accessToken&&Promise.resolve(this.accessToken()).then(e=>this.realtime.setAuth(e)).catch(e=>console.warn(`Failed to set initial Realtime auth token:`,e)),this.rest=new fe(new URL(`rest/v1`,r).href,{headers:this.headers,schema:o.db.schema,fetch:this.fetch,timeout:o.db.timeout,urlLengthLimit:o.db.urlLengthLimit,retry:o.db.retry}),this.storage=new mn(this.storageUrl.href,this.headers,this.fetch,n?.storage),o.accessToken||this._listenForAuthEvents()}get functions(){return new l(this.functionsUrl.href,{headers:this.headers,customFetch:this.functionsFetch})}from(e){return this.rest.from(e)}schema(e){return this.rest.schema(e)}getOpenApiSpec(){return this.rest.getOpenApiSpec()}rpc(e,t={},n={head:!1,get:!1,count:void 0}){return this.rest.rpc(e,t,n)}channel(e,t={config:{}}){return this.realtime.channel(e,t)}getChannels(){return this.realtime.getChannels()}removeChannel(e){return this.realtime.removeChannel(e)}removeAllChannels(){return this.realtime.removeAllChannels()}async _getSessionToken(){if(this.accessToken)return await this.accessToken();let{data:e}=await this.auth.getSession();return e.session?.access_token??null}async _getAccessToken(){return await this._getSessionToken()??this.supabaseKey}_initSupabaseAuthClient({autoRefreshToken:e,persistSession:t,detectSessionInUrl:n,storage:r,userStorage:i,storageKey:a,flowType:o,lock:s,debug:c,throwOnError:l,experimental:u,lockAcquireTimeout:d,skipAutoInitialize:f},p,m){let h={Authorization:`Bearer ${this.supabaseKey}`,apikey:`${this.supabaseKey}`};return new Zi({url:this.authUrl.href,headers:{...h,...p},storageKey:a,autoRefreshToken:e,persistSession:t,detectSessionInUrl:n,storage:r,userStorage:i,flowType:o,lock:s,debug:c,throwOnError:l,experimental:u,fetch:m,lockAcquireTimeout:d,skipAutoInitialize:f,hasCustomAuthorizationHeader:Object.keys(this.headers).some(e=>e.toLowerCase()===`authorization`)})}_initRealtimeClient(e){return new _t(this.realtimeUrl.href,{...e,params:{apikey:this.supabaseKey,...e?.params}})}_listenForAuthEvents(){return this.auth.onAuthStateChange((e,t)=>{this._handleTokenChanged(e,`CLIENT`,t?.access_token)})}_handleTokenChanged(e,t,n){(e===`TOKEN_REFRESHED`||e===`SIGNED_IN`||e===`INITIAL_SESSION`)&&this.changedAccessToken!==n?(this.changedAccessToken=n,this.realtime.setAuth(n)):e===`SIGNED_OUT`&&(this.realtime.setAuth(),t==`STORAGE`&&this.auth.signOut(),this.changedAccessToken=void 0)}};let $i=(e,t,n)=>new Qi(e,t,n);function ea(){if(typeof window<`u`||globalThis.Deno!==void 0)return!1;let e=globalThis.process;if(!e)return!1;let t=e.version;if(t==null)return!1;let n=t.match(/^v(\d+)\./);return n?parseInt(n[1],10)<=20:!1}return ea()&&console.warn(`⚠️  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 22 or later. For more information, visit: https://github.com/orgs/supabase/discussions/45715`),e.AuthAdminApi=Yi,e.AuthApiError=Zn,e.AuthClient=Xi,e.AuthError=Xn,e.AuthImplicitGrantRedirectError=tr,e.AuthInvalidCredentialsError=er,e.AuthInvalidJwtError=fr,e.AuthInvalidTokenResponseError=R,e.AuthPKCECodeVerifierMissingError=ir,e.AuthPKCEGrantCodeExchangeError=rr,e.AuthRefreshDiscardedError=cr,e.AuthRetryableFetchError=or,e.AuthSessionMissingError=L,e.AuthUnknownError=F,e.AuthWeakPasswordError=ur,e.CustomAuthError=I,Object.defineProperty(e,`FunctionRegion`,{enumerable:!0,get:function(){return c}}),e.FunctionsError=i,e.FunctionsFetchError=a,e.FunctionsHttpError=s,e.FunctionsRelayError=o,e.GoTrueAdminApi=mi,e.GoTrueClient=Ji,e.NavigatorLockAcquireTimeoutError=_i,e.PostgrestError=u,e.REALTIME_CHANNEL_STATES=ut,Object.defineProperty(e,`REALTIME_LISTEN_TYPES`,{enumerable:!0,get:function(){return T}}),Object.defineProperty(e,`REALTIME_POSTGRES_CHANGES_LISTEN_EVENT`,{enumerable:!0,get:function(){return lt}}),Object.defineProperty(e,`REALTIME_PRESENCE_LISTEN_EVENTS`,{enumerable:!0,get:function(){return Xe}}),Object.defineProperty(e,`REALTIME_SUBSCRIBE_STATES`,{enumerable:!0,get:function(){return E}}),e.RealtimeChannel=dt,e.RealtimeClient=_t,e.RealtimePostgresFilterBuilder=st,e.RealtimePresence=Ze,e.SIGN_OUT_SCOPES=pi,e.StorageApiError=Pt,e.SupabaseClient=Qi,e.WebSocketFactory=pe,e.createClient=$i,e.isAuthApiError=Qn,e.isAuthError=P,e.isAuthImplicitGrantRedirectError=nr,e.isAuthPKCECodeVerifierMissingError=ar,e.isAuthRefreshDiscardedError=lr,e.isAuthRetryableFetchError=sr,e.isAuthSessionMissingError=$n,e.isAuthWeakPasswordError=dr,e.lockInternals=Z,e.navigatorLock=yi,e.postgresChangesFilter=ct,e.processLock=xi,e})({});</script>
 <script>
-const GAME_VERSION = 7;
+const GAME_VERSION = 8;
 'use strict';
 /* =====================================================================
    PIXEL OCTAGON — core utilities, audio, save data, game data
@@ -6493,6 +6503,8 @@ class GuestMatch {
    d-pad / stick moves between buttons, A picks, B goes back.
    ===================================================================== */
 const PAD_MAP = { 0: 'KeyJ', 2: 'KeyK', 3: 'KeyL', 1: 'Space', 5: 'KeyI', 4: 'KeyO', 7: 'KeyU', 6: 'KeyF', 8: 'KeyQ' };
+// basketball: A shoot/block · X crossover/steal · Y step back/charge · B drive/lockdown · RB pump fake · LB pass · RT sprint
+const BB_PAD_MAP = { 0: 'Space', 2: 'KeyJ', 3: 'KeyK', 1: 'KeyL', 5: 'KeyI', 4: 'KeyO', 7: 'ShiftLeft' };
 const Pad = {
   held: {}, active: false, navT: 0, prevMenu: {},
   poll() {
@@ -6509,7 +6521,9 @@ const Pad = {
     this.prevMenu.start = btn(9);
     const fighting = (Game.mode === 'fight' && Game.match && !Game.match.over && UI.el.hidden) || (BB.state === 'game' && UI.el.hidden);
     if (fighting) {
-      const want = { ...Object.fromEntries(Object.entries(PAD_MAP).map(([i, code]) => [code, btn(+i)])), KeyW: dir.up, KeyS: dir.down, KeyA: dir.left, KeyD: dir.right };
+      const map = BB.state === 'game' ? BB_PAD_MAP : PAD_MAP;
+      if (this.mapIs !== map) { this.releaseAll(); this.mapIs = map; }
+      const want = { ...Object.fromEntries(Object.entries(map).map(([i, code]) => [code, btn(+i)])), KeyW: dir.up, KeyS: dir.down, KeyA: dir.left, KeyD: dir.right };
       for (const [code, on] of Object.entries(want)) { if (on !== !!this.held[code]) { if (on) keyDown(code, false); else keyUp(code); this.held[code] = on; } }
       return;
     }
@@ -6856,6 +6870,14 @@ def('bbCeleb', 1.2, [
   [0.8, { spine: [0.1, 0, 0], rH: [-0.25, 1.45, 0.3], rP: [-1, -0.3, 0] }, 'snap'],
   [1.2, {}, 'io'],
 ]);
+// take a charge: square up, arms crossed over the chest, braced
+def('bbCharge', 0.8, [
+  [0.1, { spine: [0.05, 0, 0], chest: [-0.04, 0, 0], neck: [-0.05, 0, 0], lHip: [-0.3, 0.1, 0.18], lKnee: 0.5, rHip: [-0.3, -0.1, -0.18], rKnee: 0.5,
+    lH: [-0.08, 1.33, 0.24], lP: [1, -0.6, 0], rH: [0.08, 1.3, 0.25], rP: [-1, -0.6, 0] }, 'snap'],
+  [0.7, { spine: [0.05, 0, 0], chest: [-0.04, 0, 0], lHip: [-0.3, 0.1, 0.18], lKnee: 0.5, rHip: [-0.3, -0.1, -0.18], rKnee: 0.5,
+    lH: [-0.08, 1.33, 0.24], lP: [1, -0.6, 0], rH: [0.08, 1.3, 0.25], rP: [-1, -0.6, 0] }, 'io'],
+  [0.8, {}, 'io'],
+]);
 /* =====================================================================
    PIXEL HOOPS — half-court basketball on the voxel rig.
    Players move with momentum (they accelerate and slide to a stop, and a
@@ -6871,10 +6893,10 @@ const BB_SHOT_CLOCK = 12;
 const BB_GREEN_C = 0.72;   // where the green window sits on the meter
 const V2 = (x = 0, z = 0) => new THREE.Vector2(x, z);
 const BB_DIFFS = [
-  { name: 'Rookie', color: '#3fd27a', react: 0.42, sigma: 0.12, steal: 0.12, bite: 0.75, sht: 0.92, spd: 0.9, cash: 40, xp: 50 },
-  { name: 'Starter', color: '#f3b928', react: 0.3, sigma: 0.085, steal: 0.24, bite: 0.5, sht: 1, spd: 0.97, cash: 80, xp: 90 },
-  { name: 'All-Star', color: '#ff7a1a', react: 0.21, sigma: 0.06, steal: 0.36, bite: 0.32, sht: 1.05, spd: 1.02, cash: 130, xp: 140 },
-  { name: 'Legend', color: '#e0313f', react: 0.14, sigma: 0.043, steal: 0.48, bite: 0.18, sht: 1.1, spd: 1.06, cash: 200, xp: 200 },
+  { name: 'Rookie', color: '#3fd27a', react: 0.42, sigma: 0.12, steal: 0.12, lock: 0.2, chg: 0.1, bite: 0.75, sht: 0.92, spd: 0.9, cash: 40, xp: 50 },
+  { name: 'Starter', color: '#f3b928', react: 0.3, sigma: 0.085, steal: 0.24, lock: 0.4, chg: 0.18, bite: 0.5, sht: 1, spd: 0.97, cash: 80, xp: 90 },
+  { name: 'All-Star', color: '#ff7a1a', react: 0.21, sigma: 0.06, steal: 0.36, lock: 0.6, chg: 0.26, bite: 0.32, sht: 1.05, spd: 1.02, cash: 130, xp: 140 },
+  { name: 'Legend', color: '#e0313f', react: 0.14, sigma: 0.043, steal: 0.48, lock: 0.8, chg: 0.34, bite: 0.18, sht: 1.1, spd: 1.06, cash: 200, xp: 200 },
 ];
 const BB_TEAMS = [
   { name: 'Red', c: '#c0262e', c2: '#f2f2f2', hud: '#ff5a5a', shoes: '#16181f' },
@@ -6913,8 +6935,9 @@ class BBPlayer {
     this.pos = V2(); this.vel = V2(); this.y = 0; this.vy = 0; this.yaw = Math.PI;
     this.P = Float32Array.from(STANCE_POSE.bbn); this.T = new Float32Array(NCH); this.anim = null;
     this.act = null; this.hand = 'R'; this.drib = 0; this.cross = null; this.lastCross = -9;
-    this.ev = []; this.inp = { x: 0, z: 0, sprint: false };
+    this.ev = []; this.inp = { x: 0, z: 0, sprint: false, lock: false };
     this.stealCd = 0; this.crossCd = 0; this.stepCd = 0; this.bonusT = 0; this.slowT = 0; this.jumpCd = 0; this.hang = 0;
+    this.energy = 100; this.regenT = 0; this.driveCd = 0; this.chargeCd = 0; this.burstT = 0; this.drive = null; this.streak = 0; this.fire = 0;
     this.walkPh = Math.random() * 6; this.t = Math.random() * 5;
     this.st = { pts: 0, fga: 0, fgm: 0, tpa: 0, tpm: 0, stl: 0, blk: 0, ank: 0, reb: 0, ast: 0 };
     this.ai = this.cpu ? { t: 0, spot: null, spotT: 0, mv: V2(), react: 0 } : null;
@@ -6954,7 +6977,7 @@ const BB = {
     Game.scene.add(mesh);
     this.ball = { pos: new THREE.Vector3(0, BALL_R, 6), vel: new THREE.Vector3(), holder: null, mesh, shot: null, pass: null, last: null, noCatch: 0, noCatchFor: null, spin: 0, through: false, groundT: 0, oob: false };
   },
-  clearPlayers() { for (const p of this.players) p.dispose(); this.players = []; this.me = null; },
+  clearPlayers() { for (const p of this.players) p.dispose(); this.players = []; this.me = null; if (this.ring) { Game.scene.remove(this.ring); this.ring = null; } },
   // o: { mode: 'cpu'|'demo'|'online'|'shoot', size: 1|2, to: 21, diff, roster: [{name, look, team, human, remote, rating}] }
   setup(o) {
     Court.build(Game.scene); Game.setArena('court');
@@ -6965,6 +6988,11 @@ const BB = {
       const p = new BBPlayer({ ...r, diff: r.diff ?? o.diff });
       this.players.push(p);
       if (r.human) this.me = p;
+    }
+    if (this.ring) { Game.scene.remove(this.ring); this.ring = null; }
+    if (this.me && o.mode !== 'demo') {
+      this.ring = new THREE.Mesh(new THREE.RingGeometry(0.4, 0.5, 28), new THREE.MeshBasicMaterial({ color: BB_TEAMS[this.me.team].hud, transparent: true, opacity: 0.85, depthWrite: false }));
+      this.ring.rotation.x = -Math.PI / 2; Game.scene.add(this.ring);
     }
     this.poss = 0; this.checkBall(0, true);
     this.cam.fx = 0;
@@ -7008,7 +7036,11 @@ const BB = {
   },
   score2(team, pts, shooter) {
     this.score[team] += pts;
-    if (shooter) { shooter.st.pts += pts; shooter.st.fgm++; if (pts === 3) shooter.st.tpm++; }
+    if (shooter) {
+      shooter.st.pts += pts; shooter.st.fgm++; if (pts === 3) shooter.st.tpm++;
+      shooter.streak++;
+      if (shooter.streak >= 3 && !shooter.fire) { shooter.fire = 3; this.pop(shooter, 'ON FIRE!', '#ff7a1a', 1.4); BBS.ooh(1.5); }
+    }
     const passer = this.ball.assist; if (passer && passer !== shooter && passer.team === team && this.t - passer.passT < 4) passer.st.ast++;
     Court.netKick = 1; Court.excite = 1; BBS.swish(); BBS.ooh(pts === 3 ? 1.6 : 1.1); this.events.push({ k: 'net', v: 1 });
     if (shooter) this.pop(shooter, '+' + pts, pts === 3 ? '#f3b928' : '#fff', pts === 3 ? 1.4 : 1.1);
@@ -7031,13 +7063,25 @@ const BB = {
     if (down && (code === 'Escape' || code === 'KeyP')) { this.togglePause(); return; }
     if (this.paused) return;
     if (this.cfg.mode === 'online' && BBNet.role === 'guest') { BBNet.guestKey(code, down); return; }
-    const ev = (e) => (p.remote ? null : p.ev.push(e));
-    if (code === 'KeyJ' || code === 'KeyZ') { if (down) ev(p.hasBall || (p.act && p.act.k === 'step') ? 'shootDown' : 'steal'); else ev('shootUp'); }
-    else if (!down) return;
-    else if (code === 'KeyK' || code === 'KeyX') ev(p.hasBall ? 'cross' : 'steal');
-    else if (code === 'KeyL' || code === 'KeyC') ev('step');
-    else if (code === 'KeyI' || code === 'TouchJump') ev(p.hasBall ? 'pump' : 'jump');
-    else if (code === 'KeyO' || code === 'KeyV') ev(p.hasBall ? 'pass' : 'call');
+    const e = this.keyEvent(p, code, down); if (e) p.ev.push(e);
+  },
+  // one key map for the keyboard, the controller and online guests
+  //   offence: SPACE shoot (hold) · J crossover · K step back · L drive · I pump fake · O pass · SHIFT sprint
+  //   defence: SPACE block · J steal · K take a charge · L lockdown (hold) · SHIFT sprint
+  keyEvent(p, code, down) {
+    const has = p.hasBall || (p.act && p.act.k === 'step');
+    const def = !p.offense && !!this.ball.holder;
+    if (code === 'Space') {
+      if (down) return has ? 'shootDown' : 'jump';
+      return p.shooting && !p.act.rel ? 'shootUp' : null;
+    }
+    if (!down) return null;
+    if (code === 'KeyJ') return has ? 'cross' : def ? 'steal' : null;
+    if (code === 'KeyK') return has ? 'step' : def ? 'charge' : null;
+    if (code === 'KeyL') return has ? 'drive' : p.offense ? 'cut' : null; // on defence L is held (lockdown)
+    if (code === 'KeyI') return has ? 'pump' : 'jump';
+    if (code === 'KeyO') return has ? 'pass' : 'call';
+    return null;
   },
   readMove(p) { // WASD relative to the camera: W runs at the hoop
     Game.camera.getWorldDirection(_cf);
@@ -7045,7 +7089,8 @@ const BB = {
     const h = (KEYS.KeyD || KEYS.ArrowRight ? 1 : 0) - (KEYS.KeyA || KEYS.ArrowLeft ? 1 : 0);
     const v = (KEYS.KeyW || KEYS.ArrowUp ? 1 : 0) - (KEYS.KeyS || KEYS.ArrowDown ? 1 : 0);
     const w = V2(right.x * h + fl.x * v, right.y * h + fl.y * v); if (w.lengthSq() > 1) w.normalize();
-    p.inp.x = w.x; p.inp.z = w.y; p.inp.sprint = !!(KEYS.Space || KEYS.ShiftLeft || KEYS.ShiftRight || KEYS.KeyU);
+    p.inp.x = w.x; p.inp.z = w.y; p.inp.sprint = !!(KEYS.ShiftLeft || KEYS.ShiftRight);
+    p.inp.lock = !!KEYS.KeyL && !p.offense;
   },
   togglePause() {
     if (this.state !== 'game' || this.phase === 'over') return;
@@ -7067,6 +7112,9 @@ const BB = {
       else if (k === 'pump') this.pumpFake(p);
       else if (k === 'pass') this.passBall(p, e.to);
       else if (k === 'steal') this.steal(p);
+      else if (k === 'drive') this.drive(p, false);
+      else if (k === 'cut') this.drive(p, true);
+      else if (k === 'charge') this.charge(p);
       else if (k === 'call') { const h = this.ball.holder; if (h && h.team === p.team && h.cpu) h.ai.callFrom = p; }
     }
   },
@@ -7078,7 +7126,10 @@ const BB = {
     if (!this.cleared) { if (p === this.me) this.hint('Take it back past the arc first'); return; }
     const d = rimDist(p.pos.x, p.pos.y), toRim = p.vel.dot(p.rimDir()), spd = p.vel.length();
     let k = d < 3.1 ? 'layup' : 'jumper';
-    if ((d < 2.4 && (p.inp.sprint || toRim > 2.6) && spd > 2) || (d < 3.1 && p.inp.sprint && toRim > 3.4)) k = 'dunk';
+    const fast = p.inp.sprint || !!p.drive;
+    if ((d < 2.4 && (fast || toRim > 2.6) && spd > 2) || (d < 3.1 && fast && toRim > 3.4)) k = 'dunk';
+    if (p.drive && d < 3.8 && k === 'jumper') k = 'layup'; // finishing a drive
+    p.drive = null;
     if (kind === 'layup' || kind === 'jumper') k = kind;
     const three = isThree(p.pos.x, p.pos.y);
     p.act = { k, t: 0, fill: k === 'jumper' ? 0.62 : 0.5, rel: false, three, d, took: false };
@@ -7102,6 +7153,8 @@ const BB = {
     if (p.cpu) w *= p.diff.sht;
     if (p.bonusT > 0) w *= 1.25; // step-back created space
     if (k === 'jumper' && p.vel.length() > 3.5) w *= 0.8; // off the move
+    if (p.fire > 0) w *= 1.3; // on fire
+    if (p.energy < 20) w *= 0.9; // tired legs
     return { w: clamp(w, 0.022, 0.3), c };
   },
   contest(p) {
@@ -7139,6 +7192,8 @@ const BB = {
   // the ball leaves the shooter's hand on a real arc
   launch(p, make, err, late) {
     const B = this.ball, A = p.act;
+    if (p.fire > 0) p.fire--;
+    if (!make) { if (p.fire > 0 || p.streak >= 3) this.pop(p, 'COOLED OFF', '#9ad7ff', 0.8); p.streak = 0; p.fire = 0; }
     const R = p.handsMid(new THREE.Vector3()); R.y += 0.1;
     if (R.y < 1.8) R.y = 1.8 + p.y;
     B.pos.copy(R); B.holder = null; B.pass = null; B.last = p; B.through = false; B.noCatch = 0.25; B.noCatchFor = null;
@@ -7154,8 +7209,9 @@ const BB = {
       T.x += dir.x * mag; T.z += dir.y * mag;
       if (mag > 0.7) T.y += rand(-0.25, 0.15);
     }
-    const ang = A.k === 'layup' ? 1.08 : A.d < 4 ? 0.98 : 0.9;
-    B.vel.copy(solveArc(B.pos, T, ang, BALL_G));
+    // aim by arc height: a real shot peaks well above the rim and drops in steep (45°+), from any release point
+    const apex = Math.max(RIM.y + (A.k === 'layup' ? 0.75 : 1.0) + 0.12 * A.d, B.pos.y + 0.45);
+    B.vel.copy(arcByApex(B.pos, T, apex, BALL_G));
     B.shot = { by: p, team: p.team, three: A.three, make, live: true, t: 0, blocked: false, tried: A.tried || {} };
     B.spin = 8;
   },
@@ -7170,22 +7226,46 @@ const BB = {
   crossover(p) {
     if (!p.hasBall || p.crossCd > 0 || p.air || p.act) return;
     const to = p.hand === 'R' ? 'L' : 'R';
-    p.cross = { t: 0, dur: 0.34, from: p.hand, to };
-    p.crossCd = 0.42; p.lastCross = this.t;
+    p.cross = { t: 0, dur: 0.36, from: p.hand, to };
+    p.crossCd = 0.45; p.lastCross = this.t; p.burstT = 0.32;
     // explode toward the new ball hand, or wherever you're pushing the stick
     const side = p.left().multiplyScalar(to === 'L' ? 1 : -1);
     const want = V2(p.inp.x, p.inp.z);
     const dir = want.lengthSq() > 0.1 && want.dot(side) > -0.2 ? want.normalize() : side;
-    p.vel.addScaledVector(dir, 2.8 * (p.rt.spd || 1));
-    BBS.squeak();
+    // kill the speed you had across the new direction and explode the other way
+    const keep = p.vel.dot(dir); p.vel.addScaledVector(dir, -keep).multiplyScalar(0.35);
+    p.vel.addScaledVector(dir, (Math.max(0, keep) * 0.5 + 5.2) * (p.rt.spd || 1));
+    BBS.squeak(); FX.dust(p);
     // a defender who was already reaching for it hits the floor
     for (const o of this.opps(p)) if (o.act && o.act.k === 'steal' && o.act.t < 0.3 && o.dist(p) < 1.7) this.ankles(o, p);
     // anyone leaning the wrong way stumbles
     for (const o of this.opps(p)) {
       if (o.down || o.dist(p) > 1.4) continue;
-      if (o.vel.dot(dir) < -1.2 && Math.random() < 0.6) { o.slowT = 0.4; this.pop(o, 'SHOOK', '#9ad7ff', 0.8); }
+      if (o.vel.dot(dir) < -0.8 && Math.random() < 0.7) { o.slowT = 0.45; this.pop(o, 'SHOOK', '#9ad7ff', 0.8); }
     }
     this.events.push({ k: 'cross', i: this.players.indexOf(p) });
+  },
+  // drive: explode at the rim at full speed; steer a little, then finish with a layup or dunk
+  drive(p, cut) {
+    if ((!cut && !p.hasBall) || p.air || p.act || p.down || p.driveCd > 0 || p.energy < 12) return;
+    if (cut && (p.hasBall || !p.offense)) return;
+    p.drive = { t: 0, max: cut ? 1.1 : 1.4 }; p.driveCd = 1.0; p.cross = null;
+    p.vel.addScaledVector(p.rimDir(), 1.8);
+    BBS.squeak(); FX.dust(p);
+    this.events.push({ k: 'drive', i: this.players.indexOf(p) });
+  },
+  // take a charge: plant your feet; a driver who runs you over is called for the foul
+  charge(p) {
+    if (p.air || p.act || p.down || p.chargeCd > 0) return;
+    p.act = { k: 'charge', t: 0 }; p.chargeCd = 1.5; p.vel.multiplyScalar(0.15);
+    p.play('bbCharge', 'bbd', 1);
+  },
+  chargeCall(d, o) {
+    if (this.phase !== 'play' || !o.hasBall) return;
+    d.act = { k: 'fall', t: 0.75 }; d.play('bbFall', 'bbd', 1.4); o.slowT = 0.6; o.drive = null;
+    d.st.chg = (d.st.chg || 0) + 1;
+    this.pop(d, 'CHARGE!', '#ff5a5a', 1.4); BBS.ooh(1.6);
+    this.turnover(o.team, 'OFFENSIVE FOUL');
   },
   stepBack(p) {
     if (!p.hasBall || p.stepCd > 0 || !this.ready(p)) return;
@@ -7261,23 +7341,47 @@ const BB = {
   // ---------- per-player update ----------
   updatePlayer(p, dt) {
     p.t += dt;
-    for (const k of ['stealCd', 'crossCd', 'stepCd', 'bonusT', 'slowT', 'jumpCd']) if (p[k] > 0) p[k] -= dt;
+    for (const k of ['stealCd', 'crossCd', 'stepCd', 'bonusT', 'slowT', 'jumpCd', 'driveCd', 'chargeCd', 'burstT']) if (p[k] > 0) p[k] -= dt;
     if (p.hang > 0) p.hang -= dt;
     this.doEvents(p);
     const A = p.act;
+    // energy: sprinting, driving and lockdown burn it; it comes back when you ease off
+    const moving = p.vel.length() > 1.2, bh = this.ball.holder;
+    const locking = p.inp.lock && !p.offense && bh && bh.team !== p.team && p.dist(bh) < 3.6 && p.energy > 5;
+    let drain = 0;
+    if (p.drive) drain += 20; else if (p.inp.sprint && moving) drain += 15;
+    if (locking) drain += 12;
+    if (drain) { p.energy = Math.max(0, p.energy - drain * dt); p.regenT = 0.6; }
+    else { p.regenT -= dt; if (p.regenT <= 0) p.energy = Math.min(100, p.energy + 24 * dt); }
+    if (p.energy < 6 && p.drive) p.drive = null;
     // movement: accelerate toward what the stick asks for; no control in the air (momentum)
     if (!p.air && !(p.hang > 0)) {
-      let max = (p.inp.sprint ? 6.3 : 4.5) * (p.rt.spd || 1) * (p.cpu ? p.diff.spd : 1);
+      let mx = p.inp.x, mz = p.inp.z, sprint = p.inp.sprint && p.energy > 6, bonus = 1;
+      if (p.drive) { // run at the rim; the stick only bends the line
+        const D = p.drive; D.t += dt;
+        const r = p.rimDir(), dir = r.addScaledVector(V2(mx, mz), 0.5).normalize();
+        mx = dir.x; mz = dir.y; sprint = true; bonus = 1.08;
+        if (D.t > D.max || rimDist(p.pos.x, p.pos.y) < 1.3 || (p.act && p.act.k !== 'step')) p.drive = null;
+      }
+      p.locking = !!locking;
+      if (locking) { // lockdown: you get pulled to the spot between them and the rim, a lot more when they drive
+        const r = V2(-bh.pos.x, -bh.pos.y).normalize(), spot = bh.pos.clone().addScaledVector(r, 0.95);
+        const to = spot.sub(p.pos), l = to.length(), w = bh.drive ? 0.75 : 0.4;
+        if (l > 0.06) { to.divideScalar(Math.max(l, 0.45)); mx = mx * (1 - w) + to.x * w; mz = mz * (1 - w) + to.y * w; }
+        bonus = bh.drive ? 1.14 : 1.03;
+      }
+      let max = (sprint ? 6.3 : 4.5) * (p.rt.spd || 1) * (p.cpu ? p.diff.spd : 1) * bonus;
       if (p.hasBall) max *= 0.92;
-      if (!p.offense && p.inp.sprint === false) { // defensive slide is a touch slower sideways
-        const want = V2(p.inp.x, p.inp.z); if (want.lengthSq() > 0.01 && Math.abs(want.normalize().dot(p.fwd())) < 0.5) max *= 0.88;
+      if (p.energy < 15) max *= 0.9;
+      if (!p.offense && !sprint && !locking) { // defensive slide is a touch slower sideways
+        const want = V2(mx, mz); if (want.lengthSq() > 0.01 && Math.abs(want.normalize().dot(p.fwd())) < 0.5) max *= 0.88;
       }
       if (p.slowT > 0) max *= 0.35;
-      let want = V2(p.inp.x * max, p.inp.z * max);
-      if (!this.canMove(p) || (A && A.k === 'step')) want = null;
-      if (A && A.k === 'steal') want = null;
-      if (A && A.k === 'block') want = null;
-      const acc = (want ? 15 : 12) * dt;
+      const ml = Math.hypot(mx, mz); if (ml > 1) { mx /= ml; mz /= ml; }
+      let want = V2(mx * max, mz * max);
+      if (!this.canMove(p) || (A && ['step', 'steal', 'block', 'charge'].includes(A.k))) want = null;
+      // right after a crossover the body keeps sliding: low grip for a moment
+      const acc = (p.burstT > 0 ? 3.5 : want ? 15 : 12) * dt;
       const tgt = want || V2(0, 0);
       const dv = tgt.sub(p.vel); const l = dv.length();
       if (l > acc) dv.multiplyScalar(acc / l);
@@ -7316,6 +7420,7 @@ const BB = {
         if (A.t > 1.5) { p.act = { k: 'getup', t: 0 }; p.play('bbGetup', 'bbd', 1); }
       } else if (A.k === 'getup') { if (A.t > 0.5) p.act = null; }
       else if (A.k === 'celeb') { if (A.t > 1.2) p.act = null; }
+      else if (A.k === 'charge') { if (A.t > 0.8) p.act = null; }
     }
     if (p.cross) { p.cross.t += dt; if (p.cross.t >= p.cross.dur) { p.hand = p.cross.to; p.cross = null; p.drib = 0; } }
     // facing
@@ -7376,6 +7481,7 @@ const BB = {
     if (S.by) S.contested = true; return false;
   },
   blocked(o, shooter) {
+    shooter.streak = 0; shooter.fire = 0;
     const B = this.ball;
     B.holder = null; B.pass = null; B.last = o; B.noCatch = 0.35; B.noCatchFor = shooter;
     const away = V2(B.pos.x - o.pos.x, B.pos.z - o.pos.y); if (away.lengthSq() < 1e-4) away.copy(o.fwd()); away.normalize();
@@ -7562,7 +7668,7 @@ const BB = {
       if (p.air) { T[CH.lk] += 0.35; T[CH.rk] += 0.25; T[CH.lhx] -= 0.2; T[CH.rhx] -= 0.1; }
       if (p.slowT > 0 && !p.offense) { T[CH.sx] += 0.15; T[CH.sz] += Math.sin(p.t * 20) * 0.08; }
       // crossover: weight shifts hard toward the new ball side
-      if (p.cross) { const u = p.cross.t / p.cross.dur, dir = p.cross.to === 'L' ? 1 : -1; const w = Math.sin(u * Math.PI); T[CH.sz] += dir * 0.28 * w; T[CH.lk] += 0.3 * w; T[CH.rk] += 0.3 * w; T[CH.hy] += -dir * 0.2 * w; }
+      if (p.cross) { const u = p.cross.t / p.cross.dur, dir = p.cross.to === 'L' ? 1 : -1; const w = Math.sin(u * Math.PI); T[CH.sz] += dir * 0.5 * w; T[CH.sx] += 0.18 * w; T[CH.lk] += 0.55 * w; T[CH.rk] += 0.55 * w; T[CH.hy] += -dir * 0.38 * w; T[CH.lhz] += dir * 0.25 * w; T[CH.rhz] += dir * 0.25 * w; T[CH.ny] += -dir * 0.3 * w; }
       const k = 1 - Math.exp(-dt * 15);
       for (let c = 0; c < NCH; c++) p.P[c] += (T[c] - p.P[c]) * k;
     }
@@ -7620,6 +7726,10 @@ const BB = {
         const v = V2(-m.pos.x, -m.pos.y).normalize();
         go(m.pos.x + v.x * gap, m.pos.y + v.y * gap, p.dist(m) > 2.2);
         const dist = p.dist(m);
+        // lockdown when they drive (better CPUs more often); sometimes plant for a charge
+        if (m.drive) { if (A.lockDrive !== m.drive) { A.lockDrive = m.drive; A.lockRoll = Math.random() < p.diff.lock; } p.inp.lock = A.lockRoll; } else p.inp.lock = false;
+        const between = V2(p.pos.x - m.pos.x, p.pos.y - m.pos.y).normalize().dot(m.rimDir()) > 0.6;
+        if (m.drive && between && dist < 2.2 && p.chargeCd <= 0 && !p.act && Math.random() < p.diff.chg * dt * 4) p.ev.push('charge');
         if (dist < 1.3 && p.stealCd <= 0 && !p.act && Math.random() < p.diff.steal * dt * 1.6) p.ev.push('steal');
         if (m.shooting && !A.contested) {
           if (A.react <= 0) A.react = p.diff.react + rand(0, 0.08);
@@ -7641,7 +7751,7 @@ const BB = {
       const d = tgt.clone().sub(p.pos), l = d.length();
       const want = l > 0.25 ? d.multiplyScalar(Math.min(1, l / 1.4) / l) : V2();
       A.mv.lerp(want, 1 - Math.exp(-dt * 10));
-      p.inp.x = A.mv.x; p.inp.z = A.mv.y; p.inp.sprint = sprint && l > 1.5;
+      p.inp.x = A.mv.x; p.inp.z = A.mv.y; p.inp.sprint = sprint && l > 3 && p.energy > 35;
     } else { p.inp.x = p.inp.z = 0; p.inp.sprint = false; }
   },
   thinkBall(p, dt, go) {
@@ -7667,7 +7777,7 @@ const BB = {
     if (d < 2.5 && (open || Math.random() < 0.35)) { p.ev.push('shootDown'); return; }
     // open look: pull up (shorter shots more often, deep twos least)
     if (open && d < 7.8) {
-      const want = d < 5.2 ? 0.42 : three ? 0.34 : 0.16;
+      const want = d < 5.2 ? 0.42 : three ? 0.26 : 0.16;
       if (Math.random() < want) { p.ev.push('shootDown'); return; }
     }
     if (sc < 2.2 && d < 9.5) { p.ev.push('shootDown'); return; }
@@ -7677,6 +7787,8 @@ const BB = {
       const m = mates[0], mo = this.opps(m).reduce((a, o) => Math.min(a, o.dist(m)), 9);
       if (mo > 2.0 && this.laneOpen(p, m)) { p.ev.push('pass'); return; }
     }
+    // attack the rim when there's room, or right after shaking someone
+    if (p.driveCd <= 0 && p.energy > 30 && d > 2.8 && d < 8 && (p.burstT > 0 || (!inFront && Math.random() < 0.5) || (dd > 1.6 && Math.random() < 0.22))) { p.ev.push('drive'); return; }
     if (near && inFront && dd < 1.5) {
       const r = Math.random();
       if (r < 0.32 && p.crossCd <= 0) { p.ev.push('cross'); A.drive = V2(rand(-2, 2), 0.3); return; }
@@ -7698,9 +7810,17 @@ const BB = {
   step(dt) {
     this.t += dt;
     const ph = this.phase;
+    if (ph === 'intro') {
+      this.phaseT += dt;
+      for (const p of this.players) { p.inp.x = p.inp.z = 0; p.inp.sprint = false; p.ev = []; }
+      if (this.phaseT > 2.4) { this.phase = 'play'; this.phaseT = 0; this.hint('Check ball'); }
+      for (const p of this.players) this.updatePlayer(p, dt);
+      this.updateBall(dt);
+      return;
+    }
     if (ph === 'check') {
       this.phaseT += dt;
-      for (const p of this.players) { if (p.cpu || this.phaseT < 0.15) this.think(p, dt); else this.toHome(p); }
+      for (const p of this.players) { if (p.cpu) this.think(p, dt); else this.toHome(p); }
       if (this.phaseT > 1.3) { for (const p of this.players) { if (p.home && p.pos.distanceTo(p.home) > 0.6) p.pos.lerp(p.home, 0.5); } this.phase = 'play'; this.phaseT = 0; this.hint('Check ball'); }
     } else if (ph === 'scored' || ph === 'dead') {
       this.phaseT += dt;
@@ -7736,6 +7856,8 @@ const BB = {
         const nx = dx / d, nz = dz / d, push = (min - d) / 2;
         a.pos.x -= nx * push; a.pos.y -= nz * push; b.pos.x += nx * push; b.pos.y += nz * push;
         // the one running into the other loses their speed along the contact
+        // a driver who runs into someone planted for a charge is called for the foul
+        for (const [dd, o, sg] of [[a, b, -1], [b, a, 1]]) if (dd.act && dd.act.k === 'charge' && dd.act.t < 0.8 && o.hasBall && (o.vel.x * nx + o.vel.y * nz) * sg > 2.4) { this.chargeCall(dd, o); return; }
         for (const [p, s] of [[a, 1], [b, -1]]) { const vn = (p.vel.x * nx + p.vel.y * nz) * s; if (vn > 0) { p.vel.x -= nx * vn * s * 0.8; p.vel.y -= nz * vn * s * 0.8; } }
       }
     }
@@ -7755,7 +7877,7 @@ const BB = {
   finish() {
     if (this.cfg.mode === 'online') { if (BBNet.role !== 'host') return; BBNet.hostEnd(); BBNet.status = 'ended'; }
     bbReward();
-    this.hud(false);
+    this.hud(false); UI.banner('');
     UI.go('bbResults');
   },
 
@@ -7771,10 +7893,12 @@ const BB = {
       if (this.state === 'game' && this.cfg.mode === 'online' && BBNet.role === 'host') BBNet.hostFrame(real);
     }
     const pdt = dt || 1e-4;
-    for (const p of this.players) this.posePlayer(p, pdt);
+    for (const p of this.players) { this.posePlayer(p, pdt); if (p.fire > 0) FX.aura(p, pdt, '#ff7a1a', 45); }
+    if (this.ring && this.me) { this.ring.position.set(this.me.pos.x, 0.015, this.me.pos.y); this.ring.material.opacity = 0.55 + Math.sin(Game.time * 5) * 0.25; }
     // ball mesh
     const B = this.ball;
     if (B) { B.mesh.position.copy(B.pos); B.spin = (B.spin || 0) * Math.exp(-pdt * 0.5); B.mesh.rotation.x += (B.holder ? 9 : B.spin) * pdt; }
+    if (this.state === 'game' && this.phase !== this.lastPh) { const prev = this.lastPh; this.lastPh = this.phase; this.onPhase(this.phase, prev); }
     if (!(this.cfg && this.cfg.mode === 'online')) this.events.length = 0;
     if (this.state === 'menu') this.demoTick();
     FX.update(pdt);
@@ -7783,6 +7907,13 @@ const BB = {
     if (this.state === 'game') this.updateHud(real);
     else Court.setBoard(this.score[0], this.score[1], '');
     if (render) Game.renderer.render(Game.scene, Game.camera);
+  },
+  onPhase(ph, prev) {
+    const T = BB_TEAMS, o = this.cfg;
+    const names = (t) => this.team(t).map((p) => p.name.split(' ')[0]).join(' & ');
+    if (ph === 'intro') UI.banner(`<span style="color:${T[0].hud}">${esc(names(0))}</span> VS <span style="color:${T[1].hud}">${esc(names(1))}</span>`, `First to ${o.to} · ${o.mode === 'online' ? 'Online' : BB_DIFFS[o.diff ?? 1].name}`);
+    else if (ph === 'over') { const w = this.winner ?? 0; UI.banner(`<span style="color:${T[w].hud}">${esc(this.team(w).length === 1 ? names(w) : T[w].name)} WIN${this.team(w).length === 1 ? 'S' : ''}</span>`, `${this.score[0]} – ${this.score[1]}`); }
+    else if (prev === 'intro' || prev === 'over') UI.banner('');
   },
   updateCam(dt) {
     const C = this.cam, cam = Game.camera, B = this.ball;
@@ -7803,8 +7934,14 @@ const BB = {
       else { const a = this.t * 0.25; want.set(hx + Math.cos(a) * 4.6, 2.3, hz + Math.sin(a) * 4.6); look.set(hx, 1.3, hz); }
       if (k < 1) k = 1 - Math.exp(-dt * 3);
     } else {
-      want.set(C.fx * 0.3, 7.7, 17.4 + Math.max(0, C.fz - 7) * 0.3);
-      look.set(C.fx * 0.4, 0.9, 3.3 + Math.max(0, C.fz - 6) * 0.3);
+      // close follow-cam behind the play, the hoop always at the top of the frame
+      const fz2 = clamp(C.fz, 0.5, 10.5);
+      want.set(C.fx * 0.55, 4.9, fz2 + 8.4);
+      look.set(C.fx * 0.7, 1.35, fz2 - 2.4);
+      if (this.phase === 'intro') { // opening shot: low from the sideline, sweeping round to the game camera
+        const u = EASE.io(clamp(this.phaseT / 2.2, 0, 1));
+        want.lerp(new THREE.Vector3(7.5, 1.9, 9.5), 1 - u); look.lerp(new THREE.Vector3(0, 1.6, 4.5), 1 - u); k = 1 - Math.exp(-dt * 8);
+      }
       if (C.punch > 0) { want.lerp(look, C.punch * 0.25); C.punch *= Math.exp(-dt * 3); }
     }
     if (C.snap) { k = 1; C.snap = false; }
@@ -7839,6 +7976,7 @@ const BB = {
     this.hud(false);
   },
   leaveGame() {
+    UI.banner('');
     this.hud(false); this.paused = false; this.slowT = 0; UI.restoreTouch && UI.restoreTouch();
   },
   // start a real game
@@ -7848,7 +7986,8 @@ const BB = {
     this.state = 'game'; Game.mode = 'bball'; Sound.fx = true; FX.enabled = true; this.sfx = true;
     this.celebrated = false; this.ended = false; this.shootMade = 0;
     this.setup(o);
-    this.cam.snap = true;
+    if (o.mode !== 'shoot') { this.phase = 'intro'; this.phaseT = 0; }
+    this.cam.snap = true; this.lastPh = null;
     this.hud(true);
     UI.wipe();
     Sound.crowd(0.05);
@@ -7858,28 +7997,34 @@ const BB = {
   // ---------- HUD ----------
   hud(on) {
     let el = $('#bbhud');
-    if (!on) { if (el) el.hidden = true; const t = $('#touch'); if (t && this.touchOn) { t.hidden = true; this.touchOn = false; UI.buildTouch(); } return; }
+    if (!on) { if (el) el.hidden = true; return; }
     if (!el) { el = document.createElement('div'); el.id = 'bbhud'; document.body.insertBefore(el, $('#pops')); }
-    const o = this.cfg, T0 = BB_TEAMS[0], T1 = BB_TEAMS[1];
-    const shoot = o.mode === 'shoot';
-    const nm = (t) => { const ps = this.team(t); return ps.length === 1 ? ps[0].name.split(' ')[0] : T[t]; };
-    const T = [T0.name, T1.name];
-    el.innerHTML = `<div class="bbtop">${shoot ? `<div class="bbteam a"><span class="nm">Shootaround</span></div><div class="bbmid"><span class="to">MAKES</span><b class="sclk" id="bbsa">0 / 0</b></div><div></div>`
-      : `<div class="bbteam a" style="--tc:${T0.hud}"><span class="nm">${esc(nm(0))}</span><b class="sc" id="bbs0">0</b><i class="pz" id="bbp0">●</i></div>
-      <div class="bbmid"><span class="to">FIRST TO ${o.to}</span><b class="sclk" id="bbclk">12</b><span class="ping" id="bbping"></span></div>
-      <div class="bbteam b" style="--tc:${T1.hud}"><i class="pz" id="bbp1">●</i><b class="sc" id="bbs1">0</b><span class="nm">${esc(nm(1))}</span></div>`}</div>
+    const o = this.cfg, shoot = o.mode === 'shoot';
+    // same broadcast layout as the fights: nameplates left and right, clock in the middle, bars under the names
+    const side = (t) => {
+      const T = BB_TEAMS[t], ps = this.team(t), solo = ps.length === 1;
+      const big = solo ? ps[0].name : T.name, small = solo ? T.name : ps.map((p) => p.name.split(' ')[0]).join(' & ');
+      const bars = ps.map((p) => `<div class="bben"><span>${esc(p.name.split(' ')[0])}${p === this.me ? ' (you)' : ''}</span><div class="st"><i data-i="${this.players.indexOf(p)}"></i></div></div>`).join('');
+      return `<div class="side bbside ${t ? 'r' : ''}" style="--tc:${T.hud}">
+        <div class="nameplate">${t ? `<span class="s">${esc(small)}</span><span class="n">${esc(big)}</span>` : `<span class="n">${esc(big)}</span><span class="s">${esc(small)}</span>`}</div>
+        <div class="bbscore"><b id="bbs${t}">0</b><span class="pz" id="bbp${t}">● BALL</span><span class="fire" id="bbf${t}">🔥 ON FIRE</span></div>
+        <div class="bbens">${bars}</div></div>`;
+    };
+    el.innerHTML = `<div class="top bbtop">${shoot ? `<div class="side bbside" style="--tc:${BB_TEAMS[0].hud}"><div class="nameplate"><span class="n">${esc(this.me ? this.me.name : '')}</span><span class="s">Shootaround</span></div>
+        <div class="bbens"><div class="bben"><span>Energy</span><div class="st"><i data-i="0"></i></div></div></div></div>
+        <div class="clock"><span class="rd">MAKES</span><span class="t" id="bbsa">0/0</span><span class="ni" id="bbsapct"></span></div><div></div>`
+      : `${side(0)}<div class="clock"><span class="rd">FIRST TO ${o.to}</span><span class="t" id="bbclk">12</span><span class="ni" id="bbping"></span></div>${side(1)}`}</div>
       <div id="bbclear">TAKE IT BACK ▲</div><div id="bbhint"></div>
-      <div id="bbmeter"><i class="g"></i><i class="f"></i><b></b></div>
+      <div id="bbmeter"><i class="g"></i><i class="f"></i><i class="tick"></i><b></b></div>
       <div id="bbtags"></div>
       <div class="bottom" id="bbkeys"></div>`;
     el.hidden = false;
-    this.hudEls = { s0: $('#bbs0'), s1: $('#bbs1'), clk: $('#bbclk'), p0: $('#bbp0'), p1: $('#bbp1'), clear: $('#bbclear'), meter: $('#bbmeter'), keys: $('#bbkeys'), tags: $('#bbtags'), sa: $('#bbsa'), ping: $('#bbping') };
+    this.hudEls = { s0: $('#bbs0'), s1: $('#bbs1'), clk: $('#bbclk'), p0: $('#bbp0'), p1: $('#bbp1'), f0: $('#bbf0'), f1: $('#bbf1'), clear: $('#bbclear'), meter: $('#bbmeter'), keys: $('#bbkeys'), tags: $('#bbtags'), sa: $('#bbsa'), sapct: $('#bbsapct'), ping: $('#bbping'), bars: [...el.querySelectorAll('.bben .st i')] };
     this.keysKey = '';
     this.meterRes = null;
-    // name tags over the humans
-    const tags = this.players.filter((p) => !p.cpu || p === this.me);
-    this.hudEls.tags.innerHTML = tags.map((p) => `<span class="bbtag ${p === this.me ? 'me' : ''}" data-i="${this.players.indexOf(p)}" style="--tc:${BB_TEAMS[p.team].hud}">${p === this.me ? '▼ YOU' : esc(p.name.split(' ')[0])}</span>`).join('');
-    if (IS_TOUCH) this.buildTouch();
+    // name tags over the other humans (yours is the ring under your feet)
+    const tags = this.players.filter((p) => !p.cpu && p !== this.me);
+    this.hudEls.tags.innerHTML = tags.map((p) => `<span class="bbtag" data-i="${this.players.indexOf(p)}" style="--tc:${BB_TEAMS[p.team].hud}">${esc(p.name.split(' ')[0])}</span>`).join('');
   },
   buildTouch() {
     const T = $('#touch'); if (!T) return;
@@ -7901,38 +8046,39 @@ const BB = {
   updateHud(dt) {
     const E = this.hudEls; if (!E) return;
     const me = this.me;
-    if (this.cfg.mode === 'shoot') { if (E.sa) E.sa.textContent = `${this.shootMade} / ${me ? me.st.fga : 0}`; }
-    else {
+    if (this.cfg.mode === 'shoot') {
+      const a = me ? me.st.fga : 0;
+      if (E.sa) E.sa.textContent = `${this.shootMade}/${a}`;
+      if (E.sapct) E.sapct.textContent = a ? Math.round((this.shootMade / a) * 100) + '%' : '';
+    } else {
       E.s0.textContent = this.score[0]; E.s1.textContent = this.score[1];
       E.clk.textContent = Math.ceil(this.shotClock); E.clk.classList.toggle('low', this.shotClock < 4);
       E.p0.classList.toggle('on', this.poss === 0); E.p1.classList.toggle('on', this.poss === 1);
+      E.f0.classList.toggle('on', this.team(0).some((p) => p.fire > 0)); E.f1.classList.toggle('on', this.team(1).some((p) => p.fire > 0));
       Court.setBoard(this.score[0], this.score[1], ':' + String(Math.ceil(this.shotClock)).padStart(2, '0'));
       E.clear.classList.toggle('on', !!(me && me.team === this.poss && !this.cleared && this.phase === 'play'));
-      if (E.ping) E.ping.textContent = this.cfg.mode === 'online' && BBNet.role === 'guest' && BBNet.rtt ? BBNet.rtt + 'ms' : '';
+      if (E.ping) { const g = this.cfg.mode === 'online' && BBNet.role === 'guest'; E.ping.textContent = g && BBNet.rtt ? BBNet.rtt + 'ms ' + (BBNet.direct(BBNet.hostId()) ? 'DIRECT' : 'SERVER') : ''; E.ping.className = 'ni ' + (!g || !BBNet.rtt ? '' : BBNet.rtt < 70 ? 'good' : BBNet.rtt < 140 ? 'mid' : 'bad'); }
     }
-    // context controls
-    const off = me && me.hasBall;
-    const keyset = !me ? '' : off ? 'o' + (this.mates(me).length ? 'p' : '') : me.offense ? 'n' : 'd';
+    for (const b of E.bars) { const p = this.players[+b.dataset.i]; if (p) { b.style.width = clamp(p.energy, 0, 100) + '%'; b.classList.toggle('low', p.energy < 25); } }
+    // context controls, like the fight move bar
+    const has = me && (me.hasBall || (me.act && me.act.k === 'step'));
+    const keyset = !me ? '' : has ? 'o' + (this.mates(me).length ? 'p' : '') : me.offense || !this.ball.holder ? 'n' + (this.mates(me).length ? 'p' : '') : 'd';
     if (keyset !== this.keysKey) {
       this.keysKey = keyset;
-      const k = (c, l) => `<div class="mv"><span class="k">${c}</span><span class="l">${l}</span></div>`;
-      E.keys.innerHTML = keyset[0] === 'o' ? k('J', 'Shoot (hold)') + k('K', 'Crossover') + k('L', 'Step back') + k('I', 'Pump fake') + (keyset[1] ? k('O', 'Pass') : '') + k('SHIFT', 'Sprint')
-        : keyset === 'n' ? k('I', 'Jump') + (this.mates(me).length ? k('O', 'Call for ball') : '') + k('SHIFT', 'Sprint')
-          : keyset === 'd' ? k('J', 'Steal') + k('I', 'Block / jump') + k('SHIFT', 'Sprint') : '';
+      const k = (c, l, id = '') => `<div class="mv" ${id ? `data-k="${id}"` : ''}><span class="k">${c}</span><span class="l">${l}</span></div>`;
+      E.keys.innerHTML = keyset[0] === 'o' ? k('SPACE', 'Shoot (hold)') + k('J', 'Crossover') + k('K', 'Step back') + k('L', 'Drive') + k('I', 'Pump fake') + (keyset[1] ? k('O', 'Pass') : '') + k('SHIFT', 'Sprint')
+        : keyset[0] === 'n' ? k('SPACE', 'Jump') + k('L', 'Cut to rim') + (keyset[1] ? k('O', 'Call for ball') : '') + k('SHIFT', 'Sprint')
+          : keyset === 'd' ? k('SPACE', 'Block') + k('J', 'Steal') + k('K', 'Take charge') + k('L', 'Lockdown (hold)', 'lock') + k('SHIFT', 'Sprint') : '';
     }
-    // shot meter next to the shooter
+    const lk = E.keys.querySelector('[data-k="lock"]'); if (lk) lk.classList.toggle('ready', !!(me && me.locking));
+    // the shot meter: a tall bar beside the shooter
     const M = E.meter, A = me && me.act;
     const shooting = A && (A.k === 'jumper' || A.k === 'layup') && !A.rel;
-    if (this.meterLive) { /* the online guest draws its own meter */ } else if (shooting || (this.meterRes && this.meterRes.t < 0.8)) {
-      const s = FX.project(new THREE.Vector3(me.pos.x, me.y + 1.6, me.pos.y));
-      M.style.left = (s.x + 46) + 'px'; M.style.top = (s.y - 40) + 'px'; M.hidden = false;
+    if (this.meterLive) { /* the online guest draws its own meter */ } else if (shooting || (this.meterRes && this.meterRes.t < 0.9)) {
       let m, w, cls = '';
       if (shooting) { m = A.t / A.fill; w = this.window(me, A).w; this.meterRes = null; }
       else { this.meterRes.t += dt; m = this.meterRes.m; w = this.meterRes.w; cls = this.meterRes.green ? 'green' : 'miss'; }
-      M.className = cls;
-      M.querySelector('.f').style.height = clamp(m, 0, 1.12) / 1.12 * 100 + '%';
-      const g = M.querySelector('.g'); g.style.bottom = ((BB_GREEN_C - w / 2) / 1.12) * 100 + '%'; g.style.height = (w / 1.12) * 100 + '%';
-      M.querySelector('b').textContent = shooting ? '' : this.meterRes.label;
+      this.drawMeter(me, m, w, cls, shooting ? '' : this.meterRes.label);
     } else M.hidden = true;
     // tags
     for (const el of E.tags.children) {
@@ -7940,6 +8086,15 @@ const BB = {
       const s = FX.project(new THREE.Vector3(p.pos.x, p.y + 2.3, p.pos.y));
       el.style.transform = `translate(${s.x}px,${s.y}px) translate(-50%,-100%)`; el.style.opacity = s.ok ? 1 : 0;
     }
+  },
+  drawMeter(p, m, w, cls, label) {
+    const M = this.hudEls.meter;
+    const s = FX.project(new THREE.Vector3(p.pos.x, p.y + 1.25, p.pos.y));
+    M.style.left = (s.x + 62) + 'px'; M.style.top = (s.y - 95) + 'px'; M.hidden = false; M.className = cls;
+    M.querySelector('.f').style.height = clamp(m, 0, 1.12) / 1.12 * 100 + '%';
+    const g = M.querySelector('.g'); g.style.bottom = ((BB_GREEN_C - w / 2) / 1.12) * 100 + '%'; g.style.height = (w / 1.12) * 100 + '%';
+    M.querySelector('.tick').style.bottom = (BB_GREEN_C / 1.12) * 100 + '%';
+    M.querySelector('b').textContent = label;
   },
 };
 function gauss() { let u = 0, v = 0; while (u === 0) u = Math.random(); while (v === 0) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(TAU * v); }
@@ -7951,6 +8106,12 @@ function solveArc(A, B, ang, g) {
   const v = Math.sqrt((g * dh * dh) / Math.max(den, 0.05));
   const hx = dh > 1e-4 ? dx / dh : 0, hz = dh > 1e-4 ? dz / dh : 0;
   return new THREE.Vector3(hx * v * Math.cos(a), v * Math.sin(a), hz * v * Math.cos(a));
+}
+function arcByApex(A, B, apex, g) {
+  const dx = B.x - A.x, dz = B.z - A.z, dh = Math.hypot(dx, dz);
+  const up = Math.sqrt(2 * g * Math.max(0.05, apex - A.y)), tu = up / g, td = Math.sqrt(2 * Math.max(0.02, apex - B.y) / g);
+  const vh = dh / (tu + td), hx = dh > 1e-4 ? dx / dh : 0, hz = dh > 1e-4 ? dz / dh : 0;
+  return new THREE.Vector3(hx * vh, up, hz * vh);
 }
 // where a loose ball will come down to about head height (ignores the rim)
 function predictLanding(B) {
@@ -8056,7 +8217,7 @@ Object.assign(SCREENS, {
           <div class="small muted">${R ? `${R.w}W-${R.l}L · ${R.pts} pts · ${R.ank} ankles broken` : 'Make a fighter in Pixel Octagon to save your record. Their look and stats come with them.'}</div>
           ${me.prof ? `<div class="small">Speed ${Math.round(me.rating.spd * 100)} · Shooting ${Math.round(me.rating.sht * 100)} · Bounce ${Math.round(me.rating.jump * 100)}</div>` : ''}</div></div>
         <div class="row"><button class="btn" data-act="go" data-to="bbHow">How to Play</button><button class="btn" data-act="go" data-to="games">All Games</button></div>
-        <p class="small muted hint">Move <span class="kbd">WASD</span> Shoot <span class="kbd">J</span> Cross <span class="kbd">K</span> Step back <span class="kbd">L</span> Jump <span class="kbd">I</span> Pass <span class="kbd">O</span> Sprint <span class="kbd">SHIFT</span></p>
+        <p class="small muted hint">Move <span class="kbd">WASD</span> Shoot / Block <span class="kbd">SPACE</span> Cross / Steal <span class="kbd">J</span> Step back / Charge <span class="kbd">K</span> Drive / Lockdown <span class="kbd">L</span> Pass <span class="kbd">O</span> Sprint <span class="kbd">SHIFT</span></p>
       </div>
       <div class="menu-list modes">
         ${mode('go:bbPlay', 'Play vs CPU', '1v1 or 2v2, four levels', 'primary')}
@@ -8083,17 +8244,21 @@ Object.assign(SCREENS, {
     const k = (c) => `<span class="kbd">${c}</span>`;
     return `<div class="panel wide"><h2>How to Play Hoops</h2><div class="scroll"><div class="grid2">
       <div class="card"><h3>With the ball</h3><div class="mvlist">
-        <b>Move</b><span>${k('W')}${k('A')}${k('S')}${k('D')}. W runs at the hoop. Hold ${k('SHIFT')} (or ${k('SPACE')}) to sprint.</span>
-        <b>Shoot</b><span>Hold ${k('J')} and let go in the <b style="color:var(--green)">green</b>. The green window shrinks the farther out you are, and again when a defender's hand is up. Near the rim it's a layup; sprinting at the rim it's a dunk.</span>
-        <b>Crossover</b><span>${k('K')} switches hands and bursts you sideways. If a defender reaches for the ball right as you cross, their ankles break: they hit the floor for a second and a half.</span>
-        <b>Step back</b><span>${k('L')} hops you back away from the hoop. For a moment after, your green window is bigger. Hold ${k('J')} during it to rise straight into the shot.</span>
-        <b>Pump fake</b><span>${k('I')} with the ball. Defenders who bite jump, then you go around them.</span>
-        <b>Pass</b><span>${k('O')} to your teammate in 2-on-2.</span></div></div>
+        <b>Move</b><span>${k('W')}${k('A')}${k('S')}${k('D')}. W runs at the hoop. Hold ${k('SHIFT')} to sprint (it burns energy).</span>
+        <b>Shoot</b><span>Hold ${k('SPACE')} and let go in the <b style="color:var(--green)">green</b>. The green shrinks the farther out you are and again when a hand is in your face. Close in it's a layup; sprinting or driving at the rim it's a dunk.</span>
+        <b>Crossover</b><span>${k('J')} switches hands and throws you hard to the side. If a defender reaches right as you cross, their ankles break and they sit for a second and a half.</span>
+        <b>Step back</b><span>${k('K')} hops you back off the defender. For a moment after, your green is bigger. Hold ${k('SPACE')} during it to rise straight into the shot.</span>
+        <b>Drive</b><span>${k('L')} explodes you at the rim at full speed. Steer a little with WASD, then ${k('SPACE')} for the layup or dunk.</span>
+        <b>Pump fake</b><span>${k('I')}. Defenders who bite jump, then go around them.</span>
+        <b>Pass</b><span>${k('O')} to your teammate in 2-on-2. Without the ball, ${k('O')} calls for it and ${k('L')} cuts to the rim.</span>
+        <b>On fire</b><span>Make 3 in a row and you catch fire: a bigger green until you miss.</span></div></div>
       <div class="card"><h3>On defence</h3><div class="mvlist">
-        <b>Steal</b><span>${k('J')} reaches in. Close to the ball works best. Miss and you're off balance for a moment. Never reach while they're crossing you over.</span>
-        <b>Block</b><span>${k('I')} jumps with both hands up. You keep the speed you jumped with, so you can fly in from the side. Get a hand on the ball on its way up.</span>
-        <b>Rebound</b><span>Missed shots really bounce off the rim and the glass. Get under it and jump with ${k('I')}.</span>
-        <b>Rules</b><span>Half court, twos and threes. After a make the other team checks it at the top. After a steal or defensive rebound, take it back behind the arc first. 12-second shot clock. Out of bounds goes to the other team.</span></div></div>
+        <b>Block</b><span>${k('SPACE')} jumps with both hands up. You keep the speed you jumped with, so you can fly in from the side. Time it near the top of your jump.</span>
+        <b>Steal</b><span>${k('J')} reaches in. Close to the ball works best. Miss and you're off balance. Never reach while they're crossing you over.</span>
+        <b>Take a charge</b><span>${k('K')} plants your feet. If the ball handler runs you over while you're set, it's an offensive foul and your ball. If they don't, you're stuck for a moment.</span>
+        <b>Lockdown</b><span>Hold ${k('L')}. Pulls you to the spot between them and the rim and helps a lot when they drive, only a little otherwise. Burns energy.</span>
+        <b>Energy</b><span>The bars under the names. Sprinting, driving and lockdown use it. Low energy means slower feet and a smaller green.</span>
+        <b>Rules</b><span>Half court, twos and threes. After a make the other team checks it at the top. After a steal or defensive rebound, take it back behind the arc. 12-second shot clock.</span></div></div>
       </div></div>${backBtn('bbHome')}</div>`;
   },
   bbPause() {
@@ -8103,15 +8268,17 @@ Object.assign(SCREENS, {
       <button class="btn ghost" data-act="bbQuit">Quit to Hoops menu</button></div>`;
   },
   bbResults() {
-    const B = BB, me = B.me, won = me ? B.winner === me.team : null, R = UI.bbReward;
-    const rows = B.players.map((p) => `<tr class="${p === me ? 'me' : ''}" style="--tc:${BB_TEAMS[p.team].hud}"><td><i class="tdot"></i>${esc(p.name)}</td><td>${p.st.pts}</td><td>${p.st.fgm}/${p.st.fga}</td><td>${p.st.tpm}/${p.st.tpa}</td><td>${p.st.reb}</td><td>${p.st.ast}</td><td>${p.st.stl}</td><td>${p.st.blk}</td><td>${p.st.ank}</td></tr>`).join('');
-    const sc = B.score, T = BB_TEAMS;
-    return `<div class="panel" style="margin:auto;width:min(720px,100%)">
-      <h1 class="logo" style="font-size:clamp(24px,5vw,40px)">${won === null ? 'FINAL' : won ? 'WINNER' : '<span style="color:#9aa3c0">TOUGH LOSS</span>'}</h1>
-      <p style="font-family:var(--f-name);font-size:28px;text-transform:uppercase;margin:0"><span style="color:${T[0].hud}">${T[0].name} ${sc[0]}</span> · <span style="color:${T[1].hud}">${sc[1]} ${T[1].name}</span></p>
-      <div class="scroll" style="min-height:120px"><table class="box"><thead><tr><th>Player</th><th>PTS</th><th>FG</th><th>3PT</th><th>REB</th><th>AST</th><th>STL</th><th>BLK</th><th title="Ankles broken">ANK</th></tr></thead><tbody>${rows}</tbody></table></div>
-      ${R ? `<p style="font-family:var(--f-display);font-size:13px;color:var(--gold);margin:0">+${R.xp} XP · +$${R.cash}${R.ups ? ` · LEVEL UP!` : ''}</p>` : ''}
-      <div class="row">${B.cfg.mode === 'online' ? (BBNet.role === 'host' ? '<button class="btn primary" data-act="bbNetAgain">Back to lobby</button>' : '<button class="btn primary" data-act="go" data-to="bbOnline">Back to lobby</button>') : '<button class="btn primary" data-act="bbRestart">Play again</button>'}<button class="btn ghost" data-act="bbQuit">Hoops menu</button></div></div>`;
+    const B = BB, me = B.me, won = me ? B.winner === me.team : null, R = UI.bbReward, T = BB_TEAMS, sc = B.score;
+    const rows = B.players.map((p) => `<tr class="${p === me ? 'me' : ''}" style="--tc:${T[p.team].hud}"><td><i class="tdot"></i>${esc(p.name)}</td><td>${p.st.pts}</td><td>${p.st.fgm}/${p.st.fga}</td><td>${p.st.tpm}/${p.st.tpa}</td><td>${p.st.reb}</td><td>${p.st.ast}</td><td>${p.st.stl}</td><td>${p.st.blk}</td><td>${p.st.ank}</td></tr>`).join('');
+    const w = B.winner ?? 0, wn = B.team(w).length === 1 ? B.team(w)[0].name : T[w].name + ' team';
+    return `<div class="panel" style="margin:auto;width:min(760px,100%)">
+      <h1 class="logo" style="font-size:clamp(24px,5vw,40px)">${won === null ? 'FINAL' : won ? 'VICTORY' : '<span style="color:#9aa3c0">DEFEAT</span>'}</h1>
+      <p style="font-family:var(--f-name);font-size:24px;text-transform:uppercase;margin:0">${esc(wn)} ${B.team(w).length === 1 ? 'wins' : 'win'} <span style="color:var(--gold)">${Math.max(sc[0], sc[1])}–${Math.min(sc[0], sc[1])}</span> · first to ${B.cfg.to}</p>
+      <div class="scroll" style="min-height:110px"><table class="box"><thead><tr><th>Player</th><th>PTS</th><th>FG</th><th>3PT</th><th>REB</th><th>AST</th><th>STL</th><th>BLK</th><th title="Ankles broken">ANK</th></tr></thead><tbody>${rows}</tbody></table>
+      ${R && R.lines ? `<div class="mvlist" style="margin-top:10px">${R.lines.map(([n, v]) => `<b style="font-size:18px">+${v}</b><span>${esc(n)}</span>`).join('')}</div>` : ''}</div>
+      ${R ? `<p style="font-family:var(--f-display);font-size:14px;color:var(--gold);margin:0">TOTAL +${R.xp} XP · +$${R.cash}${R.nosave ? ' <span class="small muted">(make a fighter to keep it)</span>' : ''}</p>` : ''}
+      ${R && R.ups ? `<div class="card sel"><h3>Level up! Now LV ${R.lv}</h3><p>+${R.ups * PTS_PER_LEVEL} stat points ready to spend.</p></div>` : ''}
+      <div class="row">${B.cfg.mode === 'online' ? (BBNet.role === 'host' ? '<button class="btn primary" data-act="bbNetAgain">Back to lobby</button>' : '<button class="btn primary" data-act="go" data-to="bbOnline">Back to lobby</button>') : '<button class="btn primary" data-act="bbRestart">Rematch</button>'}<button class="btn ghost" data-act="bbQuit">Hoops menu</button></div></div>`;
   },
   bbNetMenu() {
     return `<div class="panel" style="margin:auto"><h2>Online game</h2><p class="muted">Online games can't be paused. The game is still going!</p>
@@ -8143,15 +8310,21 @@ function bbReward() {
   const won = B.winner === me.team, D = BB_DIFFS[B.cfg.diff ?? 1];
   const online = B.cfg.mode === 'online';
   const scale = (B.cfg.to || 15) / 15 * (B.cfg.size === 2 ? 1.1 : 1);
-  let xp = Math.round((won ? (online ? 160 : D.xp) : 30) * scale + me.st.pts * 2 + me.st.ank * 10);
+  const st = me.st, lines = [];
+  lines.push([won ? 'Win' : 'Played it out', Math.round((won ? (online ? 160 : D.xp) : 30) * scale)]);
+  if (st.pts) lines.push([`Points (${st.pts})`, st.pts * 2]);
+  if (st.ank) lines.push([`Ankles broken (${st.ank})`, st.ank * 10]);
+  if (st.stl + st.blk) lines.push([`Steals & blocks (${st.stl + st.blk})`, (st.stl + st.blk) * 5]);
+  if (st.chg) lines.push([`Charges taken (${st.chg})`, st.chg * 8]);
+  if (st.ast) lines.push([`Assists (${st.ast})`, st.ast * 4]);
+  let xp = lines.reduce((a, [, v]) => a + v, 0);
   let cash = Math.round((won ? (online ? 150 : D.cash) : 15) * scale);
-  if (!prof) { UI.bbReward = { xp, cash, ups: 0, nosave: true }; return; }
+  if (!prof) { UI.bbReward = { xp, cash, ups: 0, nosave: true, lines }; return; }
   const R = bbRecord(prof); if (won) R.w++; else R.l++; R.pts += me.st.pts; R.ank += me.st.ank;
   Shop.ensure(prof); cash = Math.round(cash * cashMult(prof)); prof.cash += cash;
   const ups = grantXP(prof, xp); xp = Math.round(xp * xpMult(prof));
-  if (won) Daily.bump && Daily.bump('win');
   persist();
-  UI.bbReward = { xp, cash, ups };
+  UI.bbReward = { xp, cash, ups, lines, lv: prof.level };
 }
 /* =====================================================================
    PIXEL HOOPS ONLINE — lobbies of up to four (2v2), same Supabase rooms
@@ -8160,12 +8333,12 @@ function bbReward() {
    player who drops mid-game is taken over by a CPU.
    Slots: 0,1 = Red · 2,3 = Blue (1v1 uses 0 and 2).
    ===================================================================== */
-const BB_SNAP_HZ = 15;
+const BB_SNAP_HZ = 20, BB_SRV_HZ = 10; // direct links get 20 snapshots a second; the server fallback 10 (Supabase allows 100 messages/s per project)
 const ACT_CODES = ['', 'jumper', 'layup', 'dunk', 'block', 'steal', 'pass', 'pump', 'step', 'fall', 'getup', 'celeb'];
 const BBNet = {
   role: null, status: 'idle', msg: '', code: '', conn: null, myId: Net.myId,
   lob: { fmt: 2, to: 15, diff: 1, slots: [null, null, null, null] },
-  seen: {}, lastSeq: {}, ack: {}, pend: [], seq: 0, snaps: [], sendAcc: 0, inAcc: 0, rtt: 0, pingT: 0, lastRecv: 0, lastIn: '', delay: 0.11,
+  seen: {}, lastSeq: {}, lastN: {}, ack: {}, pend: [], seq: 0, peers: {}, evLog: [], evId: 0, lastEv: 0, srvAcc: 0, nIn: 0, snaps: [], sendAcc: 0, inAcc: 0, rtt: 0, pingT: 0, lastRecv: 0, lastIn: '', delay: 0.11,
   get active() { return !!this.role; },
   slotsFor(fmt) { return fmt === 1 ? [0, 2] : [0, 1, 2, 3]; },
   me() { const m = bbMe(); return { id: this.myId, name: m.name, look: m.look, rating: m.rating }; },
@@ -8214,8 +8387,54 @@ const BBNet = {
   },
   leave(quiet) {
     if (this.conn) { this.send({ t: 'bye', id: this.myId }); const c = this.conn; setTimeout(() => { try { c.close(); } catch (e) { /* gone */ } }, 250); }
-    this.conn = null; this.role = null; this.snaps = []; this.pend = []; this.seen = {}; this.lastSeq = {}; this.ack = {}; this.rtt = 0;
+    for (const id of Object.keys(this.peers)) this.rtcClose(id);
+    this.conn = null; this.role = null; this.snaps = []; this.pend = []; this.seen = {}; this.lastSeq = {}; this.lastN = {}; this.ack = {}; this.rtt = 0; this.evLog = []; this.lastEv = 0; this.evq = [];
     if (!quiet) this.setStatus('idle');
+  },
+  // ---------- direct links (WebRTC): host <-> each guest; the room channel only carries the handshake ----------
+  hostId() { const h = this.lob.slots[0]; return h ? h.id : null; },
+  direct(id) { const P = id && this.peers[id]; return !!(P && P.dc && P.dc.readyState === 'open'); },
+  sendTo(id, m) { const P = this.peers[id]; if (P && P.dc && P.dc.readyState === 'open') { try { P.dc.send(JSON.stringify(m)); return true; } catch (e) { /* fall back */ } } return false; },
+  rtcOpen(id, initiator) {
+    if (typeof RTCPeerConnection === 'undefined' || !id) return;
+    this.rtcClose(id);
+    let pc; try { pc = new RTCPeerConnection({ iceServers: Net.local() ? [] : [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun.cloudflare.com:3478'] }] }); } catch (e) { return; }
+    const P = this.peers[id] = { pc, dc: null, iceQ: [] };
+    pc.onicecandidate = (e) => { if (e.candidate && this.peers[id] === P) this.send({ t: 'ice', to: id, from: this.myId, c: e.candidate.toJSON ? e.candidate.toJSON() : e.candidate }); };
+    pc.ondatachannel = (e) => this.rtcChan(id, P, e.channel);
+    pc.onconnectionstatechange = () => { if (this.peers[id] === P && ['failed', 'closed'].includes(pc.connectionState)) this.rtcClose(id); };
+    if (initiator) {
+      this.rtcChan(id, P, pc.createDataChannel('h', { ordered: false, maxRetransmits: 2 }));
+      pc.createOffer().then((o) => pc.setLocalDescription(o)).then(() => { if (this.peers[id] === P) this.send({ t: 'rtc', to: id, from: this.myId, sdp: pc.localDescription.toJSON ? pc.localDescription.toJSON() : pc.localDescription }); }).catch(() => this.rtcClose(id));
+    }
+    P.to = setTimeout(() => { if (this.peers[id] === P && !(P.dc && P.dc.readyState === 'open')) this.rtcClose(id); }, 10000); // no luck: that player stays on the server
+  },
+  rtcChan(id, P, dc) {
+    P.dc = dc;
+    dc.onmessage = (e) => { let m; try { m = JSON.parse(e.data); } catch (err) { return; } this.onData(m, id); };
+    dc.onclose = () => { if (P.dc === dc) P.dc = null; };
+  },
+  async rtcSignal(m) {
+    const id = m.from; if (m.to !== this.myId || !id) return;
+    try {
+      if (m.t === 'rtc') {
+        if (m.sdp.type === 'offer') this.rtcOpen(id, false);
+        const P = this.peers[id]; if (!P) return;
+        await P.pc.setRemoteDescription(m.sdp);
+        for (const c of P.iceQ.splice(0)) await P.pc.addIceCandidate(c).catch(() => {});
+        if (m.sdp.type === 'offer') { const a = await P.pc.createAnswer(); await P.pc.setLocalDescription(a); this.send({ t: 'rtc', to: id, from: this.myId, sdp: P.pc.localDescription.toJSON ? P.pc.localDescription.toJSON() : P.pc.localDescription }); }
+      } else {
+        const P = this.peers[id]; if (!P) return;
+        if (P.pc.remoteDescription) await P.pc.addIceCandidate(m.c).catch(() => {}); else P.iceQ.push(m.c);
+      }
+    } catch (e) { this.rtcClose(id); }
+  },
+  rtcClose(id) {
+    const P = this.peers[id]; if (!P) return;
+    clearTimeout(P.to);
+    try { if (P.dc) P.dc.close(); } catch (e) { /* closed */ }
+    try { P.pc.close(); } catch (e) { /* closed */ }
+    delete this.peers[id];
   },
   // ---------- lobby (host) ----------
   pushLobby() { if (this.role === 'host') this.send({ t: 'lobby', lob: this.lob, code: this.code }); },
@@ -8264,18 +8483,20 @@ const BBNet = {
     this.lastRecv = performance.now();
     const H = this.role === 'host';
     if (m.id) this.seen[m.id] = performance.now();
+    if (m.t === 'rtc' || m.t === 'ice') { this.rtcSignal(m); return; }
     if (H) {
       if (m.t === 'hi') {
         const id = m.p && m.p.id; if (!id) return;
         if (BB.state === 'game' && BB.cfg.mode === 'online') { this.send({ t: 'busy', to: id }); return; }
         if (!this.lob.slots.some((s) => s && s.id === id)) { if (this.seat({ ...m.p, ver: m.ver }) < 0) { this.send({ t: 'full', to: id }); return; } }
         this.seen[id] = performance.now();
+        if (!this.peers[id]) setTimeout(() => { if (this.role === 'host' && this.lob.slots.some((x) => x && x.id === id) && !this.peers[id]) this.rtcOpen(id, true); }, 300);
         this.pushLobby(); UI.screen === 'bbOnline' && UI.show(SCREENS.bbOnline());
         return;
       }
       if (m.t === 'bye') { this.dropPlayer(m.id); return; }
       if (m.t === 'i') { this.applyInput(m); return; }
-      if (m.t === 'png') { this.send({ t: 'pong', to: m.id, at: m.at }); return; }
+      if (m.t === 'png') { const r = { t: 'pong', to: m.id, at: m.at }; if (!this.sendTo(m.id, r)) this.send(r); return; }
       return;
     }
     // guest
@@ -8292,7 +8513,7 @@ const BBNet = {
     if (m.t === 'go') { this.status = 'game'; this.begin(m.roster, { fmt: m.size, to: m.to, diff: m.diff }); return; }
     if (m.t === 's') { this.onSnap(m); return; }
     if (m.t === 'pong' && m.to === this.myId) { const v = Math.round(performance.now() - m.at); this.rtt = this.rtt ? Math.round(this.rtt * 0.7 + v * 0.3) : v; return; }
-    if (m.t === 'end') { this.onEnd(m); return; }
+    if (m.t === 'end') { if (this.status !== 'ended') this.onEnd(m); return; }
     if (m.t === 'bye' && m.id && this.lob.slots[0] && m.id === this.lob.slots[0].id) { // host left
       const inGame = BB.state === 'game';
       this.leave(true); this.status = 'error'; this.msg = 'The host left, so the lobby closed.';
@@ -8300,6 +8521,7 @@ const BBNet = {
     }
   },
   dropPlayer(id) {
+    this.rtcClose(id);
     const L = this.lob, i = L.slots.findIndex((s) => s && s.id === id);
     if (i > 0) { L.slots[i] = null; this.pushLobby(); if (BB.state !== 'game') UI.screen === 'bbOnline' && UI.show(SCREENS.bbOnline()); }
     if (BB.state === 'game') { // a CPU takes over their player
@@ -8310,7 +8532,8 @@ const BBNet = {
   // host: a guest's controls
   applyInput(m) {
     const p = BB.players.find((q) => q.remote === m.id); if (!p) return;
-    p.inp.x = m.x || 0; p.inp.z = m.z || 0; p.inp.sprint = !!m.s;
+    if (m.n && m.n < (this.lastN[m.id] || 0)) { /* an older packet that arrived late: keep only its button presses */ }
+    else { if (m.n) this.lastN[m.id] = m.n; p.inp.x = m.x || 0; p.inp.z = m.z || 0; p.inp.sprint = !!m.s; p.inp.lock = !!m.lk; }
     const last = this.lastSeq[m.id] || 0;
     for (const e of m.ev || []) if (e.q > last) { p.ev.push(e); this.lastSeq[m.id] = e.q; }
     this.ack[m.id] = this.lastSeq[m.id] || 0;
@@ -8318,30 +8541,42 @@ const BBNet = {
   },
   // host: every frame after the simulation
   hostFrame(real) {
-    this.sendAcc += real;
-    // anyone silent for 8 seconds is gone
+    this.sendAcc += real; this.srvAcc += real;
     const now = performance.now();
     for (const p of BB.players) if (p.remote && p.netSeen && now - p.netSeen > 8000) this.dropPlayer(p.remote);
+    // events ride along on every snapshot for 0.6 s (numbered), so a dropped or late packet never loses one
+    for (const e of BB.events.splice(0)) this.evLog.push({ ...e, id: ++this.evId, at: BB.t });
+    while (this.evLog.length && BB.t - this.evLog[0].at > 0.6) this.evLog.shift();
     if (this.sendAcc < 1 / BB_SNAP_HZ) return;
     this.sendAcc = 0;
     const r2 = (v) => Math.round(v * 100) / 100;
     const P = BB.players.map((p) => [r2(p.pos.x), r2(p.pos.y), r2(p.y), r2(p.yaw), r2(p.vel.x), r2(p.vel.y), p.act ? ACT_CODES.indexOf(p.act.k) : 0, p.act ? r2(p.act.t) : 0,
-      p.hand === 'L' ? 1 : 0, p.cross ? r2(p.cross.t) : -1, p.anim ? p.animKey : '', p.anim ? r2(p.anim.t) : 0, p.anim ? r2(p.anim.rate) : 1, p.slowT > 0 ? 1 : 0]);
+      p.hand === 'L' ? 1 : 0, p.cross ? r2(p.cross.t) : -1, p.anim ? p.animKey : '', p.anim ? r2(p.anim.t) : 0, p.anim ? r2(p.anim.rate) : 1, p.slowT > 0 ? 1 : 0,
+      p.fire > 0 ? 1 : 0, Math.round(p.energy), p.locking ? 1 : 0]);
     const B = BB.ball;
-    this.send({ t: 's', ht: r2(BB.t), ph: BB.phase, sc: BB.score, po: BB.poss, cl: BB.cleared ? 1 : 0, clk: r2(BB.shotClock), P, B: [r2(B.pos.x), r2(B.pos.y), r2(B.pos.z), B.holder ? BB.players.indexOf(B.holder) : -1], ev: BB.events.splice(0), ack: this.ack, w: BB.winner ?? -1 });
+    const msg = { t: 's', ht: r2(BB.t), ph: BB.phase, sc: BB.score, po: BB.poss, cl: BB.cleared ? 1 : 0, clk: r2(BB.shotClock), P, B: [r2(B.pos.x), r2(B.pos.y), r2(B.pos.z), B.holder ? BB.players.indexOf(B.holder) : -1], ev: this.evLog, ack: this.ack, w: BB.winner ?? -1 };
+    let viaServer = false;
+    for (const p of BB.players) if (p.remote && !this.sendTo(p.remote, msg)) viaServer = true;
+    // only players without a direct link need the server copy, and they get it 10 times a second
+    if (viaServer && this.srvAcc >= 1 / BB_SRV_HZ) { this.srvAcc = 0; this.send(msg); }
   },
   hostEnd() {
     const st = BB.players.map((p) => p.st);
-    this.send({ t: 'end', sc: BB.score, st, w: BB.winner });
+    const m = { t: 'end', sc: BB.score, st, w: BB.winner };
+    for (const p of BB.players) if (p.remote) this.sendTo(p.remote, m);
+    this.send(m);
   },
   // ---------- guest ----------
   onSnap(m) {
     const S = this.snaps;
-    if (S.length && m.ht <= S[S.length - 1].ht) { if (m.ht < S[S.length - 1].ht - 5) S.length = 0; else return; } // host restarted the clock
+    if (S.length && m.ht <= S[S.length - 1].ht) {
+      if (m.ht < S[S.length - 1].ht - 5) { S.length = 0; this.lastEv = 0; } // host restarted the clock
+      else { for (const e of m.ev || []) if (e.id > this.lastEv) { this.lastEv = e.id; (this.evq = this.evq || []).push({ ht: e.at, e }); } return; }
+    }
     m.rt = performance.now() / 1000; S.push(m); if (S.length > 40) S.shift();
     if (m.ack && m.ack[this.myId]) { const a = m.ack[this.myId]; this.pend = this.pend.filter((e) => e.q > a); }
     // events play when the snapshot that carries them is drawn
-    for (const e of m.ev || []) (this.evq = this.evq || []).push({ ht: m.ht, e });
+    for (const e of m.ev || []) if (e.id > this.lastEv) { this.lastEv = e.id; (this.evq = this.evq || []).push({ ht: e.at, e }); }
   },
   guestFrame(real) {
     const S = this.snaps; if (!S.length) return;
@@ -8362,7 +8597,7 @@ const BBNet = {
       const k = ACT_CODES[C[6]]; p.act = k ? { k, t: C[7], rel: true } : null;
       p.hand = C[8] ? 'L' : 'R';
       p.cross = C[9] >= 0 ? { t: C[9], dur: 0.34, from: C[8] ? 'L' : 'R', to: C[8] ? 'R' : 'L' } : null;
-      p.slowT = C[13] ? 0.1 : 0;
+      p.slowT = C[13] ? 0.1 : 0; p.fire = C[14] || 0; p.energy = C[15] ?? 100; p.locking = !!C[16];
       if (C[10]) {
         if (!p.anim || p.animKey !== C[10]) { const [nm, st] = C[10].split('@'); p.play(nm, st, C[12]); p.anim.t = C[11]; }
         else if (Math.abs(p.anim.t - C[11]) > 0.15) p.anim.t = C[11];
@@ -8379,26 +8614,30 @@ const BBNet = {
     if (me && !BB.paused) {
       BB.readMove(me);
       this.inAcc += real;
-      const sig = [me.inp.x.toFixed(2), me.inp.z.toFixed(2), me.inp.sprint ? 1 : 0].join();
-      if ((sig !== this.lastIn && this.inAcc > 1 / 20) || this.inAcc > 0.2 || this.pend.some((e) => !e.sent)) {
+      const sig = [me.inp.x.toFixed(2), me.inp.z.toFixed(2), me.inp.sprint ? 1 : 0, me.inp.lock ? 1 : 0].join();
+      const host = this.hostId(), dc = this.direct(host);
+      this.delay = dc ? 0.09 : 0.17;
+      const minGap = dc ? 1 / 30 : 1 / 10, keep = dc ? 0.15 : 0.3;
+      if ((sig !== this.lastIn && this.inAcc > minGap) || this.inAcc > keep || this.pend.some((e) => !e.sent)) {
         this.inAcc = 0; this.lastIn = sig;
         for (const e of this.pend) e.sent = true;
-        this.send({ t: 'i', id: this.myId, x: +me.inp.x.toFixed(2), z: +me.inp.z.toFixed(2), s: me.inp.sprint ? 1 : 0, ev: this.pend });
+        const msg = { t: 'i', id: this.myId, n: ++this.nIn, x: +me.inp.x.toFixed(2), z: +me.inp.z.toFixed(2), s: me.inp.sprint ? 1 : 0, lk: me.inp.lock ? 1 : 0, ev: this.pend };
+        if (!this.sendTo(host, msg)) this.send(msg);
       }
       this.localMeter(me, real);
     }
     this.pingT += real;
-    if (this.pingT > 2) { this.pingT = 0; this.send({ t: 'png', id: this.myId, at: performance.now() }); }
+    if (this.pingT > 2) { this.pingT = 0; const m = { t: 'png', id: this.myId, at: performance.now() }; if (!this.sendTo(this.hostId(), m)) this.send(m); }
   },
   // guest: my key presses become numbered events the host acknowledges
   guestKey(code, down) {
     const me = BB.me; if (!me) return;
     const ev = (k, extra) => this.pend.push({ k, q: ++this.seq, ...(extra || {}) });
-    const has = me.hasBall;
-    if (code === 'KeyJ' || code === 'KeyZ') {
+    const has = me.hasBall || (me.act && me.act.k === 'step');
+    if (code === 'Space') { // shoot on offence (timed on this screen), block on defence
       if (down) {
-        if (has || (me.act && me.act.k === 'step')) { this.meter = this.meterStart(me); ev('shootDown', this.meter ? { kind: this.meter.k } : null); }
-        else ev('steal');
+        if (has) { this.meter = this.meterStart(me); ev('shootDown', this.meter ? { kind: this.meter.k } : null); }
+        else ev('jump');
       } else if (this.meter && !this.meter.done) {
         const M = this.meter; M.done = true;
         const m = (performance.now() / 1000 - M.at) / M.fill, lo = BB_GREEN_C - M.w / 2, hi = BB_GREEN_C + M.w / 2;
@@ -8406,19 +8645,15 @@ const BBNet = {
         const label = green ? (Math.abs(m - BB_GREEN_C) < M.w * 0.18 ? 'PERFECT' : 'GREEN') : err < 0.035 ? (late ? 'SLIGHTLY LATE' : 'SLIGHTLY EARLY') : err < 0.12 ? (late ? 'LATE' : 'EARLY') : (late ? 'WAY LATE' : 'WAY EARLY');
         BB.meterResult({ m, w: M.w, green, label });
         ev('shootUp', { g: green ? 1 : 0, e: +err.toFixed(3) });
-      } else ev('shootUp');
+      }
       return;
     }
-    if (!down) return;
-    if (code === 'KeyK' || code === 'KeyX') ev(has ? 'cross' : 'steal');
-    else if (code === 'KeyL' || code === 'KeyC') ev('step');
-    else if (code === 'KeyI' || code === 'TouchJump') ev(has ? 'pump' : 'jump');
-    else if (code === 'KeyO' || code === 'KeyV') ev(has ? 'pass' : 'call');
+    const k = BB.keyEvent(me, code, down); if (k) ev(k);
   },
   meterStart(me) {
     const d = rimDist(me.pos.x, me.pos.y), k = d < 3.1 ? 'layup' : 'jumper';
     const toRim = me.vel.dot(me.rimDir());
-    if ((d < 2.4 && (me.inp.sprint || toRim > 2.6) && me.vel.length() > 2) || (d < 3.1 && me.inp.sprint && toRim > 3.4)) return null; // dunk: no meter
+    if ((d < 2.4 && (me.inp.sprint || toRim > 2.6) && me.vel.length() > 2) || (d < 3.1 && (me.inp.sprint || toRim > 5) && toRim > 3.4)) return null; // dunk: no meter
     const A = { k, d }, w = BB.window(me, A).w;
     return { k, d, w, fill: k === 'jumper' ? 0.62 : 0.5, at: performance.now() / 1000, done: false };
   },
@@ -8427,11 +8662,7 @@ const BBNet = {
     if (M && !M.done) {
       const m = (performance.now() / 1000 - M.at) / M.fill;
       if (m > 1.25) { M.done = true; return; }
-      const s = FX.project(new THREE.Vector3(me.pos.x, me.y + 1.6, me.pos.y));
-      el.style.left = (s.x + 46) + 'px'; el.style.top = (s.y - 40) + 'px'; el.hidden = false; el.className = '';
-      el.querySelector('.f').style.height = clamp(m, 0, 1.12) / 1.12 * 100 + '%';
-      const g = el.querySelector('.g'); g.style.bottom = ((BB_GREEN_C - M.w / 2) / 1.12) * 100 + '%'; g.style.height = (M.w / 1.12) * 100 + '%';
-      el.querySelector('b').textContent = '';
+      BB.drawMeter(me, m, M.w, '', '');
       BB.meterLive = true;
     } else BB.meterLive = false;
   },
