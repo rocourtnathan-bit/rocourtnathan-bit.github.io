@@ -1712,6 +1712,7 @@ class Fighter {
     this.stats = cfg.stats;
     this.D = derived(cfg.stats);
     this.isPlayer = !!cfg.isPlayer;
+    this.human = !!cfg.isPlayer || !!cfg.remote;
     this.evolved = !!cfg.evolved;
     this.rig = new Rig(cfg.look, cfg.style);
     this.pos = new THREE.Vector2(); this.vel = new THREE.Vector2();
@@ -1801,7 +1802,7 @@ class Fighter {
   // a dodge that actually made something miss: longer slow-mo and a damage bonus on the next hit
   perfectDodge() {
     this.dodgeBonusT = 1.0;
-    if (this.isPlayer) { Game.witch(0.9, 0.2); FX.text(this, 'COUNTER NOW!', '#7fe3ff', 0.8, true); }
+    if (this.human) { Game.witch(0.9, 0.2, this); FX.text(this, 'COUNTER NOW!', '#7fe3ff', 0.8, true); }
   }
   breakGuard() {
     this.guard = 0; this.guardBrokenT = 1.8; this.guardDelay = 0; this.blockW = 0;
@@ -2041,7 +2042,7 @@ class Fighter {
     const inRange = d <= reach && this.inFront();
     if (inRange && O.state === 'dodge') { FX.text(O, 'DODGED!', '#7fe3ff', 0.9); O.meter = Math.min(100, O.meter + 6); O.perfectDodge(); }
     if (!inRange || !O.vulnerable) {
-      if (i === 0) { Sound.whoosh(0.9); this.stam = Math.max(0, this.stam - 2); if (this.isPlayer || O.isPlayer) FX.text(this, 'MISS', '#8d96b3', 0.6, true); }
+      if (i === 0) { Sound.whoosh(0.9); this.stam = Math.max(0, this.stam - 2); if (this.human || O.human) FX.text(this, 'MISS', '#8d96b3', 0.6, true); }
       return;
     }
     // parried?
@@ -2072,7 +2073,7 @@ class Fighter {
         this.hp = Math.max(1, this.hp - 3 * O.D.dmg); this.streak = 0;
         FX.text(O, 'CHECKED!', '#7fe3ff', 0.9); Sound.hit(0.6, false);
         this.state = 'hit'; this.playAnim('hLeg'); this.stunT = 0.3; this.grapple = null;
-      } else if (this.isPlayer || O.isPlayer) FX.text(O, red >= 0.9 ? 'BLOCKED' : red >= 0.8 ? 'BLOCKED' : 'PARTIAL BLOCK', red >= 0.8 ? '#bcd3ff' : '#ffb36b', 0.7, true);
+      } else if (this.human || O.human) FX.text(O, red >= 0.9 ? 'BLOCKED' : red >= 0.8 ? 'BLOCKED' : 'PARTIAL BLOCK', red >= 0.8 ? '#bcd3ff' : '#ffb36b', 0.7, true);
       return;
     }
     // clean hit
@@ -2275,6 +2276,12 @@ class Fighter {
     const gas = 1 - clamp(this.stam / this.maxStam / 0.35, 0, 1);
     if (gas > 0) { T[CH.lHy] -= gas * 0.18; T[CH.rHy] -= gas * 0.18; T[CH.sx] += gas * 0.12; T[CH.nx] += gas * 0.1; }
     return T;
+  }
+  poseFrom(P) {
+    const r = this.rig.root;
+    r.position.set(this.pos.x, 0, this.pos.y); r.rotation.y = this.yaw; r.updateMatrixWorld(true);
+    applyPose(this.rig, P, this.opp ? this.opp.aim : null);
+    this.rig.head.getWorldPosition(this.aim.head); this.rig.bodyMark.getWorldPosition(this.aim.body); this.rig.lKnee.getWorldPosition(this.aim.leg);
   }
   pose(dt) {
     if (this.state === 'grappled') { /* P already set by attacker */ }
@@ -2573,6 +2580,7 @@ const Cam = {
       const ax = new THREE.Vector2(b.x - a.x, b.y - a.y); const sep = Math.max(0.3, ax.length()); ax.normalize();
       let perp = new THREE.Vector2(-ax.y, ax.x);
       if (this.side && perp.dot(this.side) < 0) perp.negate();
+      if (!this.side && this.flip) perp.negate(); // online guest sees themselves on the left
       this.side = this.side ? this.side.lerp(perp, 1 - Math.exp(-dt * 3)).normalize() : perp.clone();
       const dist = clamp(3.3 + sep * 1.05, 4.3, 9.5) * (1 - this.zoomPunch * 0.25);
       wantPos.set(mid.x + this.side.x * dist, 1.55 + sep * 0.16, mid.y + this.side.y * dist);
@@ -2729,11 +2737,12 @@ const Game = {
   hitstop(t) { if (this.mode !== 'fight') return; this.stopT = Math.max(this.stopT, t); },
   slowmo(t, s) { if (this.mode !== 'fight') return; this.slowT = Math.max(this.slowT, t); this.slowScale = s; },
   // dodge slow-mo: the opponent slows down, you don't
-  witchT: 0, witchScale: 1, lastWitch: -9,
-  witch(t, s) {
+  witchT: 0, witchScale: 1, lastWitch: -9, witchWho: null,
+  witch(t, s, who) {
     if (this.mode !== 'fight') return;
     if (s > 0.4 && this.time - this.lastWitch < 1.2) return; // plain dodges can't chain slow-mo
     const active = this.witchT > 0;
+    this.witchWho = who || null;
     this.lastWitch = this.time; this.witchT = Math.max(this.witchT, t); this.witchScale = active ? Math.min(this.witchScale, s) : s;
     Sound.tone({ f: 240, f2: 70, dur: 0.35, g: 0.18, type: 'sine' });
   },
@@ -2764,7 +2773,8 @@ class Match {
     const pc = playerCfg(o.profile);
     // corner colours: never let both fighters wear the same shorts
     if (o.opp.look && o.opp.look.shorts === pc.look.shorts) o.opp = { ...o.opp, look: { ...o.opp.look, shorts: pc.look.shorts === 1 ? 0 : 1 } };
-    const [P, C] = Game.addPair(pc, o.opp, null, { diff: o.diff, mode: o.mode === 'practice' ? o.dummyMode || 'idle' : 'fight' });
+    const [P, C] = Game.addPair(pc, o.opp, null, o.mode === 'online' ? null : { diff: o.diff, mode: o.mode === 'practice' ? o.dummyMode || 'idle' : 'fight' });
+    Cam.flip = false;
     this.P = P; this.C = C;
     if (o.mode === 'practice') { Game.practiceDummy = C; C.D.dmg *= 0.5; }
     Game.mode = 'fight'; Cam.mode = 'fight'; Cam.side = null; Cam.snap();
@@ -2864,6 +2874,7 @@ class Match {
     Game.ais = [null, null];
   }
   report() {
+    if (this.o.mode === 'online') { Net.report(this); return; }
     const r = this.result, prof = this.o.profile, P = this.P;
     const diff = DIFFS[this.o.diff] || DIFFS[0];
     const m = diff.xp, lines = [];
@@ -3142,6 +3153,7 @@ const SCREENS = {
         <button class="btn ${has ? 'primary' : ''}" data-act="go" data-to="quick" ${has ? '' : 'disabled'}>Quick Fight <small>Any opponent, any difficulty</small></button>
         <button class="btn" data-act="go" data-to="tourney" ${has ? '' : 'disabled'}>Tournament <small>16-fighter bracket, 4 fights, harder every round</small></button>
         <button class="btn" data-act="go" data-to="boss" ${has ? '' : 'disabled'}>Boss Mode <small>Five monsters. Earn it.</small></button>
+        <button class="btn" data-act="go" data-to="online" ${has ? '' : 'disabled'}>Online <small>Private match with a friend, join by code</small></button>
         <button class="btn" data-act="practice" ${has ? '' : 'disabled'}>Practice <small>Drill moves, earn XP</small></button>
         <button class="btn" data-act="go" data-to="fighters">My Fighters <small>Train stats, evolve, customize</small></button>
         <div class="row"><button class="btn" data-act="go" data-to="howto">How to Play</button><button class="btn" data-act="go" data-to="settings">Settings</button></div>
@@ -3267,6 +3279,50 @@ const SCREENS = {
     }).join('');
     return `<div class="panel wide"><h2>Boss Mode</h2><p class="muted">Bosses have stats past the human limit, evolved finishers and a special trait. Beat each one to unlock the next.</p>
       <div class="scroll"><div class="grid3">${cards}</div></div>${backBtn()}</div>`;
+  },
+  online() {
+    const p = activeFighter(); const N = Net;
+    const meCard = p ? `<p class="small muted">You're fighting as <b style="color:var(--mat)">${esc(p.name)}</b> · ${esc(STYLES[p.style].name)} · LV ${p.level}</p>` : '';
+    const evenRow = (canEdit) => `<label class="f">Stats</label><div class="opt">${[[false, 'Your real stats'], [true, 'Even stats (fair fight)']].map(([v, l]) => `<button class="${N.even === v ? 'sel' : ''}" ${canEdit ? `data-act="netEven" data-v="${v}"` : 'disabled'}>${l}</button>`).join('')}</div>`;
+    let body = '';
+    if (!N.role && N.status !== 'starting') {
+      body = `${N.status === 'error' ? `<div class="confirm"><p>${esc(N.msg)}</p></div>` : ''}
+        <button class="btn primary" data-act="netHost">Host a match <small>Get a code to send a friend</small></button>
+        <label class="f" for="net-code">Join with a code</label>
+        <div class="row"><input type="text" id="net-code" maxlength="6" placeholder="ABC123" autocomplete="off" style="flex:1 1 140px;text-transform:uppercase;font-family:var(--f-display);font-size:18px;letter-spacing:4px"><button class="btn" data-act="netJoin" style="flex:0 0 auto">Join</button></div>`;
+    } else if (N.status === 'starting') body = `<p>${esc(N.msg)}</p><button class="btn ghost" data-act="netCancel">Cancel</button>`;
+    else if (N.role === 'host') {
+      body = `<p class="tag">Your room code</p>
+        <div class="row" style="gap:12px"><span id="net-codebox" style="font-family:var(--f-display);font-size:clamp(26px,7vw,40px);letter-spacing:8px;color:var(--gold);user-select:all">${N.code}</span><button class="btn" data-act="netCopy" style="flex:0 0 auto">Copy</button></div>
+        ${N.status === 'waiting' ? `<p class="muted">Send this code to your friend. Waiting for them to join…</p>` : `<div class="card sel"><span class="small muted">OPPONENT JOINED</span><span class="nm">${esc(N.opp.name)}</span><span class="small">${esc(STYLES[N.opp.style].name)} · LV ${N.opp.level || 1}</span></div>`}
+        ${evenRow(true)}
+        <div class="row">${N.status === 'ready' ? `<button class="btn primary" data-act="netStart">Start fight</button>` : ''}<button class="btn ghost" data-act="netCancel">Cancel</button></div>`;
+    } else if (N.role === 'guest') {
+      body = `<div class="card sel"><span class="small muted">CONNECTED TO ROOM</span><span class="nm" style="font-family:var(--f-display);font-size:22px;letter-spacing:6px">${N.code}</span></div>
+        <p class="muted">Waiting for the host to start the fight…</p>${evenRow(false)}
+        <button class="btn ghost" data-act="netCancel">Leave</button>`;
+    }
+    return `<div class="panel left"><h2>Online Match</h2>${meCard}${body}
+      <p class="small muted">Fights run on the host's computer, so the host gets the smoothest connection. Works in the downloaded file or on the website, not inside the Claude preview.</p>
+      ${N.role ? '' : backBtn()}</div>`;
+  },
+  netMenu() {
+    return `<div class="panel" style="margin:auto"><h2>Online match</h2><p class="muted">Online fights can't be paused. The fight is still going!</p>
+      <button class="btn primary" data-act="netResume">Back to the fight</button>
+      <button class="btn ghost" data-act="netLeave">Leave match <small>Counts as nothing. No XP.</small></button></div>`;
+  },
+  netResults() {
+    const d = UI.netResult; if (!d) return SCREENS.online();
+    const { end, me, won, lines, total, ups, lvBefore, prof } = d;
+    const mm = Math.floor(end.time / 60), ss = String(Math.floor(end.time % 60)).padStart(2, '0');
+    return `<div class="panel" style="margin:auto;width:min(600px,100%)">
+      <h1 class="logo" style="font-size:clamp(24px,5vw,40px)">${won ? 'VICTORY' : '<span style="color:#9aa3c0">DEFEAT</span>'}</h1>
+      <p style="font-family:var(--f-name);font-size:24px;text-transform:uppercase">${esc(end.st[end.w].name)} wins by <span style="color:var(--gold)">${end.method}</span> · Round ${end.round} · ${mm}:${ss}</p>
+      <div class="mvlist">${lines.map(([n, v]) => `<b style="font-size:18px">+${v}</b><span>${esc(n)}</span>`).join('')}</div>
+      <p style="font-family:var(--f-display);font-size:14px;color:var(--gold)">TOTAL +${total} XP</p>
+      ${ups ? `<div class="card sel"><h3>Level up! ${lvBefore} → ${prof.level}</h3><p>+${ups * PTS_PER_LEVEL} stat points ready to spend.</p></div>` : ''}
+      <div class="row">${Net.role === 'host' ? `<button class="btn primary" data-act="netStart">Rematch</button>` : Net.role === 'guest' ? `<p class="muted" style="flex:1 1 100%">Waiting for the host to start a rematch…</p>` : '<p class="muted">Your opponent left.</p>'}
+      <button class="btn ghost" data-act="netLeave">Leave</button></div></div>`;
   },
   howto() {
     return `<div class="panel wide"><h2>How to Fight</h2><div class="scroll" style="display:flex;flex-direction:column;gap:12px">
@@ -3435,10 +3491,298 @@ const ACT = {
   },
   askWipe: () => { UI.confirm = 'wipe'; UI.show(SCREENS.settings()); },
   wipe: () => { SAVE.fighters = []; SAVE.active = null; persist(); UI.confirm = null; UI.go('title'); },
+  netHost: () => Net.host(),
+  netJoin: () => Net.join(($('#net-code') || {}).value),
+  netCancel: () => { Net.teardown(); Net.setStatus('idle'); },
+  netStart: () => { if (Net.role === 'host' && Net.opp) Net.hostStart(); },
+  netEven: (d) => { Net.even = d.v === 'true'; Net.send({ t: 'lobby', even: Net.even }); UI.show(SCREENS.online()); },
+  netCopy: () => { const c = Net.code; try { navigator.clipboard.writeText(c).catch(() => {}); } catch (e) { /* fall back to selecting the code */ } const el = $('#net-codebox'); if (el) { const r = document.createRange(); r.selectNodeContents(el); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); } },
+  netResume: () => UI.hide(),
+  netLeave: () => Net.leave(),
   resume: () => togglePause(false),
   quitFight: () => { togglePause(false); endFightToMenu(); },
   pexit: () => { togglePause(false); endPractice(); },
 };
+/* =====================================================================
+   ONLINE — private matches with a join code (PeerJS / WebRTC)
+   Host runs the real fight; the guest sends inputs and draws the host's
+   snapshots. Sounds, sparks, popups and the KO replay are relayed.
+   ===================================================================== */
+const PEERJS_URL = 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js';
+const CODE_ABC = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const PEER_PREFIX = 'pxoct26-';
+const Net = {
+  role: null, status: 'idle', msg: '', code: '', peer: null, conn: null, opp: null, even: false,
+  relaying: false, out: [], snaps: [], gClock: 0, hClock: 0, sendAcc: 0, remoteIn: null, presses: [], lastEnd: null,
+  get active() { return !!this.role; },
+  local() { return location.hash === '#localnet'; }, // two tabs on one machine, for testing
+  newCode() { let s = ''; for (let i = 0; i < 6; i++) s += CODE_ABC[(Math.random() * CODE_ABC.length) | 0]; return s; },
+  loadPeer() {
+    if (window.Peer || this.local()) return Promise.resolve();
+    return new Promise((res, rej) => {
+      const s = document.createElement('script'); s.src = PEERJS_URL; s.onload = () => res(); s.onerror = () => rej(new Error('load'));
+      document.head.appendChild(s);
+    });
+  },
+  setStatus(st, msg) { this.status = st; this.msg = msg || ''; if (UI.screen === 'online') UI.show(SCREENS.online()); },
+  fail(msg) { this.teardown(); this.setStatus('error', msg); },
+  myProfile() { const p = activeFighter(); return { name: p.name, nick: p.nick, style: p.style, look: p.look, stats: p.stats, evolved: p.evolved, level: p.level }; },
+  // ---------- connection setup ----------
+  async host() {
+    this.teardown(); this.role = 'host'; this.code = this.newCode(); this.setStatus('starting', 'Getting a room code…');
+    try { await this.loadPeer(); } catch (e) { return this.fail(NET_ERR.load); }
+    if (this.local()) { this.attach(localConn(this.code, 'host')); this.setStatus('waiting'); return; }
+    const peer = (this.peer = new Peer(PEER_PREFIX + this.code, { debug: 0 }));
+    peer.on('open', () => this.setStatus('waiting'));
+    peer.on('connection', (c) => { if (this.conn) { c.close(); return; } c.on('open', () => this.attach(c)); });
+    peer.on('error', (e) => { if (e.type === 'unavailable-id') { this.host(); } else this.fail(NET_ERR[e.type] || NET_ERR.network); });
+  },
+  async join(code) {
+    code = (code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (code.length !== 6) return this.setStatus('error', 'Codes are 6 letters and numbers. Check it and try again.');
+    this.teardown(); this.role = 'guest'; this.code = code; this.setStatus('starting', 'Looking for room ' + code + '…');
+    try { await this.loadPeer(); } catch (e) { return this.fail(NET_ERR.load); }
+    if (this.local()) { const c = localConn(code, 'guest'); this.attach(c); c.send({ t: 'hello', p: this.myProfile() }); this.setStatus('joined'); return; }
+    const peer = (this.peer = new Peer(undefined, { debug: 0 }));
+    peer.on('open', () => {
+      const c = peer.connect(PEER_PREFIX + code, { reliable: true, serialization: 'json' });
+      c.on('open', () => { this.attach(c); c.send({ t: 'hello', p: this.myProfile() }); this.setStatus('joined'); });
+    });
+    peer.on('error', (e) => this.fail(NET_ERR[e.type] || NET_ERR.network));
+    setTimeout(() => { if (this.role === 'guest' && this.status === 'starting') this.fail(NET_ERR['peer-unavailable']); }, 12000);
+  },
+  attach(c) {
+    this.conn = c;
+    c.on('data', (m) => this.onData(m));
+    c.on('close', () => this.onClose());
+  },
+  send(m) { try { if (this.conn) this.conn.send(m); } catch (e) { /* dropped */ } },
+  teardown() {
+    this.relaying = false;
+    try { if (this.conn) this.conn.close(); } catch (e) { /* ignore */ }
+    try { if (this.peer) this.peer.destroy(); } catch (e) { /* ignore */ }
+    this.conn = null; this.peer = null; this.role = null; this.opp = null; this.snaps = []; this.out = []; this.remoteIn = null; this.presses = [];
+    Cam.flip = false;
+  },
+  leave() {
+    this.send({ t: 'bye' });
+    const inFight = Game.mode === 'fight';
+    this.teardown();
+    if (inFight) { if (Game.match) Game.match.over = true; cleanupFight(); }
+    this.setStatus('idle'); UI.go('online');
+  },
+  onClose() {
+    if (!this.role) return;
+    const inFight = Game.mode === 'fight' && Game.match && !Game.match.over;
+    this.teardown();
+    if (Game.mode === 'fight') { if (Game.match) Game.match.over = true; cleanupFight(); }
+    this.status = 'error'; this.msg = inFight ? 'Your opponent disconnected, so the fight was called off. No XP changed hands.' : 'The connection closed.';
+    UI.go('online');
+  },
+  // ---------- messages ----------
+  onData(m) {
+    if (!m || !m.t) return;
+    if (m.t === 'hello' && this.role === 'host') { this.opp = m.p; this.setStatus('ready'); return; }
+    if (m.t === 'bye') { this.onClose(); return; }
+    if (m.t === 'start' && this.role === 'guest') { this.guestStart(m); return; }
+    if (m.t === 'lobby' && this.role === 'guest') { this.even = m.even; if (UI.screen === 'online') UI.show(SCREENS.online()); return; }
+    if (m.t === 'i' && this.role === 'host') {
+      this.remoteIn = m;
+      if (m.p) for (const s of m.p) this.presses.push(s);
+      if (m.d) this.pendDodge = m.d;
+      if (m.ds) this.pendDash = m.ds;
+      return;
+    }
+    if (m.t === 's' && this.role === 'guest') { this.snaps.push(m); if (this.snaps.length > 90) this.snaps.shift(); return; }
+    if (m.t === 'end' && this.role === 'guest') { this.lastEnd = m; this.showResults(m, 1); return; }
+  },
+  fighterCfg(p, remote) {
+    const stats = this.even ? Object.fromEntries(STATS.map((s) => [s.id, 10])) : p.stats;
+    return { name: p.name, nick: p.nick, style: p.style, look: p.look, stats, evolved: this.even ? false : p.evolved, isPlayer: !remote, remote };
+  },
+  // host: start (or restart) a fight
+  hostStart() {
+    if (this.role !== 'host' || !this.opp) return;
+    const me = this.myProfile();
+    const hostCfg = this.fighterCfg(me, false), guestCfg = this.fighterCfg(this.opp, true);
+    if (guestCfg.look.shorts === hostCfg.look.shorts) guestCfg.look = { ...guestCfg.look, shorts: hostCfg.look.shorts === 1 ? 0 : 1 };
+    const prof = activeFighter();
+    const savedStats = prof.stats, savedEvo = prof.evolved;
+    UI.lastMatchOpts = null;
+    UI.hide(); Preview.clear(); cleanupFight(); Sound.fx = true; FX.enabled = true; $('#pops').innerHTML = '';
+    // the host's Match reads the profile for its own fighter; swap in the (possibly even) cfg for the fight
+    const fakeProf = { ...prof, stats: hostCfg.stats, evolved: hostCfg.evolved };
+    Game.match = new Match({ mode: 'online', profile: fakeProf, realProfile: prof, opp: guestCfg, diff: 2, label: 'Online · Private match' });
+    prof.stats = savedStats; prof.evolved = savedEvo;
+    Ref.reset(); Ref.pos.set(0, 3.2);
+    this.hClock = 0; this.sendAcc = 0; this.presses = []; this.remoteIn = null;
+    this.relaying = true; UI.screen = 'fight';
+    this.send({ t: 'start', host: hostCfg, guest: { ...guestCfg, isPlayer: true, remote: false }, hostAsOpp: { ...hostCfg, isPlayer: false, remote: true }, round: SAVE.settings.round });
+  },
+  // host: feed the guest's controls into their fighter
+  applyRemote(C) {
+    const r = this.remoteIn; const I = C.intent;
+    if (r) { I.fwd = r.f || 0; I.side = r.s || 0; I.block = !!r.b; }
+    if (this.pendDodge) { I.dodge = new THREE.Vector2(this.pendDodge[0], this.pendDodge[1]); this.pendDodge = null; }
+    if (this.pendDash) { I.dash = this.pendDash; this.pendDash = 0; }
+    while (this.presses.length) { C.queued = { slot: this.presses.shift(), t: Game.time }; }
+  },
+  // host: snapshot ~30 times a second
+  hostSend(real) {
+    if (this.role !== 'host' || !this.conn) return;
+    this.hClock += real; this.sendAcc += real;
+    if (this.sendAcc < 1 / 30 && !this.out.length) return;
+    if (this.sendAcc < 1 / 30 && this.out.length < 8) return;
+    this.sendAcc = 0;
+    const M = Game.match;
+    const f = Game.fighters.map((x) => ({
+      x: +x.pos.x.toFixed(3), z: +x.pos.y.toFixed(3), y: +x.yaw.toFixed(3), P: Array.from(x.P, (v) => Math.round(v * 1000) / 1000),
+      h: +x.hp.toFixed(1), mh: x.maxHp, s: +x.stam.toFixed(1), ms: x.maxStam, m: +x.meter.toFixed(1), g: +x.guard.toFixed(1), mg: x.maxGuard, gb: +x.guardBrokenT.toFixed(2),
+      st: x.state, k: x.streak, pw: +x.powerT.toFixed(2), cd: [x.cd.light, x.cd.medium, x.cd.heavy, x.cd.counter].map((v) => +v.toFixed(2)), dc: +x.dodgeCd.toFixed(2),
+    }));
+    const msg = { t: 's', ht: +this.hClock.toFixed(3), ph: M ? M.phase : 'intro', cl: M ? +M.clock.toFixed(2) : 0, rd: M ? M.round : 1, ex: +Arena.excite.toFixed(2), f, ev: this.out };
+    if (M && M.result) msg.lo = Game.fighters.indexOf(M.result.loser);
+    this.out = [];
+    this.send(msg);
+  },
+  // ---------- guest side ----------
+  guestStart(m) {
+    UI.hide(); Preview.clear(); cleanupFight(); Sound.fx = true; FX.enabled = true; $('#pops').innerHTML = '';
+    this.snaps = []; this.gClock = -1;
+    Game.match = new GuestMatch(m); UI.screen = 'fight';
+    Ref.reset(); Ref.pos.set(0, 3.2);
+  },
+  guestSend(P, live) {
+    if (this.role !== 'guest') return;
+    const I = P.intent;
+    const msg = { t: 'i', f: live ? +I.fwd.toFixed(2) : 0, s: live ? +I.side.toFixed(2) : 0, b: live && I.block ? 1 : 0 };
+    if (live && P.queued) { msg.p = [P.queued.slot]; P.queued = null; }
+    if (live && I.dodge) { msg.d = [+I.dodge.x.toFixed(2), +I.dodge.y.toFixed(2)]; I.dodge = null; }
+    if (live && I.dash) { msg.ds = I.dash; I.dash = 0; }
+    this.send(msg);
+  },
+  guestApply(real) {
+    const S = this.snaps; if (!S.length) return false;
+    const latest = S[S.length - 1].ht, target = latest - 0.1;
+    if (this.gClock < 0 || Math.abs(this.gClock - target) > 0.3) this.gClock = target;
+    else this.gClock += real + (target - this.gClock) * 0.1;
+    if (Math.abs(this.gClock - target) < 1e-9 || this.gClock === target) for (const s of S) if (s.ht <= target - 0.05) s.done = true; // after a resync, don't replay stale effects
+    // relay effects in step with the picture
+    for (const s of S) if (!s.done && s.ht <= this.gClock) { s.done = true; for (const e of s.ev || []) this.play(e); }
+    let i = 0; while (i < S.length - 2 && S[i + 1].ht <= this.gClock) i++;
+    const a = S[i], b = S[Math.min(i + 1, S.length - 1)];
+    const u = b === a ? 1 : clamp((this.gClock - a.ht) / Math.max(1e-4, b.ht - a.ht), 0, 1);
+    const M = Game.match;
+    if (M instanceof GuestMatch) M.sync(b);
+    Game.fighters.forEach((f, j) => {
+      const A = a.f[j], B = b.f[j];
+      f.pos.set(lerp(A.x, B.x, u), lerp(A.z, B.z, u)); f.yaw = A.y + angWrap(B.y - A.y) * u;
+      for (let c = 0; c < NCH; c++) f.P[c] = A.P[c] + (B.P[c] - A.P[c]) * u;
+      Object.assign(f, { hp: B.h, maxHp: B.mh, stam: B.s, maxStam: B.ms, meter: B.m, guard: B.g, maxGuard: B.mg, guardBrokenT: B.gb, state: B.st, streak: B.k, powerT: B.pw, dodgeCd: B.dc });
+      f.cd.light = B.cd[0]; f.cd.medium = B.cd[1]; f.cd.heavy = B.cd[2]; f.cd.counter = B.cd[3];
+    });
+    Arena.excite = Math.max(Arena.excite, b.ex);
+    return true;
+  },
+  // ---------- effect relay ----------
+  ser(a) {
+    if (a instanceof Fighter) return { __f: Game.fighters.indexOf(a) };
+    if (a && a.isVector3) return { __v: [a.x, a.y, a.z] };
+    if (a && a.isVector2) return { __w: [a.x, a.y] };
+    return a === undefined ? null : a;
+  },
+  des(a) {
+    if (a && typeof a === 'object') {
+      if ('__f' in a) return Game.fighters[a.__f];
+      if (a.__v) return new THREE.Vector3(a.__v[0], a.__v[1], a.__v[2]);
+      if (a.__w) return new THREE.Vector2(a.__w[0], a.__w[1]);
+    }
+    return a;
+  },
+  play(e) {
+    const o = NET_RELAY[e[0]]; if (!o || typeof o[e[1]] !== 'function') return;
+    try { o[e[1]](...e[2].map((x) => this.des(x))); } catch (err) { /* cosmetic only */ }
+  },
+  wrapAll() {
+    for (const [name, methods] of Object.entries(NET_RELAY_METHODS)) {
+      const obj = NET_RELAY[name];
+      for (const m of methods) {
+        const orig = obj[m].bind(obj);
+        obj[m] = (...args) => { if (Net.relaying && Net.role === 'host') Net.out.push([name, m, args.map((x) => Net.ser(x))]); return orig(...args); };
+      }
+    }
+  },
+  // ---------- results ----------
+  report(match) {
+    const r = match.result;
+    const end = { t: 'end', w: Game.fighters.indexOf(r.winner), method: r.method, round: r.round, time: r.time, st: Game.fighters.map((f) => ({ landed: f.stats_.landed, combos: f.stats_.combos, hp: f.hp / f.maxHp, name: f.name })) };
+    this.send(end);
+    this.relaying = false;
+    this.showResults(end, 0);
+  },
+  showResults(end, me) {
+    const prof = activeFighter(); const mine = end.st[me];
+    const won = end.w === me, lines = [];
+    lines.push([won ? 'Online victory' : 'Online fight experience', won ? 150 : 50]);
+    lines.push(['Strikes landed (' + mine.landed + ')', Math.min(80, mine.landed)]);
+    if (mine.combos) lines.push(['Combos (' + mine.combos + ')', mine.combos * 5]);
+    if (won && end.method !== 'DEC') lines.push(['Finish bonus (' + end.method + ')', 60]);
+    if (won && mine.hp >= 0.7) lines.push(['DOMINATION bonus', 90]);
+    const total = lines.reduce((a, b) => a + b[1], 0);
+    if (won) prof.wins++; else prof.losses++;
+    if (won && end.method !== 'DEC') prof.kos++;
+    const lvBefore = prof.level; const ups = grantXP(prof, total);
+    if (Game.match) Game.match.over = true;
+    UI.hud(false); UI.banner('');
+    UI.netResult = { end, me, won, lines, total, ups, lvBefore, prof };
+    UI.go('netResults');
+  },
+};
+const NET_ERR = {
+  load: 'Could not load the online library. Check your internet connection. Online play only works in the downloaded file or on the website, not inside the Claude preview.',
+  'peer-unavailable': 'No match found with that code. Check the code, and make sure your friend is still on the hosting screen.',
+  network: 'Could not reach the matchmaking server. Online play only works in the downloaded file or on the website (not inside the Claude preview), and some school or work networks block it.',
+  'server-error': 'The matchmaking server is having trouble right now. Try again in a minute.',
+  'socket-error': 'Lost contact with the matchmaking server. Try again.',
+  'browser-incompatible': 'This browser can\'t do peer-to-peer connections. Try Chrome, Edge, Firefox or Safari.',
+  webrtc: 'The direct connection failed. Some networks (school, work, some mobile carriers) block it.',
+};
+const NET_RELAY = { FX, Sound, Cam, UI, Replay, Game };
+const NET_RELAY_METHODS = {
+  FX: ['spark', 'sweat', 'dust', 'burst', 'text', 'dmg', 'combo'],
+  Sound: ['hit', 'block', 'parry', 'whoosh', 'slam', 'bell', 'power', 'cheer'],
+  Cam: ['shake', 'punch'], UI: ['banner'], Replay: ['mark', 'start'], Game: ['witch'],
+};
+// BroadcastChannel stand-in for PeerJS, so two local tabs can test the netcode
+function localConn(code, role) {
+  const ch = new BroadcastChannel('pxoct-' + code);
+  const h = { data: [], close: [], open: [] };
+  ch.onmessage = (e) => { const m = e.data; if (m.from === role) return; if (m.close) h.close.forEach((f) => f()); else h.data.forEach((f) => f(m.d)); };
+  return { on(ev, fn) { h[ev].push(fn); if (ev === 'open') setTimeout(fn, 5); }, send(d) { ch.postMessage({ from: role, d }); }, close() { try { ch.postMessage({ from: role, close: 1 }); ch.close(); } catch (e) { /* closed */ } } };
+}
+// what the guest runs instead of a simulated Match
+class GuestMatch {
+  constructor(m) {
+    this.o = { mode: 'online', profile: activeFighter() };
+    // fighter 0 is always the host, fighter 1 the guest (me)
+    const [H, G] = Game.addPair(m.hostAsOpp, m.guest, null, null);
+    this.P = G; this.C = H;
+    this.round = 1; this.rounds = 3; this.roundTime = m.round; this.clock = m.round;
+    this.phase = 'intro'; this.phaseT = 0; this.over = false; this.result = null;
+    Game.mode = 'fight'; Cam.mode = 'fight'; Cam.side = null; Cam.flip = true; Cam.snap();
+    Replay.reset();
+    UI.hud(true, this);
+  }
+  get live() { return this.phase === 'fight'; }
+  update(real) { this.phaseT += real; }
+  sync(s) {
+    if (s.ph !== this.phase) { this.phase = s.ph; this.phaseT = 0; }
+    this.clock = s.cl; this.round = s.rd;
+    if (s.ph === 'ko' || s.ph === 'replay') this.over = true;
+    if (s.lo !== undefined && s.lo >= 0 && !this.result) this.result = { loser: Game.fighters[s.lo], winner: Game.fighters[1 - s.lo] };
+  }
+  afterReplay() {}
+}
 /* =====================================================================
    MAIN — boot, loop, input, scene switching
    ===================================================================== */
@@ -3580,8 +3924,9 @@ function togglePause(on) {
 // make UI.go tear down a finished fight before showing a menu
 const _go = UI.go.bind(UI);
 UI.go = function (name, arg) {
-  if (Game.mode === 'fight' && Game.match && Game.match.over && name !== 'results') cleanupFight();
-  if (Game.mode === 'fight' && Game.match && !Game.match.over && name !== 'results') return;
+  const keep = name === 'results' || name === 'netResults';
+  if (Game.mode === 'fight' && Game.match && Game.match.over && !keep) cleanupFight();
+  if (Game.mode === 'fight' && Game.match && !Game.match.over && !keep) return;
   _go(name, arg);
 };
 
@@ -3598,7 +3943,10 @@ function keyDown(code, repeat) {
   const M = Game.match;
   if (Game.mode !== 'fight' || !M) return;
   if (Replay.active) { Replay.stop(); return; } // any key skips the replay
-  if (code === 'Escape' || code === 'KeyP') { if (!M.over) togglePause(!Game.paused); return; }
+  if (code === 'Escape' || code === 'KeyP') {
+    if (Net.active) { if (!M.over) { if (UI.el.hidden) { UI.show(SCREENS.netMenu()); UI.screen = 'netMenu'; } else UI.hide(); } return; } // online never pauses
+    if (!M.over) togglePause(!Game.paused); return;
+  }
   if (Game.paused || M.over) return;
   if (code === 'Space') { dodgeReq = true; return; }
   if (code === 'TouchDodge') { dodgeReq = true; return; }
@@ -3672,6 +4020,7 @@ function tick(real, render) {
   Game.time += real;
   if (Replay.active) {
     Replay.update(real);
+    if (Net.role === 'host') Net.hostSend(real);
     FX.update(real * Replay.speed); Arena.update(real, Game.time); Cam.update(real);
     if (render) Game.renderer.render(Game.scene, Game.camera);
     return;
@@ -3681,22 +4030,37 @@ function tick(real, render) {
   else if (Game.stopT > 0) { Game.stopT -= real; dt = 0; }
   else if (Game.slowT > 0) { Game.slowT -= real; dt *= Game.slowScale; }
   const M = Game.match;
-  // dodge slow-mo
+  // dodge slow-mo: only the dodger's opponent slows down
   let oppScale = 1;
   if (Game.witchT > 0 && !Game.paused) { Game.witchT -= real; oppScale = Game.witchScale; }
   if (Game.mode !== 'fight') Game.witchT = 0;
-  const wv = $('#witch'); if (wv) wv.classList.toggle('on', Game.witchT > 0);
+  const slowed = Game.witchT > 0 && Game.witchWho ? Game.witchWho.opp : null;
+  const wv = $('#witch'); if (wv) wv.classList.toggle('on', Game.witchT > 0 && (!M || Game.witchWho === M.P));
+  if (M instanceof GuestMatch) { // online guest: draw the host's fight, send my controls
+    M.update(real);
+    if (M.live) playerIntent(M.P); else { M.P.intent.fwd = 0; M.P.intent.side = 0; M.P.intent.block = false; }
+    Net.guestSend(M.P, M.live);
+    Net.guestApply(real);
+    for (const f of Game.fighters) f.poseFrom(f.P);
+    Replay.record(real);
+    for (const f of Game.fighters) if (f.powered) FX.aura(f, real, '#ff7a1a', 70); else if (f.evolved) FX.aura(f, real, '#f3b928', 5);
+    Ref.update(real); FX.update(real); Arena.update(real, Game.time); Cam.update(real);
+    UI.updateHud(M, real);
+    if (render) Game.renderer.render(Game.scene, Game.camera);
+    return;
+  }
   if (Game.mode === 'fight' && M) {
     let live = false;
     if (!Game.paused) live = M.update(dt, real);
     const P = M.P;
-    if (live && !Game.paused) { playerIntent(P); Game.ais.forEach((ai) => ai && ai.update(ai.f.isPlayer ? dt : dt * oppScale)); }
+    if (live && !Game.paused) { playerIntent(P); if (Net.role === 'host') Net.applyRemote(M.C); Game.ais.forEach((ai) => ai && ai.update(ai.f === slowed ? dt * oppScale : dt)); }
     else if (!Game.paused) { P.intent.fwd = 0; P.intent.side = 0; P.intent.block = false; P.queued = null; M.C.intent.attack = null; }
   } else if (Game.exhibition) Game.ais.forEach((ai) => ai && ai.update(dt));
-  if (dt > 0) for (const f of Game.fighters) f.update(f.isPlayer ? dt : dt * oppScale);
+  if (dt > 0) for (const f of Game.fighters) f.update(f === slowed ? dt * oppScale : dt);
   separate();
   for (const f of Game.fighters) f.pose(dt || 1e-4);
   if (Game.mode === 'fight' && M && !Game.paused) Replay.record(dt);
+  if (Net.role === 'host' && M) Net.hostSend(real);
   for (const f of Game.fighters) {
     if (!f.rig.root.visible) continue;
     if (f.powered) FX.aura(f, dt, '#ff7a1a', 70);
@@ -3729,13 +4093,13 @@ function boot() {
   const scene = new THREE.Scene(); scene.background = new THREE.Color('#0a0c12'); scene.fog = new THREE.Fog('#0a0c12', 16, 44);
   const camera = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.1, 140);
   Object.assign(Game, { renderer, scene, camera });
-  Arena.build(scene); FX.init(scene); Ref.init();
+  Arena.build(scene); FX.init(scene); Ref.init(); Net.wrapAll();
   UI.init(); onResize(); addEventListener('resize', onResize);
-  document.addEventListener('visibilitychange', () => { if (document.hidden && Game.mode === 'fight' && Game.match && !Game.match.over && !Game.paused) togglePause(true); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && !Net.active && Game.mode === 'fight' && Game.match && !Game.match.over && !Game.paused) togglePause(true); });
   $('#loadmsg').remove();
   UI.go('title');
   requestAnimationFrame(loop);
-  window.__PO = { Game, UI, SAVE: () => SAVE, ACT, startFight, MOVES, STYLES, KEYS, keyDown, keyUp,
+  window.__PO = { Game, UI, SAVE: () => SAVE, ACT, startFight, MOVES, STYLES, KEYS, keyDown, keyUp, Net,
     step(n, dt = 1 / 60, render = true) { Game.manual = true; for (let i = 0; i < n; i++) tick(dt, render && i === n - 1); },
     auto() { Game.manual = false; } };
 }
