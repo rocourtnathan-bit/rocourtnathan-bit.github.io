@@ -195,6 +195,7 @@ details.netcfg summary{cursor:pointer;font-family:var(--f-name);font-size:20px;l
   .stat{grid-template-columns:104px 1fr 40px 30px}.stat .sn{font-size:18px}
   .bracket{grid-template-columns:repeat(4,150px)}
 }
+@media (max-width:760px){.panel.shopp{margin-top:auto;margin-bottom:0;max-height:54vh;padding:14px}.panel.shopp>p.small{display:none}.panel.shopp h2{font-size:28px}.panel.shopp .scroll{min-height:90px}}
 @media (prefers-reduced-motion:reduce){.pop,#banner.show{animation-duration:.01s}.btn{transition:none}}
 
 /* ping badge */
@@ -234,6 +235,81 @@ details.card summary{cursor:pointer}
 .dnab b{display:block;height:8px;background:#000;border:1px solid #000}.dnab i{display:block;height:100%}
 .dnab em{font-style:normal;color:var(--dim);font-size:12px;text-align:right}
 @media (max-width:700px){.turfwrap{grid-template-columns:1fr}.tile{min-height:58px;padding:4px;overflow:hidden}.tile .tn{font-size:11px;overflow-wrap:anywhere}.tile .tw{font-size:9px}.dna{grid-template-columns:1fr}}
+
+/* ---------- transitions ---------- */
+.btn,.card,.opt button,.tile,.sw{transition:transform .14s cubic-bezier(.2,.9,.3,1),background-color .14s,border-color .14s,box-shadow .14s,opacity .14s}
+.btn:active:not([disabled]),.card:active,.opt button:active,.tile:active{transform:translateY(1px) scale(.97)}
+.btn.primary:hover{box-shadow:0 0 0 2px rgba(255,107,117,.35),4px 4px 0 rgba(0,0,0,.4)}
+.pghost{position:fixed;z-index:4;pointer-events:none;display:flex}
+.pghost>.panel{margin:0!important;width:100%!important;height:100%;overflow:hidden}
+.pghost.out{animation:ghostOut .24s ease-in forwards}.pghost.out-back{animation:ghostOutBack .24s ease-in forwards}
+@keyframes ghostOut{to{opacity:0;transform:translateX(-36px) scale(.98)}}
+@keyframes ghostOutBack{to{opacity:0;transform:translateX(36px) scale(.98)}}
+.panel.in{animation:panelIn .34s cubic-bezier(.2,.9,.3,1) both}
+.panel.in-back{animation:panelInBack .34s cubic-bezier(.2,.9,.3,1) both}
+.panel.pop{animation:panelPop .32s cubic-bezier(.2,1.25,.4,1) both}
+@keyframes panelIn{from{opacity:0;transform:translateX(42px)}}
+@keyframes panelInBack{from{opacity:0;transform:translateX(-42px)}}
+@keyframes panelPop{from{opacity:0;transform:scale(.94)}}
+.panel.in .menu-list>*,.panel.in-back .menu-list>*,.panel.pop .menu-list>*,.panel.in .grid3>*,.panel.in-back .grid3>*,.panel.in .turfmap>*,.panel.in .items>*,.panel.in .mvlist>*,.panel.pop .mvlist>*{animation:rise .36s cubic-bezier(.2,.9,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}}
+.panel .menu-list>:nth-child(1),.panel .grid3>:nth-child(1),.panel .items>:nth-child(1),.panel .mvlist>:nth-child(1){animation-delay:0.03s}
+.panel .menu-list>:nth-child(2),.panel .grid3>:nth-child(2),.panel .items>:nth-child(2),.panel .mvlist>:nth-child(2){animation-delay:0.06s}
+.panel .menu-list>:nth-child(3),.panel .grid3>:nth-child(3),.panel .items>:nth-child(3),.panel .mvlist>:nth-child(3){animation-delay:0.09s}
+.panel .menu-list>:nth-child(4),.panel .grid3>:nth-child(4),.panel .items>:nth-child(4),.panel .mvlist>:nth-child(4){animation-delay:0.12s}
+.panel .menu-list>:nth-child(5),.panel .grid3>:nth-child(5),.panel .items>:nth-child(5),.panel .mvlist>:nth-child(5){animation-delay:0.15s}
+.panel .menu-list>:nth-child(6),.panel .grid3>:nth-child(6),.panel .items>:nth-child(6),.panel .mvlist>:nth-child(6){animation-delay:0.18s}
+.panel .menu-list>:nth-child(7),.panel .grid3>:nth-child(7),.panel .items>:nth-child(7),.panel .mvlist>:nth-child(7){animation-delay:0.21s}
+.panel .menu-list>:nth-child(8),.panel .grid3>:nth-child(8),.panel .items>:nth-child(8),.panel .mvlist>:nth-child(8){animation-delay:0.24s}
+.panel .menu-list>:nth-child(9),.panel .grid3>:nth-child(9),.panel .items>:nth-child(9),.panel .mvlist>:nth-child(9){animation-delay:0.27s}
+.panel .menu-list>:nth-child(10),.panel .grid3>:nth-child(10),.panel .items>:nth-child(10),.panel .mvlist>:nth-child(10){animation-delay:0.30s}
+.panel .menu-list>:nth-child(11),.panel .grid3>:nth-child(11),.panel .items>:nth-child(11),.panel .mvlist>:nth-child(11){animation-delay:0.33s}
+.panel .menu-list>:nth-child(12),.panel .grid3>:nth-child(12),.panel .items>:nth-child(12),.panel .mvlist>:nth-child(12){animation-delay:0.36s}
+.panel .menu-list>:nth-child(13),.panel .grid3>:nth-child(13),.panel .items>:nth-child(13),.panel .mvlist>:nth-child(13){animation-delay:0.39s}
+.panel .menu-list>:nth-child(14),.panel .grid3>:nth-child(14),.panel .items>:nth-child(14),.panel .mvlist>:nth-child(14){animation-delay:0.42s}
+.panel .menu-list>:nth-child(15),.panel .grid3>:nth-child(15),.panel .items>:nth-child(15),.panel .mvlist>:nth-child(15){animation-delay:0.45s}
+
+.panel .turfmap>:nth-child(1){animation-delay:0.02s}
+.panel .turfmap>:nth-child(2){animation-delay:0.04s}
+.panel .turfmap>:nth-child(3){animation-delay:0.06s}
+.panel .turfmap>:nth-child(4){animation-delay:0.08s}
+.panel .turfmap>:nth-child(5){animation-delay:0.10s}
+.panel .turfmap>:nth-child(6){animation-delay:0.12s}
+.panel .turfmap>:nth-child(7){animation-delay:0.14s}
+.panel .turfmap>:nth-child(8){animation-delay:0.16s}
+.panel .turfmap>:nth-child(9){animation-delay:0.18s}
+.panel .turfmap>:nth-child(10){animation-delay:0.20s}
+.panel .turfmap>:nth-child(11){animation-delay:0.22s}
+.panel .turfmap>:nth-child(12){animation-delay:0.24s}
+.panel .turfmap>:nth-child(13){animation-delay:0.26s}
+.panel .turfmap>:nth-child(14){animation-delay:0.28s}
+.panel .turfmap>:nth-child(15){animation-delay:0.30s}
+.panel .turfmap>:nth-child(16){animation-delay:0.32s}
+.panel .turfmap>:nth-child(17){animation-delay:0.34s}
+.panel .turfmap>:nth-child(18){animation-delay:0.36s}
+.panel .turfmap>:nth-child(19){animation-delay:0.38s}
+.panel .turfmap>:nth-child(20){animation-delay:0.40s}
+.panel.in h1.logo,.panel.in-back h1.logo,.panel.pop h1.logo{animation:logoIn .5s cubic-bezier(.2,1.3,.4,1) both}
+@keyframes logoIn{from{opacity:0;transform:translateY(-18px) scale(1.06);text-shadow:0 0 0 var(--red),0 0 0 rgba(0,0,0,.6)}}
+#wipe{position:fixed;inset:0;z-index:9;pointer-events:none;background:#07080c;visibility:hidden}
+#wipe::after{content:'';position:absolute;top:0;bottom:0;left:-14px;width:14px;background:var(--red);box-shadow:-8px 0 0 var(--gold)}
+#wipe.go{visibility:visible;animation:wipeOut .62s cubic-bezier(.7,0,.25,1) .08s both}
+@keyframes wipeOut{from{transform:translateX(0);visibility:visible}to{transform:translateX(120%);visibility:hidden}}
+.linkbtn{background:none;border:0;color:var(--dim);text-decoration:underline;cursor:pointer;font:inherit;padding:0 2px}
+.linkbtn:hover{color:var(--gold)}
+input.shake{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-3px)}}
+/* shop */
+.cash{font-family:var(--f-display);font-size:18px;color:var(--green);text-shadow:2px 2px 0 #000}
+.tabs{flex-wrap:wrap}
+.items{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.card.item{cursor:pointer;align-items:flex-start}
+.card.item.on{border-color:var(--green)}
+.card.item .price{color:var(--gold)}.card.item .eq{color:var(--green)}
+.nm2{font-family:var(--f-name);font-size:18px;line-height:1;text-transform:uppercase}
+.sw2{display:block;width:100%;height:26px;border:2px solid #000;position:relative;box-shadow:inset 0 -6px 0 rgba(0,0,0,.25)}
+.sw2 b{position:absolute;right:6px;top:5px;width:12px;height:12px;border:2px solid #000}
+@media (prefers-reduced-motion:reduce){.pghost{display:none}.panel.in,.panel.in-back,.panel.pop,.panel *{animation:none!important}#wipe{display:none}}
 </style>
 <canvas id="gl"></canvas>
 <div class="vign"></div>
@@ -267,6 +343,7 @@ details.card summary{cursor:pointer}
 <div id="prac" hidden></div>
 <div id="touch" hidden></div>
 <div class="screen" id="ui"></div>
+<div id="wipe" aria-hidden="true"></div>
 <div id="loadmsg">LOADING THE OCTAGON…</div>
 <script>/* three.js r128, MIT license */
 /**
@@ -757,7 +834,9 @@ class Rig {
     this.scale = hs;
     const torsoC = opts.ref ? '#22252e' : SC ? SC.shirt : (L.top !== 'none' ? shortsC : skin);
     const absC = opts.ref ? '#22252e' : SC ? SC.shirt : (L.top === 'rash' ? shortsC : skin);
-    const armC = opts.ref ? '#22252e' : SC ? SC.shirt : (L.top === 'rash' ? shortsC : skin);
+    const armC = opts.ref ? '#22252e' : SC ? (SC.sleeves === 'none' ? skin : SC.shirt) : (L.top === 'rash' ? shortsC : skin);
+    const foreC = SC && (SC.sleeves === 'long' || SC.hood) ? (SC.sleeveC || SC.shirt) : skin;
+    const shiny = (it) => (it && it.shine ? toon(it.c, shade(it.c, 0.5)) : it ? toon(it.c) : null);
 
     const piv = this.pivot = grp(this.root, 0, PIV, 0, 'YXZ');
     const hips = this.hips = grp(piv, 0, 0, 0, 'YXZ');
@@ -779,6 +858,7 @@ class Rig {
     }
     if (SC && SC.hood) vox(chest, 0.3 * b, 0.13, 0.12, shade(SC.shirt, 0.85), 0, 0.33, -0.12); // bunched hood
     if (SC && SC.print) vox(chest, 0.14, 0.1, 0.02, SC.print, 0, 0.18, 0.121 * b, { outline: false, shadow: false });
+    if (SC) this.buildShirt(SC, chest, spine, b);
     if (!SC && L.top === 'sports') vox(chest, 0.445 * b, 0.06, 0.245 * b, shade(shortsC, 0.6), 0, 0.03, 0, { outline: false });
     if (opts.ref) { // referee shirt stripes + bow tie
       for (let i = -2; i <= 2; i++) vox(chest, 0.035, 0.3, 0.245 * b, '#d9dbe2', i * 0.08, 0.15, 0, { outline: false });
@@ -800,9 +880,22 @@ class Rig {
       vox(sh, 0.15 * b, 0.15, 0.16 * b, armC, 0, -0.02, 0);
       vox(sh, armW, 0.29, armW + 0.01, armC, 0, -0.155, 0);
       const el = grp(sh, 0, -0.31, 0);
-      vox(el, armW * 0.92, 0.27, armW * 0.95, SC && SC.hood ? SC.shirt : skin, 0, -0.13, 0);
+      vox(el, armW * 0.92, 0.27, armW * 0.95, foreC, 0, -0.13, 0);
+      if (SC && SC.watch && side === 'l') { // watch on the lead wrist
+        vox(el, armW * 0.92 + 0.026, 0.05, armW * 0.95 + 0.026, shiny(SC.watch), 0, -0.235, 0, { shadow: false });
+        vox(el, 0.055, 0.042, 0.016, SC.watch.face || '#111', 0, -0.235, armW * 0.475 + 0.016, { outline: false, shadow: false });
+      }
       const hand = grp(el, 0, -0.28, 0);
-      if (opts.ref || SC) vox(hand, 0.095, 0.1, 0.105, skin, 0, -0.04, 0);
+      const G = SC && SC.gloves;
+      if (G && G.kind === 'boxing') {
+        vox(hand, 0.105, 0.07, 0.11, '#f2f2f2', 0, 0.02, 0);
+        vox(hand, 0.15, 0.16, 0.17, shiny(G), 0, -0.08, 0.015);
+        vox(hand, 0.05, 0.08, 0.06, shade(G.c, 0.8), s * -0.07, -0.05, 0.05, { outline: false });
+      } else if (G && G.kind === 'mma') {
+        vox(hand, 0.112, 0.115, 0.125, shiny(G), 0, -0.05, 0.008);
+        vox(hand, 0.114, 0.028, 0.127, G.c2 || '#e9e6dc', 0, 0.0, 0.008, { outline: false });
+      } else if (G) vox(hand, 0.105, 0.11, 0.115, shiny(G), 0, -0.04, 0); // hand wraps
+      else if (opts.ref || SC) vox(hand, 0.095, 0.1, 0.105, skin, 0, -0.04, 0);
       else if (st.gloves === 'boxing') {
         vox(hand, 0.105, 0.07, 0.11, '#f2f2f2', 0, 0.02, 0);
         vox(hand, 0.15, 0.16, 0.17, gloveC, 0, -0.08, 0.015);
@@ -820,21 +913,27 @@ class Rig {
     for (const side of ['l', 'r']) {
       const s = side === 'l' ? 1 : -1;
       const hip = grp(hips, s * 0.1, -0.04, 0);
-      vox(hip, legW, 0.46, legW + 0.01, SC ? shortsC : skin, 0, -0.23, 0);
+      const longP = SC && SC.pantsKind !== 'shorts';
+      vox(hip, legW, 0.46, legW + 0.01, longP ? shortsC : skin, 0, -0.23, 0);
       // shorts leg
       const thai = st.stance === 'muaythai';
       if (opts.ref) vox(hip, legW + 0.02, 0.44, legW + 0.03, '#1a1c22', 0, -0.22, 0);
-      else if (SC) vox(hip, legW + 0.02, 0.44, legW + 0.03, shortsC, 0, -0.22, 0);
+      else if (longP) vox(hip, legW + 0.02, 0.44, legW + 0.03, shortsC, 0, -0.22, 0);
+      else if (SC) vox(hip, legW + 0.04, 0.3, legW + 0.05, shortsC, 0, -0.13, 0); // street shorts
+      if (SC && SC.stripe) vox(hip, 0.016, SC.pantsKind === 'shorts' ? 0.3 : 0.44, 0.05, SC.stripe, s * (legW / 2 + 0.022), SC.pantsKind === 'shorts' ? -0.13 : -0.22, 0, { outline: false });
       else vox(hip, legW + (thai ? 0.05 : 0.025), thai ? 0.2 : 0.25, legW + (thai ? 0.06 : 0.035), shortsC, 0, thai ? -0.08 : -0.1, 0);
       const knee = grp(hip, 0, -0.46, 0);
-      vox(knee, 0.13, 0.44, 0.14, opts.ref ? '#1a1c22' : SC ? shortsC : skin, 0, -0.22, 0);
-      if (!SC && !opts.ref) vox(knee, 0.13, 0.12, 0.05, skinD, 0, -0.12, 0.07, { outline: false, shadow: false }); // shin highlight
+      vox(knee, 0.13, 0.44, 0.14, opts.ref ? '#1a1c22' : longP ? shortsC : skin, 0, -0.22, 0);
+      if (longP && SC.stripe) vox(knee, 0.016, 0.44, 0.05, SC.stripe, s * 0.075, -0.22, 0, { outline: false });
+      if (!longP && !opts.ref) vox(knee, 0.13, 0.12, 0.05, skinD, 0, -0.12, 0.07, { outline: false, shadow: false }); // shin highlight
       const ank = grp(knee, 0, -0.44, 0);
       const shoe = opts.ref || st.shoes || SC;
-      const shoeC = SC ? SC.shoes : '#16181f';
+      const shoeC = SC ? (SC.shoeShine ? toon(SC.shoes, shade(SC.shoes, 0.5)) : SC.shoes) : '#16181f';
       vox(ank, SC ? 0.13 : 0.12, 0.07, 0.27, shoe ? shoeC : skin, 0, -0.035, 0.06);
-      if (shoe) vox(ank, 0.14, 0.14, 0.15, shoeC, 0, 0.04, 0.0);
-      if (SC) vox(ank, 0.135, 0.025, 0.28, '#e9e6dc', 0, -0.06, 0.06, { outline: false, shadow: false }); // sole
+      const tall = SC && (SC.shoeKind === 'high' || SC.shoeKind === 'boot');
+      if (shoe) vox(ank, 0.14, tall ? 0.24 : 0.14, 0.15, shoeC, 0, tall ? 0.09 : 0.04, 0.0);
+      if (tall && SC.shoeTrim) vox(ank, 0.146, 0.04, 0.156, SC.shoeTrim, 0, 0.17, 0, { outline: false });
+      if (SC) vox(ank, 0.135, 0.025, 0.28, SC.sole || '#e9e6dc', 0, -0.06, 0.06, { outline: false, shadow: false }); // sole
       if (st.wraps && !opts.ref && !SC) vox(ank, 0.145, 0.07, 0.155, '#222631', 0, 0.03, 0.0);
       // contact markers
       const toe = grp(ank, 0, -0.07, 0.19), heel = grp(ank, 0, -0.07, -0.07);
@@ -881,7 +980,27 @@ class Rig {
     const SC = L.street;
     if (SC && SC.cap) { vox(head, 0.245, 0.08, 0.265, SC.cap, 0, 0.14, -0.005); vox(head, 0.2, 0.025, 0.12, shade(SC.cap, 0.8), 0, 0.11, 0.16); }
     if (SC && SC.beanie) vox(head, 0.25, 0.12, 0.27, SC.beanie, 0, 0.14, -0.01);
+    if (SC && SC.bandana) { vox(head, 0.248, 0.065, 0.268, SC.bandana, 0, 0.1, -0.005); vox(head, 0.07, 0.06, 0.05, shade(SC.bandana, 0.8), 0, 0.07, -0.15); }
     if (SC && SC.shades) vox(head, 0.2, 0.04, 0.02, '#0b0b0f', 0, 0.025, 0.128, { outline: false, shadow: false });
+  }
+  // street shirt details: hoodie pocket, flannel stripes, open jacket, jersey trim, chains
+  buildShirt(SC, chest, spine, b) {
+    const k = SC.shirtKind, c2 = SC.c2 || '#e9e6dc';
+    if (k === 'hoodie') vox(spine, 0.2 * b, 0.09, 0.02, shade(SC.shirt, 0.82), 0, 0.06, 0.096 * b, { outline: false, shadow: false });
+    if (k === 'flannel') for (const y of [0.05, 0.15, 0.25]) { vox(chest, 0.445 * b, 0.032, 0.245 * b, c2, 0, y, 0, { outline: false, shadow: false }); vox(spine, 0.315 * b, 0.03, 0.195 * b, c2, 0, y - 0.02, 0, { outline: false, shadow: false }); }
+    if (k === 'jacket') {
+      vox(chest, 0.12 * b, 0.3, 0.02, c2, 0, 0.15, 0.121 * b, { outline: false, shadow: false });
+      vox(spine, 0.1 * b, 0.25, 0.02, c2, 0, 0.1, 0.096 * b, { outline: false, shadow: false });
+      vox(chest, 0.36 * b, 0.06, 0.26 * b, shade(SC.shirt, 0.8), 0, 0.3, 0, { shadow: false });
+    }
+    if (k === 'jersey') { vox(chest, 0.2, 0.025, 0.245 * b, c2, 0, 0.29, 0, { outline: false, shadow: false }); vox(chest, 0.12, 0.13, 0.02, c2, 0, 0.15, 0.121 * b, { outline: false, shadow: false }); }
+    const N = SC.neck;
+    if (N) {
+      const m = N.shine ? toon(N.c, shade(N.c, 0.5)) : toon(N.c), t = N.kind === 'cuban' ? 0.032 : 0.02;
+      vox(chest, 0.15, t, 0.02, m, 0, 0.245, 0.124 * b, { outline: false, shadow: false });
+      for (const sx of [-1, 1]) vox(chest, t, 0.09, 0.02, m, sx * 0.082, 0.285, 0.12 * b, { outline: false, shadow: false, rot: [0, 0, -sx * 0.55] });
+      if (N.kind === 'pendant') vox(chest, 0.05, 0.06, 0.022, N.c2 ? toon(N.c2, shade(N.c2, 0.4)) : m, 0, 0.205, 0.126 * b, { shadow: false });
+    }
   }
   dispose() { if (this.root.parent) this.root.parent.remove(this.root); }
 }
@@ -2025,6 +2144,7 @@ class Fighter {
     this.cfg = cfg;
     this.name = cfg.name; this.nick = cfg.nick || '';
     this.styleId = cfg.style; this.st = STYLES[cfg.style];
+    if (cfg.moves) this.st = { ...this.st, moves: { ...this.st.moves, ...cfg.moves } }; // street brawlers mix moves from every style
     this.stance = this.st.stance;
     this.mods = cfg.mods || {};
     this.stats = cfg.stats;
@@ -2741,6 +2861,7 @@ class AI {
         if (slot) {
           // maybe a combo
           if (this.dna) this.plan = DNA.chain(this, slot);
+          else if (this.randomMoves) this.plan = Math.random() < 0.3 ? [pick(SLOTS)] : [];
           else if (Math.random() < this.p.combo) {
             const cands = f.st.combos.filter((c) => c.seq[0] === slot);
             if (cands.length) { const c = pick(cands); this.plan = c.seq.slice(1); }
@@ -2753,6 +2874,10 @@ class AI {
       const want = lowGas ? pref + 0.9 : (this.dna ? clamp(this.dna.range, 0.9, 2.6) : pref) + rand(-0.1, 0.35);
       this.wantFwd = clamp((d - want) * 2.2, -1, 1);
       this.wantSide = this.circle * (lowGas ? 0.9 : rand(0.2, 0.7));
+      if (f.surroundAng !== undefined) { // street fights: spread out around the player instead of lining up
+        const cur = Math.atan2(f.pos.y - o.pos.y, f.pos.x - o.pos.x);
+        this.wantSide = clamp(-angWrap(f.surroundAng - cur) * 1.6, -1, 1);
+      }
       if (d > want + 1.2 && Math.random() < this.p.dash) I.dash = 1;
       if (d < 0.9 && Math.random() < this.p.dash * 0.6) I.dash = -1;
     }
@@ -2786,6 +2911,7 @@ class AI {
       if (punish) w = s === 'heavy' ? 2.5 : s === 'medium' ? 1.5 : 0.6;
       if (M.kind === 'grapple' && this.diff < 2 && !this.dna) w *= 0.6;
       if (this.dna) w = (punish ? w * 0.5 : 0) + 0.05 + (this.dna.mix[s] || 0) * 3; // the owner's favourite moves
+      if (this.randomMoves) w = 0.5 + Math.random();
       if (f.stam < M.stam * 1.5) w *= 0.3;
       opts.push([s, w]);
     }
@@ -3118,10 +3244,11 @@ const Cam = {
       wantPos.set(cx + Math.cos(a) * 4.6, 2.1, cz + Math.sin(a) * 4.6);
       wantLook.set(cx, 1.0, cz);
     } else if (this.mode === 'creator') {
-      const a = Math.sin(this.t * 0.4) * 0.12;
-      const off = innerWidth > 760 ? 0.85 : 0;
-      wantPos.set(Math.sin(a) * 3.5, 1.35, Math.cos(a) * 3.5);
-      wantLook.set(-Math.cos(a) * off, 1.0, Math.sin(a) * off);
+      const a = Math.sin(this.t * 0.4) * 0.12, shop = UI.screen === 'shop';
+      const wide = innerWidth > 760, off = wide ? (shop ? 1.05 : 0.85) : 0, r = shop ? (wide ? 4.4 : 7.6 * clamp(0.62 / (innerWidth / innerHeight), 1, 1.5)) : 3.5;
+      wantPos.set(Math.sin(a) * r, shop ? (wide ? 1.25 : 1.0) : 1.35, Math.cos(a) * r);
+      // on a phone the shop list sits at the bottom, so frame the fighter in the top half
+      wantLook.set(-Math.cos(a) * off, shop ? (wide ? 0.92 : -1.0) : 1.0, Math.sin(a) * off);
     } else { // menu: slow orbit around the exhibition spar
       const a = this.t * 0.07;
       let cx = 0, cz = 0;
@@ -3301,6 +3428,7 @@ class Match {
     this.practiceXP = 0; this.practiceHits = 0;
     Replay.reset();
     const pc = playerCfg(o.profile);
+    if (o.streetClothes) pc.look = Shop.look(o.profile); // city fights: everyone in street clothes
     // corner colours: never let both fighters wear the same shorts
     if (o.opp.look && o.opp.look.shorts === pc.look.shorts) o.opp = { ...o.opp, look: { ...o.opp.look, shorts: pc.look.shorts === 1 ? 0 : 1 } };
     const [P, C] = Game.addPair(pc, o.opp, null, o.mode === 'online' ? null : { diff: o.diff, mode: o.mode === 'practice' ? o.dummyMode || 'idle' : 'fight' });
@@ -3435,11 +3563,13 @@ class Match {
     const total = lines.reduce((a, b) => a + b[1], 0);
     if (won) prof.wins++; else prof.losses++;
     if (won && r.method !== 'DEC') prof.kos++;
+    const cash = won && this.o.cash ? this.o.cash : 0;
+    if (cash) { Shop.ensure(prof); prof.cash += cash; }
     DNA.finish(prof);
     const lvBefore = prof.level;
     const ups = grantXP(prof, total);
     if (this.o.onReport) this.o.onReport(won, this);
-    UI.results({ r, lines, total, ups, lvBefore, prof, mode: this.o.mode, extra, opp: this.C, bossIdx: this.o.bossIdx });
+    UI.results({ cash, r, lines, total, ups, lvBefore, prof, mode: this.o.mode, extra, opp: this.C, bossIdx: this.o.bossIdx });
   }
   exitPractice() {
     const prof = this.o.profile;
@@ -3506,7 +3636,7 @@ const GANGS = [
   { id: 'wolves', name: 'Iron Wolves', color: '#4dd2ff', boss: 'Alpha' },
   { id: 'saints', name: 'Night Saints', color: '#c77dff', boss: 'The Bishop' },
 ];
-const STREET_WAVES = [{ n: 2 }, { n: 3 }, { n: 3 }, { n: 4 }, { n: 3, leader: true }];
+const STREET_WAVES = [{ n: 2 }, { n: 2 }, { n: 3 }, { n: 3 }, { n: 2, leader: true }];
 function thugLook(gang, leader) {
   const ri = (n) => (Math.random() * n) | 0;
   const shirts = ['#2b2f3a', '#1c1c22', '#5a5f6e', '#7a2a2a', '#2a4a7a', '#3a5a3a', '#d9d9d9', '#6b4a2a'];
@@ -3519,7 +3649,9 @@ function thugLook(gang, leader) {
 }
 function thugCfg(gang, tier, leader) {
   const style = pick(STYLE_IDS), rank = DIFFS[tier].rank;
-  return { name: leader ? gang.boss : pick(THUG_NAMES), nick: gang.name, style, look: thugLook(gang, leader), stats: botStats(style, leader ? rank + 1 : Math.max(1, rank - 2)), evolved: leader && tier >= 3, thug: true, leader };
+  // every brawler grabs a random move for each button from any style, so no two fight the same
+  const moves = {}; for (const slot of ['light', 'medium', 'heavy', 'super']) moves[slot] = STYLES[pick(STYLE_IDS)].moves[slot];
+  return { name: leader ? gang.boss : pick(THUG_NAMES), nick: gang.name, style, moves, look: thugLook(gang, leader), stats: botStats(style, leader ? rank + 1 : Math.max(1, rank - 2)), evolved: leader && tier >= 3, thug: true, leader };
 }
 const Street = {
   ehp: null,
@@ -3547,7 +3679,8 @@ class StreetMatch {
     this.round = 1; this.rounds = this.waves.length; this.clock = 0;
     Replay.reset();
     Game.setArena('city'); City.setTime(o.time || 'night');
-    const P = new Fighter(playerCfg(o.profile));
+    const P = new Fighter({ ...playerCfg(o.profile), look: Shop.look(o.profile) }); // street clothes from the shop
+    this.cash = 0;
     P.pos.set(0, 0.6); P.yaw = 0;
     Game.scene.add(P.rig.root);
     Game.fighters = [P]; Game.ais = [null];
@@ -3571,6 +3704,7 @@ class StreetMatch {
       // regular thugs have less health than real fighters; the leader is the real deal
       const hpK = leader ? 1.0 : 0.5 + this.tier * 0.04;
       f.maxHp = Math.round(f.maxHp * hpK); f.hp = f.maxHp;
+      if (!leader) f.D.dmg *= 0.78; // they all swing at once, so each one hits a bit softer
       f.opp = P;
       // first wave surrounds you; later ones run in from the road ends
       if (first) { const a = (i / n) * TAU + rand(-0.3, 0.3) + Math.PI / 2; f.pos.set(P.pos.x + Math.cos(a) * 3.6, P.pos.y + Math.sin(a) * 2.6); }
@@ -3580,7 +3714,8 @@ class StreetMatch {
       Game.scene.add(f.rig.root);
       Game.fighters.push(f);
       const ai = new AI(f, leader ? Math.min(5, this.tier + 1) : Math.max(0, this.tier - 1), 'fight');
-      ai.p.react *= leader ? 1 : 1.15;
+      ai.p.react *= leader ? 1 : 1.15; ai.randomMoves = !leader;
+      if (!leader) { ai.p.aggr = Math.max(ai.p.aggr, 0.55); ai.p.think = Math.min(ai.p.think, 0.42); } // a gang presses, even the weak ones
       Game.ais.push(ai);
       this.enemies.push(f);
     }
@@ -3612,13 +3747,16 @@ class StreetMatch {
     if (best && best !== cur) { P.opp = best; this.C = best; }
     void I;
   }
-  tokens() { // who's allowed to swing right now
-    const W = this.waves[this.wave] || {}, K = (this.tier >= 2 ? 2 : 1) + (W.leader ? 1 : 0);
-    const A = this.alive().sort((a, b) => a.pos.distanceTo(this.P.pos) - b.pos.distanceTo(this.P.pos));
-    let used = 0;
-    for (const f of this.enemies) if (f.state === 'ko') f.token = false;
-    for (const f of A) if (f.state === 'attack' || f.grapple) { f.token = true; used++; }
-    for (const f of A) { if (f.state === 'attack' || f.grapple) continue; f.token = used < K; if (f.token) used++; }
+  // everyone comes at you at once; spread them around you so it's a real 2-on-1, 3-on-1…
+  surround() {
+    const P = this.P, A = this.alive();
+    for (const f of A) f.token = true;
+    if (A.length < 2) { for (const f of A) f.surroundAng = undefined; return; }
+    const arr = A.map((f) => ({ f, a: Math.atan2(f.pos.y - P.pos.y, f.pos.x - P.pos.x) })).sort((x, y) => x.a - y.a);
+    const step = TAU / arr.length; let sx = 0, sy = 0;
+    arr.forEach((e, i) => { sx += Math.cos(e.a - i * step); sy += Math.sin(e.a - i * step); });
+    const c = Math.atan2(sy, sx);
+    arr.forEach((e, i) => { e.f.surroundAng = c + i * step; });
   }
   update(dt, real) {
     this.phaseT += real; this.t += dt;
@@ -3639,8 +3777,9 @@ class StreetMatch {
         if (this.wave >= this.waves.length) { this.win(); return false; }
         this.phase = 'wave'; this.phaseT = 0;
         P.hp = Math.min(P.maxHp, P.hp + P.maxHp * 0.25); P.stam = P.maxStam; P.guard = P.maxGuard;
+        const pay = this.payWave(this.wave - 1);
         const last = this.wave === this.waves.length - 1 && this.waves[this.wave].leader;
-        UI.banner('WAVE ' + (this.wave + 1), last ? esc(this.gang.boss) + ' is coming. +25% health' : 'More of them. +25% health');
+        UI.banner('WAVE ' + (this.wave + 1), `<span style="color:var(--green)">+$${pay}</span> · ` + (last ? esc(this.gang.boss) + ' is coming' : 'More of them') + ' · +25% health');
         Sound.bell(1);
       }
       return true;
@@ -3659,7 +3798,7 @@ class StreetMatch {
   }
   afterStep() {
     if (this.over && this.phase === 'end') return;
-    this.retarget(); this.tokens();
+    this.retarget(); this.surround();
     // clear away knocked-out attackers after a moment
     for (let i = this.enemies.length - 1; i >= 0; i--) {
       const f = this.enemies[i];
@@ -3685,7 +3824,14 @@ class StreetMatch {
     if (vic.cfg.leader) Game.slowmo(0.8, 0.3);
     vic.intent.fwd = vic.intent.side = 0;
   }
+  payWave(i) { // cash for every wave you clear
+    const pay = 15 + this.tier * 12 + i * 5 + (this.waves[i] && this.waves[i].leader ? 40 * (this.tier + 1) : 0);
+    this.cash += pay; Sound.tone({ f: 880, f2: 1320, dur: 0.18, g: 0.12, type: 'square' });
+    FX.text(this.P, '+$' + pay, '#3fd27a', 1.2);
+    return pay;
+  }
   win() {
+    this.payWave(this.waves.length - 1);
     this.finish(true);
     UI.banner('STREETS CLEARED', esc(this.gang.name) + ' ran off');
     Sound.bell(3); Sound.cheer(1);
@@ -3710,11 +3856,12 @@ class StreetMatch {
     if (P.stats_.combos) lines.push(['Combos (' + P.stats_.combos + ')', P.stats_.combos * 5]);
     if (P.stats_.parries) lines.push(['Counters (' + P.stats_.parries + ')', P.stats_.parries * 6]);
     const total = lines.reduce((a, b) => a + b[1], 0);
+    Shop.ensure(prof); prof.cash += this.cash;
     if (!this.o.district) { prof.street = prof.street || {}; prof.street[this.tier] = Math.max(prof.street[this.tier] || 0, cleared); }
     DNA.finish(prof);
     const lvBefore = prof.level; const ups = grantXP(prof, total);
     if (this.o.onReport) this.o.onReport(won, this);
-    UI.streetResult = { won, lines, total, ups, lvBefore, prof, kos: this.kos, cleared, waves: this.waves.length, gang: this.gang, tier: this.tier, district: this.o.district, opts: this.o };
+    UI.streetResult = { cash: this.cash, won, lines, total, ups, lvBefore, prof, kos: this.kos, cleared, waves: this.waves.length, gang: this.gang, tier: this.tier, district: this.o.district, opts: this.o };
     UI.hud(false); UI.banner('');
     UI.go('streetResults');
   }
@@ -3724,7 +3871,7 @@ function startStreet(opts) {
   UI.lastStreetOpts = opts;
   UI.hide(); Preview.clear(); cleanupFight();
   Sound.fx = true; FX.enabled = true; $('#pops').innerHTML = '';
-  Game.match = new StreetMatch(opts);
+  Game.match = new StreetMatch(opts); UI.wipe();
 }
 /* =====================================================================
    TURF WARS — one city, twenty blocks. Beat the local crew to claim a
@@ -3746,24 +3893,6 @@ const TURF = TURF_NAMES.map((name, i) => {
   const tier = clamp(Math.round(4 - core * 1.45), 0, 4);
   return { id: 'd' + i, i, name, c, r, tier, gang: GANGS[(i * 7 + 3) % GANGS.length], time: ['night', 'dusk', 'night', 'day'][(i * 5 + 1) % 4] };
 });
-const TURF_SQL = `-- Pixel Octagon: shared Turf Wars city (run once)
-create table if not exists public.turf (
-  id text primary key,
-  owner_id text,
-  owner_name text,
-  fighter jsonb,
-  dna jsonb,
-  claimed_at timestamptz default now(),
-  defenses int default 0,
-  last_event text
-);
-alter table public.turf enable row level security;
-drop policy if exists "turf read" on public.turf;
-drop policy if exists "turf write" on public.turf;
-create policy "turf read" on public.turf for select using (true);
-create policy "turf write" on public.turf for update using (true) with check (true);
-grant select, update on public.turf to anon;
-insert into public.turf (id) select 'd' || g from generate_series(0, 19) g on conflict do nothing;`;
 const TURF_LOCAL_KEY = 'pixelOctagon.turf.v1';
 // talk to the project's REST API directly: one quick request, no extra library
 async function sbRest(method, query, body) {
@@ -3782,7 +3911,8 @@ const Turf = {
   hue(id) { let h = 0; for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) % 360; return h; },
   me() { return activeFighter(); },
   isMine(row) { const p = this.me(); return !!(row && p && row.owner_id === p.id); },
-  fighterOf(p) { return { name: p.name, nick: p.nick, style: p.style, look: p.look, stats: p.stats, evolved: p.evolved, level: p.level }; },
+  fighterOf(p) { return { name: p.name, nick: p.nick, style: p.style, look: Shop.look(p), stats: p.stats, evolved: p.evolved, level: p.level }; },
+  tag(p) { return (p && (p.turfName || p.name)) || 'Someone'; }, // the name shown on the map
   // ---------- storage ----------
   async load() {
     if (this.busy) return; this.busy = true;
@@ -3820,13 +3950,15 @@ const Turf = {
       dna.aggr = rand(0.6, 1.6); dna.range = PREF_RANGE[r.style] + rand(-0.1, 0.2); dna.chain = rand(0.15, 0.55);
       dna.def = { block: rand(0.15, 0.45), dodge: rand(0.05, 0.3), counter: rand(0.02, 0.15), none: 0 }; dna.def.none = Math.max(0.1, 1 - dna.def.block - dna.def.dodge - dna.def.counter);
       const stats = botStats(r.style, clamp(2 + d.tier * 4, 1, 20));
-      rows[d.id] = { id: d.id, owner_id: 'cpu-' + r.id, owner_name: r.name, fighter: { name: r.name, nick: r.nick, style: r.style, look: r.look, stats, evolved: d.tier >= 4, level: lvl }, dna, defenses: (Math.random() * 4) | 0, last_event: null };
+      const fit = {}; for (const [cat] of SHOP_CATS) { const opts = SHOP.filter((x) => x.cat === cat); fit[cat] = ['shirt', 'pants', 'shoes'].includes(cat) || Math.random() < 0.45 ? pick(opts).id : null; }
+      rows[d.id] = { id: d.id, owner_id: 'cpu-' + r.id, owner_name: r.nick + ' crew', fighter: { name: r.name, nick: r.nick, style: r.style, look: { ...r.look, street: Shop.sc(fit) }, stats, evolved: d.tier >= 4, level: lvl }, dna, defenses: (Math.random() * 4) | 0, last_event: null };
     });
   },
   // ---------- actions ----------
   async claim(d, prevOwner) {
     const p = this.me(); const row = this.rows[d.id];
-    const upd = { owner_id: p.id, owner_name: p.name, fighter: this.fighterOf(p), dna: p.dna || DNA.blank(), claimed_at: new Date().toISOString(), defenses: 0, last_event: prevOwner ? 'Taken from ' + (row && row.owner_name || 'someone') + ' by ' + p.name : 'Taken from the ' + d.gang.name + ' by ' + p.name };
+    const me = this.tag(p);
+    const upd = { owner_id: p.id, owner_name: me, fighter: this.fighterOf(p), dna: p.dna || DNA.blank(), claimed_at: new Date().toISOString(), defenses: 0, last_event: prevOwner ? 'Taken from ' + (row && row.owner_name || 'someone') + ' by ' + me : 'Taken from the ' + d.gang.name + ' by ' + me };
     if (this.mode === 'shared') {
       try {
         const data = await sbRest('PATCH', '?id=eq.' + d.id + '&owner_id=' + (prevOwner ? 'eq.' + encodeURIComponent(prevOwner) : 'is.null'), upd);
@@ -3845,9 +3977,10 @@ const Turf = {
   },
   // keep my clones up to date with my latest stats and habits
   async syncClones() {
-    const p = this.me(); if (!p || this.mode !== 'shared') return;
+    const p = this.me(); if (!p) return;
     const mine = Object.values(this.rows).filter((r) => r.owner_id === p.id); if (!mine.length) return;
-    try { await sbRest('PATCH', '?owner_id=eq.' + encodeURIComponent(p.id), { fighter: this.fighterOf(p), dna: p.dna || DNA.blank(), owner_name: p.name }); } catch (e) { /* next time */ }
+    if (this.mode !== 'shared') { for (const r of mine) Object.assign(r, { fighter: this.fighterOf(p), dna: p.dna || DNA.blank(), owner_name: this.tag(p) }); this.saveLocal(); return; }
+    try { await sbRest('PATCH', '?owner_id=eq.' + encodeURIComponent(p.id), { fighter: this.fighterOf(p), dna: p.dna || DNA.blank(), owner_name: this.tag(p) }); } catch (e) { /* next time */ }
   },
   checkLosses() {
     const p = this.me(); if (!p) return;
@@ -3881,12 +4014,114 @@ const Turf = {
     // another player's block: fight their clone one on one, in their street
     const F = row.fighter || {};
     const cfg = { ...DNA.cloneCfg({ name: F.name || row.owner_name, nick: F.nick, style: F.style || 'boxing', look: F.look || defaultLook('boxing'), stats: F.stats || botStats('boxing', 4), evolved: F.evolved, level: F.level, dna: row.dna }), name: (F.name || row.owner_name) };
-    cfg.look = { ...cfg.look };
+    cfg.look = { ...cfg.look }; if (!cfg.look.street) cfg.look.street = Shop.sc(OUTFIT_DEFAULT);
     const diff = DNA.cloneDiff(F.level);
-    startFight({ mode: 'turf', profile: p, opp: cfg, diff, arena: 'city', time: d.time, label: d.name + ' · ' + row.owner_name + '\'s block',
-      onReport: (won) => { if (won) Turf.claim(d, ownerId); else Turf.defended(d, p.name); } });
+    startFight({ mode: 'turf', profile: p, opp: cfg, diff, arena: 'city', time: d.time, streetClothes: true, cash: 60 + d.tier * 40, label: d.name + ' · ' + row.owner_name + '\'s block',
+      onReport: (won) => { if (won) Turf.claim(d, ownerId); else Turf.defended(d, Turf.tag(p)); } });
   },
   refresh() { if (UI.screen === 'turf' && Game.mode !== 'fight' && !UI.el.hidden) { const sc = UI.el.querySelector('.scroll'); const top = sc ? sc.scrollTop : 0; UI.show(SCREENS.turf()); const s2 = UI.el.querySelector('.scroll'); if (s2) s2.scrollTop = top; } },
+};
+/* =====================================================================
+   SHOP — street clothes bought with cash from street fights.
+   What you wear shows up in Street Fight and Turf Wars.
+   ===================================================================== */
+const SHOP_CATS = [['shirt', 'Shirts'], ['pants', 'Pants & Shorts'], ['shoes', 'Shoes'], ['gloves', 'Gloves'], ['neck', 'Chains'], ['watch', 'Watches'], ['hat', 'Hats']];
+const GOLD = '#e8b52a', SILVER = '#c9ced6', ICE = '#e8f6ff';
+const SHOP = [
+  // shirts
+  { id: 'tee_white', cat: 'shirt', name: 'White Tee', price: 0, s: { shirtKind: 'tee', shirt: '#e9e6dc' } },
+  { id: 'tee_black', cat: 'shirt', name: 'Black Tee', price: 40, s: { shirtKind: 'tee', shirt: '#1c1c22' } },
+  { id: 'tee_red', cat: 'shirt', name: 'Red Tee', price: 40, s: { shirtKind: 'tee', shirt: '#b8322e' } },
+  { id: 'tee_neon', cat: 'shirt', name: 'Neon Logo Tee', price: 90, s: { shirtKind: 'tee', shirt: '#3dfc9a', print: '#111318' } },
+  { id: 'tank_white', cat: 'shirt', name: 'White Tank', price: 50, s: { shirtKind: 'tank', shirt: '#eeeae0', sleeves: 'none' } },
+  { id: 'tank_black', cat: 'shirt', name: 'Black Tank', price: 50, s: { shirtKind: 'tank', shirt: '#1b1b1f', sleeves: 'none' } },
+  { id: 'jersey_red', cat: 'shirt', name: 'Red Jersey', price: 160, s: { shirtKind: 'jersey', shirt: '#c0262e', c2: '#f2f2f2', sleeves: 'none' } },
+  { id: 'jersey_purple', cat: 'shirt', name: 'Purple Jersey', price: 160, s: { shirtKind: 'jersey', shirt: '#5a2a8a', c2: '#f3b928', sleeves: 'none' } },
+  { id: 'hoodie_gray', cat: 'shirt', name: 'Gray Hoodie', price: 120, s: { shirtKind: 'hoodie', shirt: '#7a7f8c', hood: true, sleeves: 'long' } },
+  { id: 'hoodie_black', cat: 'shirt', name: 'Black Hoodie', price: 140, s: { shirtKind: 'hoodie', shirt: '#1e2028', hood: true, sleeves: 'long' } },
+  { id: 'hoodie_pink', cat: 'shirt', name: 'Pink Hoodie', price: 150, s: { shirtKind: 'hoodie', shirt: '#e75aa8', hood: true, sleeves: 'long' } },
+  { id: 'flannel', cat: 'shirt', name: 'Red Flannel', price: 150, s: { shirtKind: 'flannel', shirt: '#a02331', c2: '#1c1c22', sleeves: 'long' } },
+  { id: 'varsity', cat: 'shirt', name: 'Varsity Jacket', price: 280, s: { shirtKind: 'jacket', shirt: '#2a4f9a', c2: '#e9e6dc', sleeves: 'long', sleeveC: '#e9e6dc' } },
+  { id: 'leather', cat: 'shirt', name: 'Leather Jacket', price: 350, s: { shirtKind: 'jacket', shirt: '#1b1b1f', c2: '#e9e6dc', sleeves: 'long' } },
+  { id: 'silk_gold', cat: 'shirt', name: 'Gold Silk Shirt', price: 450, s: { shirtKind: 'tee', shirt: '#d4a52a', print: '#1b1b1f' } },
+  // pants
+  { id: 'jeans_blue', cat: 'pants', name: 'Blue Jeans', price: 0, s: { pants: '#2b3d6b' } },
+  { id: 'jeans_black', cat: 'pants', name: 'Black Jeans', price: 60, s: { pants: '#1c1c22' } },
+  { id: 'jeans_white', cat: 'pants', name: 'White Jeans', price: 140, s: { pants: '#e2ded2' } },
+  { id: 'cargo', cat: 'pants', name: 'Cargo Pants', price: 90, s: { pants: '#6b6a4a' } },
+  { id: 'track_black', cat: 'pants', name: 'Black Tracksuit Pants', price: 120, s: { pants: '#1c1c22', stripe: '#f2f2f2' } },
+  { id: 'track_red', cat: 'pants', name: 'Red Tracksuit Pants', price: 120, s: { pants: '#b8322e', stripe: '#f2f2f2' } },
+  { id: 'shorts_bball', cat: 'pants', name: 'Basketball Shorts', price: 100, s: { pants: '#c0262e', pantsKind: 'shorts', stripe: '#f2f2f2' } },
+  { id: 'shorts_fight', cat: 'pants', name: 'Fight Shorts', price: 150, s: { pants: '#111318', pantsKind: 'shorts', stripe: GOLD } },
+  // shoes
+  { id: 'sneak_white', cat: 'shoes', name: 'White Sneakers', price: 0, s: { shoes: '#e9e6dc' } },
+  { id: 'sneak_black', cat: 'shoes', name: 'Black Sneakers', price: 60, s: { shoes: '#1b1b1f' } },
+  { id: 'high_red', cat: 'shoes', name: 'Red High-Tops', price: 150, s: { shoes: '#c0262e', shoeKind: 'high', shoeTrim: '#f2f2f2' } },
+  { id: 'high_blue', cat: 'shoes', name: 'Blue High-Tops', price: 150, s: { shoes: '#2a5bd7', shoeKind: 'high', shoeTrim: '#f2f2f2' } },
+  { id: 'boots', cat: 'shoes', name: 'Work Boots', price: 180, s: { shoes: '#6a4a2b', shoeKind: 'boot', sole: '#2a1e14' } },
+  { id: 'gold_kicks', cat: 'shoes', name: 'Gold Kicks', price: 500, s: { shoes: '#d4a52a', shoeShine: true, sole: '#f2f2f2' } },
+  // gloves
+  { id: 'wraps', cat: 'gloves', name: 'Hand Wraps', price: 60, s: { gloves: { kind: 'wraps', c: '#e9e6dc' } } },
+  { id: 'mma_black', cat: 'gloves', name: 'Black MMA Gloves', price: 120, s: { gloves: { kind: 'mma', c: '#1b1b1f' } } },
+  { id: 'mma_red', cat: 'gloves', name: 'Red MMA Gloves', price: 140, s: { gloves: { kind: 'mma', c: '#c0262e' } } },
+  { id: 'mma_gold', cat: 'gloves', name: 'Gold MMA Gloves', price: 400, s: { gloves: { kind: 'mma', c: '#d4a52a', shine: true, c2: '#1b1b1f' } } },
+  { id: 'box_red', cat: 'gloves', name: 'Red Boxing Gloves', price: 220, s: { gloves: { kind: 'boxing', c: '#d7263d' } } },
+  // chains
+  { id: 'chain_silver', cat: 'neck', name: 'Silver Chain', price: 150, s: { neck: { kind: 'chain', c: SILVER, shine: true } } },
+  { id: 'chain_gold', cat: 'neck', name: 'Gold Chain', price: 300, s: { neck: { kind: 'chain', c: GOLD, shine: true } } },
+  { id: 'cuban', cat: 'neck', name: 'Cuban Link', price: 600, s: { neck: { kind: 'cuban', c: GOLD, shine: true } } },
+  { id: 'pendant', cat: 'neck', name: 'Jade Pendant', price: 450, s: { neck: { kind: 'pendant', c: GOLD, c2: '#3dfc9a', shine: true } } },
+  { id: 'iced', cat: 'neck', name: 'Iced-Out Chain', price: 900, s: { neck: { kind: 'cuban', c: ICE, shine: true } } },
+  // watches
+  { id: 'w_sport', cat: 'watch', name: 'Sport Watch', price: 90, s: { watch: { c: '#1b1b1f', face: '#3dfc9a' } } },
+  { id: 'w_silver', cat: 'watch', name: 'Silver Watch', price: 250, s: { watch: { c: SILVER, face: '#1b2433', shine: true } } },
+  { id: 'w_gold', cat: 'watch', name: 'Gold Watch', price: 500, s: { watch: { c: GOLD, face: '#f2f2f2', shine: true } } },
+  { id: 'w_iced', cat: 'watch', name: 'Iced Watch', price: 1000, s: { watch: { c: ICE, face: '#9fd0ff', shine: true } } },
+  // hats
+  { id: 'cap_black', cat: 'hat', name: 'Black Cap', price: 50, s: { cap: '#1b1b1f' } },
+  { id: 'cap_red', cat: 'hat', name: 'Red Cap', price: 50, s: { cap: '#c0262e' } },
+  { id: 'beanie', cat: 'hat', name: 'Beanie', price: 40, s: { beanie: '#2b3d6b' } },
+  { id: 'bandana', cat: 'hat', name: 'Red Bandana', price: 70, s: { bandana: '#b8322e' } },
+  { id: 'cap_gold', cat: 'hat', name: 'Gold Snapback', price: 200, s: { cap: '#d4a52a' } },
+];
+const SHOP_BY_ID = Object.fromEntries(SHOP.map((x) => [x.id, x]));
+const OUTFIT_DEFAULT = { shirt: 'tee_white', pants: 'jeans_blue', shoes: 'sneak_white', gloves: null, neck: null, watch: null, hat: null };
+const Shop = {
+  ensure(p) { // older saves get cash, the free basics and an outfit
+    if (!p) return p;
+    if (typeof p.cash !== 'number') p.cash = 0;
+    if (!p.outfit) p.outfit = { ...OUTFIT_DEFAULT };
+    if (!Array.isArray(p.owned)) p.owned = [];
+    for (const id of ['tee_white', 'jeans_blue', 'sneak_white']) if (!p.owned.includes(id)) p.owned.push(id);
+    return p;
+  },
+  // the outfit as the rig's "street clothes" spec
+  sc(outfit, tryOn) {
+    const o = { ...OUTFIT_DEFAULT, ...(outfit || {}) };
+    if (tryOn) o[tryOn.cat] = tryOn.id;
+    const sc = { shirt: '#e9e6dc', pants: '#2b3d6b', shoes: '#e9e6dc' };
+    for (const cat of ['shirt', 'pants', 'shoes', 'gloves', 'neck', 'watch', 'hat']) { const it = SHOP_BY_ID[o[cat]]; if (it) Object.assign(sc, JSON.parse(JSON.stringify(it.s))); }
+    return sc;
+  },
+  look(p, tryOn) { Shop.ensure(p); return { ...p.look, street: Shop.sc(p.outfit, tryOn) }; },
+  buy(p, id) {
+    const it = SHOP_BY_ID[id]; Shop.ensure(p);
+    if (!it || p.owned.includes(id) || p.cash < it.price) return false;
+    p.cash -= it.price; p.owned.push(id); p.outfit[it.cat] = id; persist(); return true;
+  },
+  equip(p, id) {
+    const it = SHOP_BY_ID[id]; Shop.ensure(p);
+    if (!it || !p.owned.includes(id)) return false;
+    // tapping an equipped accessory takes it off (shirts, pants and shoes always stay on)
+    if (p.outfit[it.cat] === id && ['gloves', 'neck', 'watch', 'hat'].includes(it.cat)) p.outfit[it.cat] = null;
+    else p.outfit[it.cat] = id;
+    persist(); return true;
+  },
+  swatch(it) {
+    const s = it.s, c = s.shirt || s.pants || s.shoes || (s.gloves && s.gloves.c) || (s.neck && s.neck.c) || (s.watch && s.watch.c) || s.cap || s.beanie || s.bandana || '#888';
+    const c2 = s.c2 || s.stripe || s.print || s.shoeTrim || (s.neck && s.neck.c2) || (s.watch && s.watch.face) || null;
+    return `<i class="sw2" style="background:${c}">${c2 ? `<b style="background:${c2}"></b>` : ''}</i>`;
+  },
 };
 /* =====================================================================
    UI — menus, creator, training, HUD, results
@@ -3902,7 +4137,10 @@ const UI = {
       Sound.init(); Sound.ui();
       const fn = ACT[b.dataset.act]; if (fn) fn(b.dataset, b);
     });
-    this.el.addEventListener('keydown', (e) => { if (e.target.id === 'net-code' && e.key === 'Enter') { Sound.init(); Net.join(e.target.value); } });
+    this.el.addEventListener('keydown', (e) => {
+      if (e.target.id === 'net-code' && e.key === 'Enter') { Sound.init(); Net.join(e.target.value); }
+      if (e.target.id === 'turf-name' && e.key === 'Enter') { Sound.init(); ACT.turfName(); }
+    });
     this.el.addEventListener('input', (e) => {
       const t = e.target;
       if (t.id === 'f-name' && this.draft) this.draft.name = t.value.slice(0, 18);
@@ -3911,17 +4149,42 @@ const UI = {
       if (t.id === 's-vol') { SAVE.settings.vol = +t.value / 100; Sound.setVol(SAVE.settings.vol); persist(); }
     });
   },
-  show(html) { this.el.innerHTML = html; this.el.hidden = false; this.el.scrollTop = 0; },
+  show(html) {
+    const cur = this.el.hidden ? null : this.el.firstElementChild; // remember where the panel was, for the hand-off animation
+    this.lastRect = cur ? cur.getBoundingClientRect() : null;
+    this.el.innerHTML = html; this.el.hidden = false; this.el.scrollTop = 0;
+  },
   hide() { this.el.hidden = true; this.el.innerHTML = ''; },
   go(name, arg) {
+    const from = this.screen, old = this.el.hidden ? null : this.el.firstElementChild;
     this.screen = name; this.confirm = null;
     const fn = SCREENS[name];
-    if (Game.mode !== 'fight') setMenuScene(name === 'create' ? 'creator' : 'menu');
+    if (name === 'shop') ACT.shopPreview();
+    if (Game.mode !== 'fight') setMenuScene(name === 'create' || name === 'shop' ? 'creator' : 'menu');
     this.show(fn(arg));
+    this.animate(old, name === 'title' || (from !== 'title' && SCREEN_DEPTH[name] < SCREEN_DEPTH[from]));
     const first = this.el.querySelector('.btn.primary, .btn');
     if (first && !('ontouchstart' in window)) first.focus({ preventScroll: true });
   },
   refresh(arg) { this.go(this.screen, arg); },
+  // screen changes: the old panel slides/fades away while the new one slides in, buttons arrive one after another
+  animate(old, back) {
+    const neu = this.el.firstElementChild; if (!neu || REDUCED_MOTION()) return;
+    neu.classList.add(old ? (back ? 'in-back' : 'in') : 'pop');
+    if (old) {
+      const r = this.lastRect; if (!r || !r.width) return;
+      const g = document.createElement('div'); g.className = 'pghost ' + (back ? 'out-back' : 'out');
+      g.style.cssText = `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px`;
+      g.appendChild(old); document.body.appendChild(g);
+      g.addEventListener('animationend', () => g.remove()); setTimeout(() => g.remove(), 400);
+    }
+  },
+  // full-screen wipe that uncovers a fight (or the menus after one)
+  wipe() {
+    if (REDUCED_MOTION()) return;
+    const w = $('#wipe'); w.classList.remove('go'); void w.offsetWidth; w.classList.add('go');
+    w.onanimationend = () => w.classList.remove('go');
+  },
   banner(html, sub) {
     const b = $('#banner');
     if (!html) { b.innerHTML = ''; b.classList.remove('show'); return; }
@@ -4062,6 +4325,9 @@ const UI = {
   results(d) { UI.lastResult = d; UI.hud(false); UI.banner(''); UI.go('results', d); },
 };
 const IS_TOUCH = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+const REDUCED_MOTION = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
+// how deep each screen sits, so going back slides the other way
+const SCREEN_DEPTH = { title: 0, quick: 1, tourney: 1, boss: 1, street: 1, turf: 1, online: 1, fighters: 1, shop: 1, howto: 1, settings: 1, create: 2, train: 2, results: 2, streetResults: 2, netResults: 2 };
 const foeTag = (C) => (C.cfg.boss ? 'BOSS · ' : C.cfg.leader ? 'LEADER · ' : C.cfg.clone ? 'CLONE · ' : C.cfg.thug ? (C.cfg.nick || 'Street') + ' · ' : '') + STYLES[C.styleId].name;
 
 /* ---------- small templates ---------- */
@@ -4108,6 +4374,7 @@ const SCREENS = {
         <button class="btn" data-act="go" data-to="online" ${has ? '' : 'disabled'}>Online <small>Private match with a friend, join by code</small></button>
         <button class="btn" data-act="practice" ${has ? '' : 'disabled'}>Practice <small>Drill moves, earn XP</small></button>
         <button class="btn" data-act="go" data-to="fighters">My Fighters <small>Train stats, evolve, customize</small></button>
+        <button class="btn" data-act="go" data-to="shop" ${has ? '' : 'disabled'}>Street Shop <small>${has ? '$' + Shop.ensure(p).cash + ' · ' : ''}clothes, chains, watches</small></button>
         <div class="row"><button class="btn" data-act="go" data-to="howto">How to Play</button><button class="btn" data-act="go" data-to="settings">Settings</button></div>
       </div>
       <p class="small muted">Move <span class="kbd">WASD</span> Attack <span class="kbd">J</span><span class="kbd">K</span><span class="kbd">L</span> Block <span class="kbd">I</span> Counter <span class="kbd">O</span> Super <span class="kbd">U</span> Dodge <span class="kbd">SPACE</span></p>
@@ -4344,7 +4611,7 @@ const SCREENS = {
       ${extra && extra.champion ? `<div class="card sel"><h3>🏆 Champion!</h3><p>${esc(TOURNAMENTS[prof.tourney.tier].belt)} added to your trophy case.</p></div>` : ''}
       ${extra && !extra.won ? `<p class="muted">Eliminated in the ${esc(extra.stageName)}.</p>` : ''}
       <div class="mvlist">${lines.map(([n, v]) => `<b style="font-size:18px">+${v}</b><span>${esc(n)}</span>`).join('')}</div>
-      <p style="font-family:var(--f-display);font-size:14px;color:var(--gold)">TOTAL +${total} XP</p>
+      <p style="font-family:var(--f-display);font-size:14px;color:var(--gold)">TOTAL +${total} XP${d.cash ? ` <span style="color:var(--green)">· +$${d.cash}</span>` : ''}</p>
       ${ups ? `<div class="card sel"><h3>Level up! ${lvBefore} → ${prof.level}</h3><p>+${ups * PTS_PER_LEVEL} stat points ready to spend.</p></div>` : ''}
       ${fighterCard(prof)}
       <div class="row">${btns}${ups || prof.points ? `<button class="btn" data-act="go" data-to="train" data-id="${prof.id}">Spend points</button>` : ''}<button class="btn ghost" data-act="go" data-to="title">Menu</button></div></div>`;
@@ -4485,6 +4752,32 @@ function dnaCard(p) {
     <button class="btn" data-act="sparClone" data-id="${p.id}">Spar your clone <small>Fight a CPU that fights like you</small></button></div>`;
 }
 Object.assign(SCREENS, {
+  shop() {
+    const p = activeFighter(); if (!p) return SCREENS.title(); Shop.ensure(p);
+    const cat = UI.shopCat || 'shirt', tryIt = SHOP_BY_ID[UI.shopTry];
+    const tabs = SHOP_CATS.map(([k, n]) => `<button class="${cat === k ? 'sel' : ''}" data-act="shopCat" data-v="${k}">${n}</button>`).join('');
+    const items = SHOP.filter((x) => x.cat === cat).map((x) => {
+      const own = p.owned.includes(x.id), on = p.outfit[x.cat] === x.id;
+      return `<button class="card item ${tryIt && tryIt.id === x.id ? 'sel' : ''} ${on ? 'on' : ''}" data-act="shopTry" data-id="${x.id}">
+        ${Shop.swatch(x)}<span class="nm2">${esc(x.name)}</span><span class="small ${on ? 'eq' : own ? 'muted' : 'price'}">${on ? '✓ Wearing' : own ? 'Owned' : x.price ? '$' + x.price : 'Free'}</span></button>`;
+    }).join('');
+    let act = '<p class="small muted">Tap an item to try it on.</p>';
+    if (tryIt) {
+      const own = p.owned.includes(tryIt.id), on = p.outfit[tryIt.cat] === tryIt.id, acc = ['gloves', 'neck', 'watch', 'hat'].includes(tryIt.cat);
+      act = own ? (on ? (acc ? `<button class="btn" data-act="shopEquip" data-id="${tryIt.id}">Take it off</button>` : `<p class="small" style="color:var(--green)">✓ You're wearing this.</p>`)
+        : `<button class="btn primary" data-act="shopEquip" data-id="${tryIt.id}">Wear it</button>`)
+        : p.cash >= tryIt.price ? `<button class="btn primary" data-act="shopBuy" data-id="${tryIt.id}">Buy for $${tryIt.price}</button>`
+          : `<button class="btn" disabled>Need $${tryIt.price - p.cash} more</button>`;
+      act = `<div class="row" style="align-items:center"><b class="nm2" style="flex:1">${esc(tryIt.name)}</b>${act}</div>`;
+    }
+    return `<div class="panel left shopp" style="width:min(520px,100%)">
+      <div class="row" style="justify-content:space-between;align-items:center"><h2>Street Shop</h2><span class="cash">$${p.cash}</span></div>
+      <p class="small muted">What you wear shows up in Street Fight and Turf Wars. Earn cash by clearing waves and winning turf fights.</p>
+      <div class="opt tabs">${tabs}</div>
+      <div class="scroll"><div class="items">${items}</div></div>
+      ${act}
+      <div class="row">${backBtn()}<button class="btn" data-act="go" data-to="street">Street Fight</button></div></div>`;
+  },
   street() {
     const p = activeFighter(); if (!p) return SCREENS.title();
     const sel = UI.sel.street || (UI.sel.street = { tier: 0, time: 'night' });
@@ -4494,10 +4787,10 @@ Object.assign(SCREENS, {
       <span class="small muted">${best[i] >= STREET_WAVES.length ? '✓ Survived all 5 waves' : best[i] ? 'Best: ' + best[i] + '/5 waves' : 'Not tried'}</span></button>`).join('');
     const times = [['night', 'Night'], ['dusk', 'Dusk'], ['day', 'Day']].map(([k, n]) => `<button class="${sel.time === k ? 'sel' : ''}" data-act="stTime" data-v="${k}">${n}</button>`).join('');
     return `<div class="panel wide"><h2>Street Fight</h2>
-      <p class="muted">You're walking home and a crew jumps you on a closed-off street. Five waves, more of them each time, and the leader shows up last. Only a couple swing at once while the rest circle, so keep moving and don't get surrounded.</p>
+      <p class="muted">You're walking home and a crew jumps you on a closed-off street. They all come at you at once from different sides, and every one of them fights differently. Five waves, the leader shows up last. Clear a wave to get paid, then spend it in the shop.</p>
       <div class="scroll"><div class="grid3">${tiers}</div></div>
       <label class="f">Time of day</label><div class="opt">${times}</div>
-      <p class="small muted">Your attacks go to whoever is closest in front of you; push toward someone to switch targets. You get 25% health back between waves.</p>
+      <p class="small muted">Your attacks go to whoever is closest in front of you; push toward someone to switch targets. Don't let them get behind you: blocks only stop hits from the front. You get 25% health back between waves.</p>
       <div class="row"><button class="btn primary" data-act="streetGo">Hit the streets</button>${backBtn()}</div></div>`;
   },
   streetResults() {
@@ -4510,13 +4803,22 @@ Object.assign(SCREENS, {
       <p style="font-family:var(--f-name);font-size:24px;text-transform:uppercase">${T ? esc(T.name) + ' · ' : ''}${esc(d.gang.name)} · ${d.cleared}/${d.waves} waves · ${d.kos} knocked out</p>
       ${T && d.won ? `<div class="card sel"><h3>${esc(T.name)} is yours</h3><p class="small">Your clone guards it now. Anyone who wants it has to beat a CPU that fights like you.</p></div>` : ''}
       <div class="mvlist">${d.lines.map(([n, v]) => `<b style="font-size:18px">+${v}</b><span>${esc(n)}</span>`).join('')}</div>
-      <p style="font-family:var(--f-display);font-size:14px;color:var(--gold)">TOTAL +${d.total} XP</p>
+      <p style="font-family:var(--f-display);font-size:14px;color:var(--gold)">TOTAL +${d.total} XP${d.cash ? ` <span style="color:var(--green)">· +$${d.cash} CASH</span>` : ''}</p>
       ${d.ups ? `<div class="card sel"><h3>Level up! ${d.lvBefore} → ${d.prof.level}</h3><p>+${d.ups * PTS_PER_LEVEL} stat points ready to spend.</p></div>` : ''}
       ${fighterCard(d.prof)}
-      <div class="row">${btns}${d.ups || d.prof.points ? `<button class="btn" data-act="go" data-to="train" data-id="${d.prof.id}">Spend points</button>` : ''}<button class="btn ghost" data-act="go" data-to="title">Menu</button></div></div>`;
+      <div class="row">${btns}<button class="btn" data-act="go" data-to="shop">Shop <small>$${d.prof.cash}</small></button>${d.ups || d.prof.points ? `<button class="btn" data-act="go" data-to="train" data-id="${d.prof.id}">Spend points</button>` : ''}<button class="btn ghost" data-act="go" data-to="title">Menu</button></div></div>`;
   },
   turf() {
     const p = activeFighter(); if (!p) return SCREENS.title();
+    if (!p.turfName || UI.turfRenaming) { // first visit: pick the name that goes on your blocks
+      const v = UI.turfNameDraft || p.name;
+      return `<div class="panel"><h2>Turf Wars</h2>
+        <p>Pick your <b style="color:var(--gold)">name on the map</b>. It shows on every block you take, and on the leaderboard. Other players see it.</p>
+        <label class="f" for="turf-name">Map name</label>
+        <input type="text" id="turf-name" maxlength="16" value="${esc(v)}" placeholder="Southside Kings" autocomplete="off" style="font-family:var(--f-name);font-size:24px;text-transform:uppercase">
+        <p class="small muted">2 to 16 letters. You can change it later.</p>
+        <div class="row"><button class="btn primary" data-act="turfName">Claim the streets</button>${backBtn()}</div></div>`;
+    }
     if (!Turf.busy && (!Turf.loadedAt || Date.now() - Turf.loadedAt > 20000)) setTimeout(() => Turf.load(), 0);
     if (Turf.mode === 'loading' && !Turf.loadedAt) return `<div class="panel wide"><h2>Turf Wars</h2><p class="muted">Loading the city…</p>${backBtn()}</div>`;
     const R = Turf.rows;
@@ -4546,22 +4848,24 @@ Object.assign(SCREENS, {
     const mineN = Turf.owned().length, trib = Turf.tribute();
     const status = Turf.mode === 'shared' ? `<p class="small" style="color:var(--green)">● Shared city: everyone playing this game fights over the same map.</p>`
       : Turf.mode === 'loading' ? `<p class="small muted">○ Refreshing…</p>`
-        : `<p class="small" style="color:var(--gold)">○ Offline city: only on this device, with CPU rival crews. Set up the shared city below to play against real people.</p>`;
-    const setup = Turf.mode === 'local' ? `<details class="card"><summary><b>Make the city shared</b> (one time, about a minute)</summary>
-      <ol class="small"><li>Open your Supabase project, then <b>SQL Editor → New query</b>.</li><li>Paste the code below and press <b>Run</b>.</li><li>Come back here and press <b>Refresh</b>.</li></ol>
-      <pre class="sql" id="turf-sql">${esc(TURF_SQL)}</pre><div class="row"><button class="btn" data-act="turfCopy">Copy code</button><button class="btn" data-act="turfRefresh">Refresh</button></div>
-      <p class="small muted">Reason it's offline: ${esc(Turf.err || 'not set up')}</p></details>` : '';
-    return `<div class="panel wide"><h2>Turf Wars</h2>${status}
+        : `<p class="small" style="color:var(--gold)">○ Offline city: just you and CPU rival crews on this device.</p>`;
+
+    return `<div class="panel wide"><div class="row" style="justify-content:space-between"><h2>Turf Wars</h2><span class="small">You are <b style="color:var(--gold)">${esc(p.turfName)}</b> <button class="linkbtn" data-act="turfRename">change</button></span></div>${status}
       ${Turf.note ? `<div class="confirm"><p>${esc(Turf.note)}</p></div>` : ''}
       <div class="scroll"><div class="turfwrap"><div class="turfmap">${tiles}</div><div class="card turfside">${side}</div></div>
         <div class="grid2" style="margin-top:12px"><div class="card"><h3>Top crews</h3>${board}</div>
           <div class="card"><h3>Your blocks: ${mineN}</h3><p class="small">Each block pays 20 XP an hour while you hold it (up to 8 hours banked).</p>
             ${trib ? `<button class="btn primary" data-act="turfCollect">Collect ${trib} XP</button>` : `<p class="small muted">${mineN ? 'Nothing to collect yet.' : 'Take a block to start earning.'}</p>`}</div></div>
-        ${setup}${dnaCard(p)}</div>
+        ${dnaCard(p)}</div>
       <div class="row"><button class="btn" data-act="turfRefresh">Refresh map</button>${backBtn()}</div></div>`;
   },
 });
 Object.assign(ACT, {
+  shopCat: (d) => { UI.shopCat = d.v; UI.shopTry = null; ACT.shopPreview(); UI.show(SCREENS.shop()); },
+  shopTry: (d) => { UI.shopTry = d.id; ACT.shopPreview(); const sc = UI.el.querySelector('.scroll'), top = sc ? sc.scrollTop : 0; UI.show(SCREENS.shop()); const s2 = UI.el.querySelector('.scroll'); if (s2) s2.scrollTop = top; },
+  shopBuy: (d) => { const p = activeFighter(); if (Shop.buy(p, d.id)) { Sound.levelUp(); UI.banner('<span style="color:var(--green)">BOUGHT!</span>', esc(SHOP_BY_ID[d.id].name)); setTimeout(() => UI.banner(''), 1300); } ACT.shopTry(d); },
+  shopEquip: (d) => { Shop.equip(activeFighter(), d.id); Sound.ui(); ACT.shopTry(d); },
+  shopPreview: () => { const p = activeFighter(); const it = SHOP_BY_ID[UI.shopTry]; UI.draft = { name: p.name, nick: p.nick, style: p.style, look: Shop.look(p, it) }; if (UI.screen === 'shop') Preview.set(UI.draft); },
   stTier: (d) => { UI.sel.street.tier = +d.v; UI.show(SCREENS.street()); },
   stTime: (d) => { UI.sel.street.time = d.v; UI.show(SCREENS.street()); },
   streetGo: () => { const s = UI.sel.street || { tier: 0, time: 'night' }; startStreet({ mode: 'street', profile: activeFighter(), tier: s.tier, time: s.time, gang: pick(GANGS) }); },
@@ -4570,11 +4874,16 @@ Object.assign(ACT, {
     const p = SAVE.fighters.find((f) => f.id === d.id) || activeFighter(); if (!p) return;
     startFight({ mode: 'quick', profile: p, opp: DNA.cloneCfg(p, ' (Clone)'), diff: DNA.cloneDiff(p.level), label: 'Mirror match · your clone' });
   },
+  turfName: () => {
+    const p = activeFighter(), el = $('#turf-name'); const v = ((el && el.value) || '').trim().replace(/\s+/g, ' ').slice(0, 16);
+    if (v.length < 2) { if (el) { el.focus(); el.classList.add('shake'); setTimeout(() => el.classList.remove('shake'), 400); } return; }
+    p.turfName = v; UI.turfNameDraft = null; UI.turfRenaming = false; persist(); Turf.syncClones(); UI.go('turf');
+  },
+  turfRename: () => { const p = activeFighter(); UI.turfNameDraft = p.turfName; UI.turfRenaming = true; UI.show(SCREENS.turf()); },
   turfSel: (d) => { Turf.sel = d.id; Turf.note = ''; Turf.refresh(); },
   turfGo: () => { const d = TURF.find((x) => x.id === Turf.sel); if (d) { Turf.note = ''; Turf.attack(d); } },
   turfRefresh: () => { Turf.note = ''; Turf.load(); },
   turfCollect: () => { const x = Turf.collect(); Turf.note = x ? '+' + x + ' XP collected from your blocks.' : ''; Sound.levelUp(); Turf.refresh(); },
-  turfCopy: () => { try { navigator.clipboard.writeText(TURF_SQL).catch(() => {}); } catch (e) { /* select it instead */ } const el = $('#turf-sql'); if (el) { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } },
 });
 /* =====================================================================
    ONLINE — private matches with a join code (Supabase Realtime)
@@ -4793,7 +5102,7 @@ const Net = {
     prof.stats = savedStats; prof.evolved = savedEvo;
     Ref.reset(); Ref.pos.set(0, 3.2);
     this.hClock = 0; this.sendAcc = 0; this.presses = []; this.remoteIn = null; this.lastSig = '';
-    this.relaying = true; UI.screen = 'fight';
+    this.relaying = true; UI.screen = 'fight'; UI.wipe();
     this.send({ t: 'start', host: hostCfg, guest: { ...guestCfg, isPlayer: true, remote: false }, hostAsOpp: { ...hostCfg, isPlayer: false, remote: true }, round: SAVE.settings.round });
   },
   // host: feed the guest's controls into their fighter
@@ -4828,7 +5137,7 @@ const Net = {
   guestStart(m) {
     UI.hide(); Preview.clear(); cleanupFight(); Sound.fx = true; FX.enabled = true; $('#pops').innerHTML = '';
     this.snaps = []; this.evq = []; this.gClock = -1; this.lastSnapAt = 0; this.lastSnapHt = 0; this.jit = 0.02; this.gDelay = 0.12;
-    Game.match = new GuestMatch(m); UI.screen = 'fight';
+    Game.match = new GuestMatch(m); UI.screen = 'fight'; UI.wipe();
     Ref.reset(); Ref.pos.set(0, 3.2);
   },
   guestSend(P, live) {
@@ -5053,6 +5362,8 @@ const Ref = {
 };
 function setMenuScene(kind) {
   Game.mode = 'menu'; Sound.fx = false; FX.enabled = false;
+  const wantCity = kind === 'creator' && UI.screen === 'shop'; // try clothes on in the street
+  if ((Game.arena === 'city') !== wantCity) Game.setArena(wantCity ? 'city' : 'octagon');
   if (kind === 'creator') {
     for (const f of Game.fighters) f.rig.root.visible = false;
     if (UI.draft) Preview.set(UI.draft);
@@ -5084,7 +5395,7 @@ function startFight(opts) {
   UI.hide(); Preview.clear(); cleanupFight();
   Sound.fx = true; FX.enabled = true;
   $('#pops').innerHTML = '';
-  Game.match = new Match(opts);
+  Game.match = new Match(opts); UI.wipe();
   Ref.reset(); Ref.pos.set(0, 3.2);
 }
 function endFightToMenu() { cleanupFight(); UI.go('title'); }
@@ -5111,7 +5422,7 @@ function togglePause(on) {
 const _go = UI.go.bind(UI);
 UI.go = function (name, arg) {
   const keep = name === 'results' || name === 'netResults' || name === 'streetResults';
-  if (Game.mode === 'fight' && Game.match && Game.match.over && !keep) cleanupFight();
+  if (Game.mode === 'fight' && Game.match && Game.match.over && !keep) { cleanupFight(); UI.wipe(); }
   if (Game.mode === 'fight' && Game.match && !Game.match.over && !keep) return;
   _go(name, arg);
 };
