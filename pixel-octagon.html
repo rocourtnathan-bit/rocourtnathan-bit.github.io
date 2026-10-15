@@ -2993,10 +2993,12 @@ const UI = {
       Sound.init(); Sound.ui();
       const fn = ACT[b.dataset.act]; if (fn) fn(b.dataset, b);
     });
+    this.el.addEventListener('keydown', (e) => { if (e.target.id === 'net-code' && e.key === 'Enter') { Sound.init(); Net.join(e.target.value); } });
     this.el.addEventListener('input', (e) => {
       const t = e.target;
       if (t.id === 'f-name' && this.draft) this.draft.name = t.value.slice(0, 18);
       if (t.id === 'f-nick' && this.draft) this.draft.nick = t.value.slice(0, 18);
+      if (t.id === 'net-code') { const v = t.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6); if (v !== t.value) t.value = v; }
       if (t.id === 's-vol') { SAVE.settings.vol = +t.value / 100; Sound.setVol(SAVE.settings.vol); persist(); }
     });
   },
@@ -3317,7 +3319,7 @@ const SCREENS = {
       body = `${N.status === 'error' ? `<div class="confirm"><p>${esc(N.msg)}</p></div>` : ''}
         <button class="btn primary" data-act="netHost">Host a match <small>Get a code to send a friend</small></button>
         <label class="f" for="net-code">Join with a code</label>
-        <div class="row"><input type="text" id="net-code" maxlength="6" placeholder="ABC123" autocomplete="off" style="flex:1 1 140px;text-transform:uppercase;font-family:var(--f-display);font-size:18px;letter-spacing:4px"><button class="btn" data-act="netJoin" style="flex:0 0 auto">Join</button></div>`;
+        <div class="row"><input type="text" id="net-code" maxlength="9" placeholder="ABC123" autocomplete="off" enterkeyhint="go" style="flex:1 1 140px;text-transform:uppercase;font-family:var(--f-display);font-size:18px;letter-spacing:4px"><button class="btn" data-act="netJoin" style="flex:0 0 auto">Join</button></div>`;
     } else if (N.status === 'starting') body = `<p>${esc(N.msg)}</p><button class="btn ghost" data-act="netCancel">Cancel</button>`;
     else if (N.role === 'host') {
       body = `<p class="tag">Your room code</p>
@@ -3334,23 +3336,9 @@ const SCREENS = {
     const S = SAVE.settings;
     const icon = { ok: '✓', bad: '✕', warn: '!', wait: '…' };
     const test = N.testRes ? `<div class="netres">${N.testRes.map(([k, t]) => `<i class="${k}">${icon[k]}</i><span>${esc(t)}</span>`).join('')}</div>` : '';
-    const cfg = N.role ? '' : `<details class="netcfg" ${N.testRes ? 'open' : ''}><summary>Connection settings</summary>
-      <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
-        <p class="small">Some networks (schools, offices, some mobile carriers) block direct game connections. A <b>relay</b> passes the fight through a server on port 443, the same way video-call apps get through. Only one of you needs it set up, but both setting it up is most reliable.</p>
-        <p class="small muted">Free option: make a free account at metered.ca, open "TURN Server", and copy your app name (the part before .metered.live) and API key here.</p>
-        <div class="grid2"><label class="f">Metered app name<input type="text" id="net-app" value="${esc(S.relayApp || '')}" placeholder="myapp" autocomplete="off"></label>
-        <label class="f">Metered API key<input type="text" id="net-key" value="${esc(S.relayKey || '')}" placeholder="abc123…" autocomplete="off"></label></div>
-        <p class="small muted">Or any TURN server: URL (e.g. turns:relay.example.com:443?transport=tcp), username, password.</p>
-        <label class="f">TURN URL<input type="text" id="net-turn" value="${esc(S.turnUrl || '')}" autocomplete="off"></label>
-        <div class="grid2"><label class="f">TURN username<input type="text" id="net-tuser" value="${esc(S.turnUser || '')}" autocomplete="off"></label>
-        <label class="f">TURN password<input type="text" id="net-tpass" value="${esc(S.turnPass || '')}" autocomplete="off"></label></div>
-        <label class="f">Custom matchmaking server (optional, a self-hosted PeerServer)<input type="text" id="net-phost" value="${esc(S.peerHost || '')}" placeholder="my-peerserver.onrender.com" autocomplete="off"></label>
-        <div class="row"><button class="btn" data-act="netSaveCfg">Save settings</button><button class="btn" data-act="netTest">Test my network</button></div>
-        ${test}
-      </div></details>`;
     return `<div class="panel left"><h2>Online Match</h2>${meCard}${body}
-      ${N.role ? '' : `<p class="small muted">${N.peerReady ? '● Connected to matchmaking' : '○ Connecting to matchmaking…'}</p>`}
-      ${cfg}
+      ${N.role ? '' : `<p class="small muted">${N.peerReady ? '● Connected to matchmaking' : N.peer || N.warming ? '○ Connecting to matchmaking…' : '○ Not connected to matchmaking'}</p>`}
+      ${!N.role && test ? `<div class="card">${test}</div>` : ''}
       <p class="small muted">Fights run on the host's computer, so the host gets the smoothest connection. Works in the downloaded file or on the website, not inside the Claude preview.</p>
       ${N.role ? '' : backBtn()}</div>`;
   },
@@ -3541,11 +3529,6 @@ const ACT = {
   wipe: () => { SAVE.fighters = []; SAVE.active = null; persist(); UI.confirm = null; UI.go('title'); },
   netHost: () => Net.host(),
   netTest: () => Net.testNetwork(),
-  netSaveCfg: () => {
-    const v = (id) => (($('#' + id) || {}).value || '').trim();
-    Object.assign(SAVE.settings, { relayApp: v('net-app').replace(/\.metered\.live.*$/, ''), relayKey: v('net-key'), turnUrl: v('net-turn'), turnUser: v('net-tuser'), turnPass: v('net-tpass'), peerHost: v('net-phost') });
-    persist(); Net.dropPeer(); Net.testRes = [['ok', 'Saved. Reconnecting with the new settings…']]; Net.warm(); UI.show(SCREENS.online());
-  },
   netJoin: () => Net.join(($('#net-code') || {}).value),
   netCancel: () => { Net.teardown(); Net.setStatus('idle'); },
   netStart: () => { if (Net.role === 'host' && Net.opp) Net.hostStart(); },
@@ -3599,8 +3582,15 @@ const Net = {
       document.head.appendChild(s);
     }));
   },
-  setStatus(st, msg) { this.status = st; this.msg = msg || ''; if (UI.screen === 'online') UI.show(SCREENS.online()); },
-  fail(msg) { this.endConn(); this.setStatus('error', msg); },
+  setStatus(st, msg) { this.status = st; this.msg = msg || ''; this.refresh(); },
+  // redraw the Online screen without losing a half-typed code
+  refresh() {
+    if (UI.screen !== 'online') return;
+    const el = $('#net-code'), v = el ? el.value : '', focused = el && document.activeElement === el;
+    UI.show(SCREENS.online());
+    const el2 = $('#net-code'); if (el2 && v) { el2.value = v; if (focused) el2.focus(); }
+  },
+  fail(msg, diagnose = true) { this.endConn(); this.setStatus('error', msg); if (diagnose && !this.local()) this.testNetwork(); },
   myProfile() { const p = activeFighter(); return { name: p.name, nick: p.nick, style: p.style, look: p.look, stats: p.stats, evolved: p.evolved, level: p.level }; },
   async iceServers() {
     const ice = BASE_ICE.slice(); const S = SAVE.settings;
@@ -3637,16 +3627,16 @@ const Net = {
   afterReady() {
     if (this.role === 'host' && this.status === 'starting') this.setStatus('waiting');
     else if (this.role === 'guest' && this.status === 'starting') this.dial();
-    else if (UI.screen === 'online') UI.show(SCREENS.online());
+    else this.refresh();
   },
   peerError(e, peer) {
     if (this.peer !== peer) return;
     if (e.type === 'unavailable-id') { this.dropPeer(); this.warm(); return; }
-    if (e.type === 'peer-unavailable') { if (this.role === 'guest' && !this.conn) this.fail(NET_ERR['peer-unavailable']); return; }
+    if (e.type === 'peer-unavailable') { if (this.role === 'guest' && !this.conn) this.fail(NET_ERR['peer-unavailable'], false); return; }
     if (this.conn && (e.type === 'network' || e.type === 'disconnected' || e.type === 'socket-error' || e.type === 'socket-closed')) return; // already connected: the matchmaking link no longer matters
     this.dropPeer();
     if (this.role) this.fail(NET_ERR[e.type] || NET_ERR.network);
-    else { this.status = 'error'; this.msg = NET_ERR[e.type] || NET_ERR.network; if (UI.screen === 'online') UI.show(SCREENS.online()); }
+    else { this.status = 'error'; this.msg = NET_ERR[e.type] || NET_ERR.network; this.refresh(); if (!this.testRes) this.testNetwork(); }
   },
   dropPeer() { try { if (this.peer) this.peer.destroy(); } catch (e) { /* gone */ } this.peer = null; this.peerReady = false; },
   host() {
@@ -3739,19 +3729,19 @@ const Net = {
     UI.go('online');
   },
   async testNetwork() {
-    this.testRes = [['wait', 'Testing your network. This takes about 5 seconds…']]; if (UI.screen === 'online') UI.show(SCREENS.online());
+    this.testRes = [['wait', 'Checking what this network allows…']]; this.refresh();
     const res = [];
-    try { await this.loadPeer(); } catch (e) { this.testRes = [['bad', NET_ERR.load]]; if (UI.screen === 'online') UI.show(SCREENS.online()); return; }
+    try { await this.loadPeer(); } catch (e) { this.testRes = [['bad', NET_ERR.load]]; this.refresh(); return; }
     if (!this.peerReady) this.warm();
     const [types] = await Promise.all([this.iceServers().then((ice) => gatherTypes(ice, 4500)), waitFor(() => this.peerReady, 5000)]);
     const S = SAVE.settings, mine = !!((S.relayApp && S.relayKey) || S.turnUrl);
-    res.push(this.peerReady ? ['ok', 'Matchmaking server: reachable. Room codes work here.'] : ['bad', 'Matchmaking server: blocked or down. Codes can\'t be looked up on this network. A custom matchmaking server (below) is the fix.']);
-    res.push(types.srflx ? ['ok', 'Direct connections: allowed. Fights should connect fast.'] : ['bad', 'Direct connections: blocked on this network.']);
-    if (types.relay) res.push(['ok', mine ? 'Your relay: working. Fights can get through even strict networks.' : 'Built-in relay: answered. It uses port 3478, which strict networks often block.']);
-    else res.push(mine ? ['bad', 'Your relay: not reachable. Double-check the app name and key, or the TURN details.'] : ['warn', 'No working relay. If direct connections are blocked for you or your friend, add a relay below.']);
+    void mine;
+    res.push(this.peerReady ? ['ok', 'Room codes work on this network.'] : ['bad', 'This network blocks the matchmaking server, so room codes can\'t work here.']);
+    res.push(types.srflx || types.relay ? ['ok', 'Game connections are allowed.'] : ['bad', 'This network blocks game connections.']);
     const ok = this.peerReady && (types.srflx || types.relay);
-    res.push([ok ? 'ok' : 'bad', ok ? 'Verdict: you should be able to play online from here.' : 'Verdict: online play probably won\'t connect from this network as it is.']);
-    this.testRes = res; if (UI.screen === 'online') UI.show(SCREENS.online());
+    res.push(ok ? ['ok', 'Your side looks fine. If it still won\'t connect, the problem is probably on your friend\'s network. Have them try a different Wi-Fi or a phone hotspot.']
+      : ['warn', 'Try a different Wi-Fi or a phone hotspot. If you and your friend are on the same Wi-Fi, it can sometimes still work, so give it one more try.']);
+    this.testRes = res; this.refresh();
   },
   // ---------- messages ----------
   onData(m) {
@@ -3759,7 +3749,7 @@ const Net = {
     if (m.t === 'hello' && this.role === 'host') { this.opp = m.p; this.setStatus('ready'); return; }
     if (m.t === 'bye') { this.onClose(); return; }
     if (m.t === 'start' && this.role === 'guest') { this.guestStart(m); return; }
-    if (m.t === 'lobby' && this.role === 'guest') { this.even = m.even; if (UI.screen === 'online') UI.show(SCREENS.online()); return; }
+    if (m.t === 'lobby' && this.role === 'guest') { this.even = m.even; this.refresh(); return; }
     if (m.t === 'png') { this.send({ t: 'pong', at: m.at }); return; }
     if (m.t === 'pong' && this.role === 'host') { this.rtt = Math.round(performance.now() - m.at); this.send({ t: 'rtt', v: this.rtt }); return; }
     if (m.t === 'rtt') { this.rtt = m.v; return; }
@@ -3925,10 +3915,10 @@ const Net = {
 const NET_ERR = {
   load: 'Could not load the online library. Check your internet connection. Online play only works in the downloaded file or on the website, not inside the Claude preview.',
   'peer-unavailable': 'No match found with that code. Check the code, and make sure your friend is still on the hosting screen.',
-  network: 'Could not reach the matchmaking server. Online play only works in the downloaded file or on the website (not inside the Claude preview), and some school or work networks block it.',
+  network: 'Couldn\'t reach the matchmaking server. Online play works in the downloaded file or on the website (not inside the Claude preview), and some school or work networks block it.',
   'server-error': 'The matchmaking server is having trouble right now. Try again in a minute.',
   'socket-error': 'Lost contact with the matchmaking server. Try again.',
-  slow: 'Found the room but couldn\'t open a connection to it. One of you is probably on a network that blocks direct connections (common at schools and offices). Press "Test my network", and if it says blocked, add a relay in Connection settings or try another network.',
+  slow: 'Found the room, but couldn\'t connect to it. One of you is probably on a network that blocks game connections (common at schools and offices).',
   'browser-incompatible': 'This browser can\'t do peer-to-peer connections. Try Chrome, Edge, Firefox or Safari.',
   webrtc: 'The direct connection failed. Some networks (school, work, some mobile carriers) block it.',
 };
