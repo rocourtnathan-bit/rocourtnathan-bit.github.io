@@ -329,6 +329,20 @@ input.shake{animation:shake .35s}
 #upd .btn.upd small{color:#ffe1e3;font-size:11.5px}
 .upd-done{background:rgba(63,210,122,.08);border:2px solid var(--green);padding:8px 10px;line-height:1.4}
 @keyframes updPulse{50%{box-shadow:0 0 0 4px rgba(224,49,63,.35)}}
+/* city map */
+.mapbox{display:flex;flex-direction:column;gap:6px;min-width:0}
+svg.citymap{width:100%;height:auto;display:block;border:2px solid #000;background:#1b1d22;image-rendering:pixelated}
+svg.citymap .dz{cursor:pointer;outline:none}
+svg.citymap .dz:hover .bd,svg.citymap .dz:focus-visible .bd{stroke:#fff;stroke-width:3;opacity:1}
+svg.citymap .dz.sel .bd{stroke:#fff;stroke-width:4;stroke-dasharray:none;opacity:1}
+svg.citymap .dz.mine .bd{filter:drop-shadow(0 0 4px #f3b928)}
+.mt-name{font-family:var(--f-name);font-size:13px;fill:#f2efe6;letter-spacing:.5px}
+.mt-who{font-family:var(--f-body);font-size:9.5px;font-weight:700}
+.mt-star{font-size:10px}
+.mt-water{font-family:var(--f-display);font-size:10px;fill:rgba(200,230,255,.6);letter-spacing:4px}
+.maplegend{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.maplegend i{display:inline-block;width:12px;height:12px;border:2px solid #000;margin-right:4px;vertical-align:-2px}
+.maplegend i.hz{background:repeating-linear-gradient(45deg,#555 0 3px,#222 3px 6px)}
 @media (prefers-reduced-motion:reduce){.pghost{display:none}.panel.tx-in,.panel.tx-back,.panel.tx-pop,.panel *{animation:none!important}#wipe{display:none}}
 </style>
 <canvas id="gl"></canvas>
@@ -386,7 +400,7 @@ var supabase=(function(e){function t(e,t){var n={};for(var r in e)Object.prototy
 Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/auth-js: Invalid SIWE message field "resources". Every resource must be a valid string. Provided value: ${t}`);e+=`\n- ${t}`}m+=e}return`${p}\n${m}`}var Q=class extends Error{constructor({message:e,code:t,cause:n,name:r}){super(e,{cause:n}),this.__isWebAuthnError=!0,this.name=r??(n instanceof Error?n.name:void 0)??`Unknown Error`,this.code=t}toJSON(){return{name:this.name,message:this.message,code:this.code}}},Di=class extends Q{constructor(e,t){super({code:`ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY`,cause:t,message:e}),this.name=`WebAuthnUnknownError`,this.originalError=t}};function Oi({error:e,options:t}){let{publicKey:n}=t;if(!n)throw Error(`options was missing required publicKey property`);if(e.name===`AbortError`){if(t.signal instanceof AbortSignal)return new Q({message:`Registration ceremony was sent an abort signal`,code:`ERROR_CEREMONY_ABORTED`,cause:e})}else if(e.name===`ConstraintError`){if(n.authenticatorSelection?.requireResidentKey===!0)return new Q({message:`Discoverable credentials were required but no available authenticator supported it`,code:`ERROR_AUTHENTICATOR_MISSING_DISCOVERABLE_CREDENTIAL_SUPPORT`,cause:e});if(t.mediation===`conditional`&&n.authenticatorSelection?.userVerification===`required`)return new Q({message:`User verification was required during automatic registration but it could not be performed`,code:`ERROR_AUTO_REGISTER_USER_VERIFICATION_FAILURE`,cause:e});if(n.authenticatorSelection?.userVerification===`required`)return new Q({message:`User verification was required but no available authenticator supported it`,code:`ERROR_AUTHENTICATOR_MISSING_USER_VERIFICATION_SUPPORT`,cause:e})}else if(e.name===`InvalidStateError`)return new Q({message:`The authenticator was previously registered`,code:`ERROR_AUTHENTICATOR_PREVIOUSLY_REGISTERED`,cause:e});else if(e.name===`NotAllowedError`)return new Q({message:e.message,code:`ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY`,cause:e});else if(e.name===`NotSupportedError`)return n.pubKeyCredParams.filter(e=>e.type===`public-key`).length===0?new Q({message:`No entry in pubKeyCredParams was of type "public-key"`,code:`ERROR_MALFORMED_PUBKEYCREDPARAMS`,cause:e}):new Q({message:`No available authenticator supported any of the specified pubKeyCredParams algorithms`,code:`ERROR_AUTHENTICATOR_NO_SUPPORTED_PUBKEYCREDPARAMS_ALG`,cause:e});else if(e.name===`SecurityError`){let t=window.location.hostname;if(Fi(t)){if(n.rp.id!==t)return new Q({message:`The RP ID "${n.rp.id}" is invalid for this domain`,code:`ERROR_INVALID_RP_ID`,cause:e})}else return new Q({message:`${window.location.hostname} is an invalid domain`,code:`ERROR_INVALID_DOMAIN`,cause:e})}else if(e.name===`TypeError`){if(n.user.id.byteLength<1||n.user.id.byteLength>64)return new Q({message:`User ID was not between 1 and 64 characters`,code:`ERROR_INVALID_USER_ID_LENGTH`,cause:e})}else if(e.name===`UnknownError`)return new Q({message:`The authenticator was unable to process the specified options, or could not create a new credential`,code:`ERROR_AUTHENTICATOR_GENERAL_ERROR`,cause:e});return new Q({message:`a Non-Webauthn related error has occurred`,code:`ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY`,cause:e})}function ki({error:e,options:t}){let{publicKey:n}=t;if(!n)throw Error(`options was missing required publicKey property`);if(e.name===`AbortError`){if(t.signal instanceof AbortSignal)return new Q({message:`Authentication ceremony was sent an abort signal`,code:`ERROR_CEREMONY_ABORTED`,cause:e})}else if(e.name===`NotAllowedError`)return new Q({message:e.message,code:`ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY`,cause:e});else if(e.name===`SecurityError`){let t=window.location.hostname;if(Fi(t)){if(n.rpId!==t)return new Q({message:`The RP ID "${n.rpId}" is invalid for this domain`,code:`ERROR_INVALID_RP_ID`,cause:e})}else return new Q({message:`${window.location.hostname} is an invalid domain`,code:`ERROR_INVALID_DOMAIN`,cause:e})}else if(e.name===`UnknownError`)return new Q({message:`The authenticator was unable to process the specified options, or could not create a new assertion signature`,code:`ERROR_AUTHENTICATOR_GENERAL_ERROR`,cause:e});return new Q({message:`a Non-Webauthn related error has occurred`,code:`ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY`,cause:e})}let Ai=new class{createNewAbortSignal(){if(this.controller){let e=Error(`Cancelling existing WebAuthn API call for new one`);e.name=`AbortError`,this.controller.abort(e)}let e=new AbortController;return this.controller=e,e.signal}cancelCeremony(){if(this.controller){let e=Error(`Manually cancelling existing WebAuthn API call`);e.name=`AbortError`,this.controller.abort(e),this.controller=void 0}}};function ji(e){if(!e)throw Error(`Credential creation options are required`);if(typeof PublicKeyCredential<`u`&&`parseCreationOptionsFromJSON`in PublicKeyCredential&&typeof PublicKeyCredential.parseCreationOptionsFromJSON==`function`)return PublicKeyCredential.parseCreationOptionsFromJSON(e);let{challenge:n,user:r,excludeCredentials:i}=e,a=t(e,[`challenge`,`user`,`excludeCredentials`]),o=Sr(n).buffer,s=Object.assign(Object.assign({},r),{id:Sr(r.id).buffer}),c=Object.assign(Object.assign({},a),{challenge:o,user:s});if(i&&i.length>0){c.excludeCredentials=Array(i.length);for(let e=0;e<i.length;e++){let t=i[e];c.excludeCredentials[e]=Object.assign(Object.assign({},t),{id:Sr(t.id).buffer,type:t.type||`public-key`,transports:t.transports})}}return c}function Mi(e){if(!e)throw Error(`Credential request options are required`);if(typeof PublicKeyCredential<`u`&&`parseRequestOptionsFromJSON`in PublicKeyCredential&&typeof PublicKeyCredential.parseRequestOptionsFromJSON==`function`)return PublicKeyCredential.parseRequestOptionsFromJSON(e);let{challenge:n,allowCredentials:r}=e,i=t(e,[`challenge`,`allowCredentials`]),a=Sr(n).buffer,o=Object.assign(Object.assign({},i),{challenge:a});if(r&&r.length>0){o.allowCredentials=Array(r.length);for(let e=0;e<r.length;e++){let t=r[e];o.allowCredentials[e]=Object.assign(Object.assign({},t),{id:Sr(t.id).buffer,type:t.type||`public-key`,transports:t.transports})}}return o}function Ni(e){if(`toJSON`in e&&typeof e.toJSON==`function`)return e.toJSON();let t=e;return{id:e.id,rawId:e.id,response:{attestationObject:z(new Uint8Array(e.response.attestationObject)),clientDataJSON:z(new Uint8Array(e.response.clientDataJSON))},type:`public-key`,clientExtensionResults:e.getClientExtensionResults(),authenticatorAttachment:t.authenticatorAttachment??void 0}}function Pi(e){if(`toJSON`in e&&typeof e.toJSON==`function`)return e.toJSON();let t=e,n=e.getClientExtensionResults(),r=e.response;return{id:e.id,rawId:e.id,response:{authenticatorData:z(new Uint8Array(r.authenticatorData)),clientDataJSON:z(new Uint8Array(r.clientDataJSON)),signature:z(new Uint8Array(r.signature)),userHandle:r.userHandle?z(new Uint8Array(r.userHandle)):void 0},type:`public-key`,clientExtensionResults:n,authenticatorAttachment:t.authenticatorAttachment??void 0}}function Fi(e){return e===`localhost`||/^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$/i.test(e)}function Ii(){return!!(B()&&`PublicKeyCredential`in window&&window.PublicKeyCredential&&`credentials`in navigator&&typeof(navigator==null?void 0:navigator.credentials)?.create==`function`&&typeof(navigator==null?void 0:navigator.credentials)?.get==`function`)}async function Li(e){try{let t=await navigator.credentials.create(e);return t?t instanceof PublicKeyCredential?{data:t,error:null}:{data:null,error:new Di(`Browser returned unexpected credential type`,t)}:{data:null,error:new Di(`Empty credential response`,t)}}catch(t){return{data:null,error:Oi({error:t,options:e})}}}async function Ri(e){try{let t=await navigator.credentials.get(e);return t?t instanceof PublicKeyCredential?{data:t,error:null}:{data:null,error:new Di(`Browser returned unexpected credential type`,t)}:{data:null,error:new Di(`Empty credential response`,t)}}catch(t){return{data:null,error:ki({error:t,options:e})}}}let zi={hints:[`security-key`],authenticatorSelection:{authenticatorAttachment:`cross-platform`,requireResidentKey:!1,userVerification:`preferred`,residentKey:`discouraged`},attestation:`direct`},Bi={userVerification:`preferred`,hints:[`security-key`],attestation:`direct`};function Vi(...e){let t=e=>typeof e==`object`&&!!e&&!Array.isArray(e),n=e=>e instanceof ArrayBuffer||ArrayBuffer.isView(e),r={};for(let i of e)if(i)for(let e in i){let a=i[e];if(a!==void 0)if(Array.isArray(a))r[e]=a;else if(n(a))r[e]=a;else if(t(a)){let n=r[e];t(n)?r[e]=Vi(n,a):r[e]=Vi(a)}else r[e]=a}return r}function Hi(e,t){return Vi(zi,e,t||{})}function Ui(e,t){return Vi(Bi,e,t||{})}var Wi=class{constructor(e){this.client=e,this.enroll=this._enroll.bind(this),this.challenge=this._challenge.bind(this),this.verify=this._verify.bind(this),this.authenticate=this._authenticate.bind(this),this.register=this._register.bind(this)}async _enroll(e){return this.client.mfa.enroll(Object.assign(Object.assign({},e),{factorType:`webauthn`}))}async _challenge({factorId:e,webauthn:t,friendlyName:n,signal:r},i){try{let{data:a,error:o}=await this.client.mfa.challenge({factorId:e,webauthn:t});if(!a)return{data:null,error:o};let s=r??Ai.createNewAbortSignal();if(a.webauthn.type===`create`){let{user:e}=a.webauthn.credential_options.publicKey;if(!e.name){let t=n;if(t)e.name=`${e.id}:${t}`;else{let t=(await this.client.getUser()).data.user,n=t?.user_metadata?.name||t?.email||t?.id||`User`;e.name=`${e.id}:${n}`}}e.displayName||=e.name}switch(a.webauthn.type){case`create`:{let{data:t,error:n}=await Li({publicKey:Hi(a.webauthn.credential_options.publicKey,i?.create),signal:s});return t?{data:{factorId:e,challengeId:a.id,webauthn:{type:a.webauthn.type,credential_response:t}},error:null}:{data:null,error:n}}case`request`:{let t=Ui(a.webauthn.credential_options.publicKey,i?.request),{data:n,error:r}=await Ri(Object.assign(Object.assign({},a.webauthn.credential_options),{publicKey:t,signal:s}));return n?{data:{factorId:e,challengeId:a.id,webauthn:{type:a.webauthn.type,credential_response:n}},error:null}:{data:null,error:r}}}}catch(e){return P(e)?{data:null,error:e}:{data:null,error:new F(`Unexpected error in challenge`,e)}}}async _verify({challengeId:e,factorId:t,webauthn:n}){return this.client.mfa.verify({factorId:t,challengeId:e,webauthn:n})}async _authenticate({factorId:e,webauthn:{rpId:t=typeof window<`u`?window.location.hostname:void 0,rpOrigins:n=typeof window<`u`?[window.location.origin]:void 0,signal:r}={}},i){if(!t)return{data:null,error:new Xn(`rpId is required for WebAuthn authentication`)};try{if(!Ii())return{data:null,error:new F(`Browser does not support WebAuthn`,null)};let{data:a,error:o}=await this.challenge({factorId:e,webauthn:{rpId:t,rpOrigins:n},signal:r},{request:i});if(!a)return{data:null,error:o};let{webauthn:s}=a;return this._verify({factorId:e,challengeId:a.challengeId,webauthn:{type:s.type,rpId:t,rpOrigins:n,credential_response:s.credential_response}})}catch(e){return P(e)?{data:null,error:e}:{data:null,error:new F(`Unexpected error in authenticate`,e)}}}async _register({friendlyName:e,webauthn:{rpId:t=typeof window<`u`?window.location.hostname:void 0,rpOrigins:n=typeof window<`u`?[window.location.origin]:void 0,signal:r}={}},i){if(!t)return{data:null,error:new Xn(`rpId is required for WebAuthn registration`)};try{if(!Ii())return{data:null,error:new F(`Browser does not support WebAuthn`,null)};let{data:a,error:o}=await this._enroll({friendlyName:e});if(!a)return await this.client.mfa.listFactors().then(t=>t.data?.all.find(t=>t.factor_type===`webauthn`&&t.friendly_name===e&&t.status===`unverified`)).then(e=>e?this.client.mfa.unenroll({factorId:e?.id}):void 0),{data:null,error:o};let{data:s,error:c}=await this._challenge({factorId:a.id,friendlyName:a.friendly_name,webauthn:{rpId:t,rpOrigins:n},signal:r},{create:i});return s?this._verify({factorId:a.id,challengeId:s.challengeId,webauthn:{rpId:t,rpOrigins:n,type:s.webauthn.type,credential_response:s.webauthn.credential_response}}):{data:null,error:c}}catch(e){return P(e)?{data:null,error:e}:{data:null,error:new F(`Unexpected error in register`,e)}}}};Si();let Gi={url:`http://localhost:9999`,storageKey:`supabase.auth.token`,autoRefreshToken:!0,persistSession:!0,detectSessionInUrl:!0,headers:Kn,flowType:`implicit`,debug:!1,hasCustomAuthorizationHeader:!1,throwOnError:!1,lockAcquireTimeout:5e3,skipAutoInitialize:!1,experimental:{}},$={},Ki=!1;var qi=class e{get jwks(){return $[this.storageKey]?.jwks??{keys:[]}}set jwks(e){$[this.storageKey]=Object.assign(Object.assign({},$[this.storageKey]),{jwks:e})}get jwks_cached_at(){return $[this.storageKey]?.cachedAt??-(2**53-1)}set jwks_cached_at(e){$[this.storageKey]=Object.assign(Object.assign({},$[this.storageKey]),{cachedAt:e})}constructor(t){var n;this.userStorage=null,this.memoryStorage=null,this.stateChangeEmitters=new Map,this.autoRefreshTicker=null,this.autoRefreshTickTimeout=null,this.visibilityChangedCallback=null,this.refreshingDeferred=null,this.lastRefreshFailure=null,this._sessionRemovalEpoch=0,this.initializePromise=null,this._pendingInitNotifications=null,this.detectSessionInUrl=!0,this.hasCustomAuthorizationHeader=!1,this.suppressGetSessionWarning=!1,this.lock=null,this.lockAcquired=!1,this.pendingInLock=[],this.broadcastChannel=null,this.logger=console.log;let r=Object.assign(Object.assign({},Gi),t);if(this.storageKey=r.storageKey,this.instanceID=e.nextInstanceID[this.storageKey]??0,e.nextInstanceID[this.storageKey]=this.instanceID+1,this.logDebugMessages=!!r.debug,typeof r.debug==`function`&&(this.logger=r.debug),this.instanceID>0&&B()){let e=`${this._logPrefix()} Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.`;console.warn(e),this.logDebugMessages&&console.trace(e)}if(this.persistSession=r.persistSession,this.autoRefreshToken=r.autoRefreshToken,this.experimental=r.experimental??{},this.admin=new mi({url:r.url,headers:r.headers,fetch:r.fetch,experimental:this.experimental}),this.url=r.url,this.headers=r.headers,this.fetch=Or(r.fetch),this.detectSessionInUrl=r.detectSessionInUrl,this.flowType=r.flowType,this.hasCustomAuthorizationHeader=r.hasCustomAuthorizationHeader,this.throwOnError=r.throwOnError,this.lockAcquireTimeout=r.lockAcquireTimeout,r.lock!=null&&(this.lock=r.lock,Ki||(Ki=!0,console.warn(`${this._logPrefix()} The "lock" option is deprecated and will be removed in v3. The client now coordinates session refreshes without a lock, so most apps can drop the option. See https://github.com/supabase/supabase-js/blob/master/packages/core/auth-js/migrations/lockless-coordination.md`))),this.jwks||(this.jwks={keys:[]},this.jwks_cached_at=-(2**53-1)),this.mfa={verify:this._verify.bind(this),enroll:this._enroll.bind(this),unenroll:this._unenroll.bind(this),challenge:this._challenge.bind(this),listFactors:this._listFactors.bind(this),challengeAndVerify:this._challengeAndVerify.bind(this),getAuthenticatorAssuranceLevel:this._getAuthenticatorAssuranceLevel.bind(this),webauthn:new Wi(this),recoveryCodes:{getStatus:this._getRecoveryCodesStatus.bind(this),generate:this._generateRecoveryCodes.bind(this),verify:this._verifyRecoveryCode.bind(this),regenerate:this._regenerateRecoveryCodes.bind(this),unenroll:this._unenrollRecoveryCodes.bind(this)}},this.oauth={getAuthorizationDetails:this._getAuthorizationDetails.bind(this),approveAuthorization:this._approveAuthorization.bind(this),denyAuthorization:this._denyAuthorization.bind(this),listGrants:this._listOAuthGrants.bind(this),revokeGrant:this._revokeOAuthGrant.bind(this)},this.passkey={startRegistration:this._startPasskeyRegistration.bind(this),verifyRegistration:this._verifyPasskeyRegistration.bind(this),startAuthentication:this._startPasskeyAuthentication.bind(this),verifyAuthentication:this._verifyPasskeyAuthentication.bind(this),list:this._listPasskeys.bind(this),update:this._updatePasskey.bind(this),delete:this._deletePasskey.bind(this)},this.persistSession?(r.storage?this.storage=r.storage:Er()?this.storage=globalThis.localStorage:(this.memoryStorage={},this.storage=hi(this.memoryStorage)),r.userStorage&&(this.userStorage=r.userStorage)):(this.memoryStorage={},this.storage=hi(this.memoryStorage)),B()&&globalThis.BroadcastChannel&&this.persistSession&&this.storageKey){try{this.broadcastChannel=new globalThis.BroadcastChannel(this.storageKey)}catch(e){console.error(`Failed to create a new BroadcastChannel, multi-tab state changes will not be available`,e)}(n=this.broadcastChannel)==null||n.addEventListener(`message`,async e=>{this._debug(`received broadcast notification from other tab or client`,e),(e.data.event===`TOKEN_REFRESHED`||e.data.event===`SIGNED_IN`)&&(this.lastRefreshFailure=null);try{await this._notifyAllSubscribers(e.data.event,e.data.session,!1)}catch(e){this._debug(`#broadcastChannel`,`error`,e)}})}r.skipAutoInitialize||this.initialize().catch(e=>{this._debug(`#initialize()`,`error`,e)})}isThrowOnErrorEnabled(){return this.throwOnError}_returnResult(e){if(this.throwOnError&&e&&e.error)throw e.error;return e}_logPrefix(){return`GoTrueClient@${this.storageKey}:${this.instanceID} (${Wn}) ${new Date().toISOString()}`}_debug(...e){return this.logDebugMessages&&this.logger(this._logPrefix(),...e),this}async initialize(){if(this.initializePromise)return await this.initializePromise;this._pendingInitNotifications=[],this.initializePromise=(async()=>this.lock==null?await this._initialize():await this._acquireLock(this.lockAcquireTimeout,async()=>await this._initialize()))();let e=await this.initializePromise,t=this._pendingInitNotifications??[];this._pendingInitNotifications=null;for(let e of t)await this._notifyAllSubscribers(e.event,e.session,e.broadcast);return e}async _initialize(){try{let e={},t=`none`;if(B()&&(e=Dr(window.location.href),this._isImplicitGrantCallback(e)?t=`implicit`:await this._isPKCECallback(e)&&(t=`pkce`)),B()&&this.detectSessionInUrl&&t!==`none`){let{data:n,error:r}=await this._getSessionFromURL(e,t);if(r){if(this._debug(`#_initialize()`,`error detecting session from URL`,r),nr(r)){let e=r.details?.code;if(e===`identity_already_exists`||e===`identity_not_found`||e===`single_identity_not_deletable`)return{error:r}}return{error:r}}let{session:i,redirectType:a}=n;return this._debug(`#_initialize()`,`detected session in URL`,i,`redirect type`,a),await this._saveSession(i),setTimeout(async()=>{a===`recovery`?await this._notifyAllSubscribers(`PASSWORD_RECOVERY`,i):await this._notifyAllSubscribers(`SIGNED_IN`,i)},0),{error:null}}return await this._recoverAndRefresh(),{error:null}}catch(e){return P(e)?this._returnResult({error:e}):this._returnResult({error:new F(`Unexpected error during initialization`,e)})}finally{await this._handleVisibilityChange(),this._debug(`#_initialize()`,`end`)}}async signInAnonymously(e){try{let{data:t,error:n}=await J(this.fetch,`POST`,`${this.url}/signup`,{headers:this.headers,body:{data:e?.options?.data??{},gotrue_meta_security:{captcha_token:e?.options?.captchaToken}},xform:Y});if(n||!t)return this._returnResult({data:{user:null,session:null},error:n});let r=t.session,i=t.user;return t.session&&(await this._saveSession(t.session),await this._notifyAllSubscribers(`SIGNED_IN`,r)),this._returnResult({data:{user:i,session:r},error:null})}catch(e){if(P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async signUp(e){let t=null;try{let n;if(`email`in e){let{email:r,password:i,options:a}=e,o=null,s=null;this.flowType===`pkce`&&([o,s,t]=await this._getCodeChallengeAndMethod()),n=await J(this.fetch,`POST`,`${this.url}/signup`,{headers:this.headers,redirectTo:this._maybeAppendFlowIdToRedirect(a?.emailRedirectTo,t),body:{email:r,password:i,data:a?.data??{},gotrue_meta_security:{captcha_token:a?.captchaToken},code_challenge:o,code_challenge_method:s},xform:Y})}else if(`phone`in e){let{phone:t,password:r,options:i}=e;n=await J(this.fetch,`POST`,`${this.url}/signup`,{headers:this.headers,body:{phone:t,password:r,data:i?.data??{},channel:i?.channel??`sms`,gotrue_meta_security:{captcha_token:i?.captchaToken}},xform:Y})}else throw new er(`You must provide either an email or phone number and a password`);let{data:r,error:i}=n;if(i||!r)return await G(this.storage,this.storageKey,t),this._returnResult({data:{user:null,session:null},error:i});let a=r.session,o=r.user;return r.session&&(await this._saveSession(r.session),await this._notifyAllSubscribers(`SIGNED_IN`,a)),this._returnResult({data:{user:o,session:a},error:null})}catch(e){if(await G(this.storage,this.storageKey,t),P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async signInWithPassword(e){try{let t;if(`email`in e){let{email:n,password:r,options:i}=e;t=await J(this.fetch,`POST`,`${this.url}/token?grant_type=password`,{headers:this.headers,body:{email:n,password:r,gotrue_meta_security:{captcha_token:i?.captchaToken}},xform:ci})}else if(`phone`in e){let{phone:n,password:r,options:i}=e;t=await J(this.fetch,`POST`,`${this.url}/token?grant_type=password`,{headers:this.headers,body:{phone:n,password:r,gotrue_meta_security:{captcha_token:i?.captchaToken}},xform:ci})}else throw new er(`You must provide either an email or phone number and a password`);let{data:n,error:r}=t;if(r)return this._returnResult({data:{user:null,session:null},error:r});if(!n||!n.session||!n.user){let e=new R;return this._returnResult({data:{user:null,session:null},error:e})}return n.session&&(await this._saveSession(n.session),await this._notifyAllSubscribers(`SIGNED_IN`,n.session)),this._returnResult({data:Object.assign({user:n.user,session:n.session},n.weak_password?{weakPassword:n.weak_password}:null),error:r})}catch(e){if(P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async signInWithOAuth(e){return await this._handleProviderSignIn(e.provider,{redirectTo:e.options?.redirectTo,scopes:e.options?.scopes,queryParams:e.options?.queryParams,skipBrowserRedirect:e.options?.skipBrowserRedirect})}async exchangeCodeForSession(e,t){return await this.initializePromise,this.lock==null?this._exchangeCodeForSession(e,t):this._acquireLock(this.lockAcquireTimeout,async()=>this._exchangeCodeForSession(e,t))}async signInWithWeb3(e){let{chain:t}=e;switch(t){case`ethereum`:return await this.signInWithEthereum(e);case`solana`:return await this.signInWithSolana(e);default:throw Error(`@supabase/auth-js: Unsupported chain "${t}"`)}}async signInWithEthereum(e){let t,n;if(`message`in e)t=e.message,n=e.signature;else{let{chain:r,wallet:i,statement:a,options:o}=e,s;if(B())if(typeof i==`object`)s=i;else{let e=window;if(`ethereum`in e&&typeof e.ethereum==`object`&&`request`in e.ethereum&&typeof e.ethereum.request==`function`)s=e.ethereum;else throw Error(`@supabase/auth-js: No compatible Ethereum wallet interface on the window object (window.ethereum) detected. Make sure the user already has a wallet installed and connected for this app. Prefer passing the wallet interface object directly to signInWithWeb3({ chain: 'ethereum', wallet: resolvedUserWallet }) instead.`)}else{if(typeof i!=`object`||!o?.url)throw Error(`@supabase/auth-js: Both wallet and url must be specified in non-browser environments.`);s=i}let c=new URL(o?.url??window.location.href),l=await s.request({method:`eth_requestAccounts`}).then(e=>e).catch(()=>{throw Error(`@supabase/auth-js: Wallet method eth_requestAccounts is missing or invalid`)});if(!l||l.length===0)throw Error(`@supabase/auth-js: No accounts available. Please ensure the wallet is connected.`);let u=Ci(l[0]),d=o?.signInWithEthereum?.chainId;d||=wi(await s.request({method:`eth_chainId`})),t=Ei({domain:c.host,address:u,statement:a,uri:c.href,version:`1`,chainId:d,nonce:o?.signInWithEthereum?.nonce,issuedAt:o?.signInWithEthereum?.issuedAt??new Date,expirationTime:o?.signInWithEthereum?.expirationTime,notBefore:o?.signInWithEthereum?.notBefore,requestId:o?.signInWithEthereum?.requestId,resources:o?.signInWithEthereum?.resources}),n=await s.request({method:`personal_sign`,params:[Ti(t),u]})}try{let{data:r,error:i}=await J(this.fetch,`POST`,`${this.url}/token?grant_type=web3`,{headers:this.headers,body:Object.assign({chain:`ethereum`,message:t,signature:n},e.options?.captchaToken?{gotrue_meta_security:{captcha_token:e.options?.captchaToken}}:null),xform:Y});if(i)throw i;if(!r||!r.session||!r.user){let e=new R;return this._returnResult({data:{user:null,session:null},error:e})}return r.session&&(await this._saveSession(r.session),await this._notifyAllSubscribers(`SIGNED_IN`,r.session)),this._returnResult({data:Object.assign({},r),error:i})}catch(e){if(P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async signInWithSolana(e){let t,n;if(`message`in e)t=e.message,n=e.signature;else{let{chain:r,wallet:i,statement:a,options:o}=e,s;if(B())if(typeof i==`object`)s=i;else{let e=window;if(`solana`in e&&typeof e.solana==`object`&&(`signIn`in e.solana&&typeof e.solana.signIn==`function`||`signMessage`in e.solana&&typeof e.solana.signMessage==`function`))s=e.solana;else throw Error(`@supabase/auth-js: No compatible Solana wallet interface on the window object (window.solana) detected. Make sure the user already has a wallet installed and connected for this app. Prefer passing the wallet interface object directly to signInWithWeb3({ chain: 'solana', wallet: resolvedUserWallet }) instead.`)}else{if(typeof i!=`object`||!o?.url)throw Error(`@supabase/auth-js: Both wallet and url must be specified in non-browser environments.`);s=i}let c=new URL(o?.url??window.location.href);if(`signIn`in s&&s.signIn){let e=await s.signIn(Object.assign(Object.assign(Object.assign({issuedAt:new Date().toISOString()},o?.signInWithSolana),{version:`1`,domain:c.host,uri:c.href}),a?{statement:a}:null)),r;if(Array.isArray(e)&&e[0]&&typeof e[0]==`object`)r=e[0];else if(e&&typeof e==`object`&&`signedMessage`in e&&`signature`in e)r=e;else throw Error(`@supabase/auth-js: Wallet method signIn() returned unrecognized value`);if(`signedMessage`in r&&`signature`in r&&(typeof r.signedMessage==`string`||r.signedMessage instanceof Uint8Array)&&r.signature instanceof Uint8Array)t=typeof r.signedMessage==`string`?r.signedMessage:new TextDecoder().decode(r.signedMessage),n=r.signature;else throw Error(`@supabase/auth-js: Wallet method signIn() API returned object without signedMessage and signature fields`)}else{if(!(`signMessage`in s)||typeof s.signMessage!=`function`||!(`publicKey`in s)||typeof s!=`object`||!s.publicKey||!(`toBase58`in s.publicKey)||typeof s.publicKey.toBase58!=`function`)throw Error(`@supabase/auth-js: Wallet does not have a compatible signMessage() and publicKey.toBase58() API`);t=[`${c.host} wants you to sign in with your Solana account:`,s.publicKey.toBase58(),...a?[``,a,``]:[``],`Version: 1`,`URI: ${c.href}`,`Issued At: ${o?.signInWithSolana?.issuedAt??new Date().toISOString()}`,...o?.signInWithSolana?.notBefore?[`Not Before: ${o.signInWithSolana.notBefore}`]:[],...o?.signInWithSolana?.expirationTime?[`Expiration Time: ${o.signInWithSolana.expirationTime}`]:[],...o?.signInWithSolana?.chainId?[`Chain ID: ${o.signInWithSolana.chainId}`]:[],...o?.signInWithSolana?.nonce?[`Nonce: ${o.signInWithSolana.nonce}`]:[],...o?.signInWithSolana?.requestId?[`Request ID: ${o.signInWithSolana.requestId}`]:[],...o?.signInWithSolana?.resources?.length?[`Resources`,...o.signInWithSolana.resources.map(e=>`- ${e}`)]:[]].join(`
 `);let e=await s.signMessage(new TextEncoder().encode(t),`utf8`);if(!e||!(e instanceof Uint8Array))throw Error(`@supabase/auth-js: Wallet signMessage() API returned an recognized value`);n=e}}try{let{data:r,error:i}=await J(this.fetch,`POST`,`${this.url}/token?grant_type=web3`,{headers:this.headers,body:Object.assign({chain:`solana`,message:t,signature:z(n)},e.options?.captchaToken?{gotrue_meta_security:{captcha_token:e.options?.captchaToken}}:null),xform:Y});if(i)throw i;if(!r||!r.session||!r.user){let e=new R;return this._returnResult({data:{user:null,session:null},error:e})}return r.session&&(await this._saveSession(r.session),await this._notifyAllSubscribers(`SIGNED_IN`,r.session)),this._returnResult({data:Object.assign({},r),error:i})}catch(e){if(P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async _exchangeCodeForSession(e,t){let n=t?.flowId!=null,r=n?zr(t?.flowId):B()?zr(Dr(window.location.href)[N]):null;n&&!r&&this._debug(`#_exchangeCodeForSession()`,`provided flowId is not a valid flow id`,t?.flowId);let{verifier:i,flowId:a}=n&&!r?{verifier:null,flowId:null}:await Gr(this.storage,this.storageKey,r),[o,s]=(i??``).split(`/`);try{if(!o&&this.flowType===`pkce`)throw new ir;let{data:t,error:n}=await J(this.fetch,`POST`,`${this.url}/token?grant_type=pkce`,{headers:this.headers,body:{auth_code:e,code_verifier:o},xform:Y});if(await G(this.storage,this.storageKey,a),n)throw n;if(!t||!t.session||!t.user){let e=new R;return this._returnResult({data:{user:null,session:null,redirectType:null},error:e})}return t.session&&(await this._saveSession(t.session),await this._notifyAllSubscribers(s===`recovery`?`PASSWORD_RECOVERY`:`SIGNED_IN`,t.session)),this._returnResult({data:Object.assign(Object.assign({},t),{redirectType:s??null}),error:n})}catch(e){if(await G(this.storage,this.storageKey,a),P(e))return this._returnResult({data:{user:null,session:null,redirectType:null},error:e});throw e}}async signInWithIdToken(e){try{let{options:t,provider:n,token:r,access_token:i,nonce:a}=e,{data:o,error:s}=await J(this.fetch,`POST`,`${this.url}/token?grant_type=id_token`,{headers:this.headers,body:{provider:n,id_token:r,access_token:i,nonce:a,gotrue_meta_security:{captcha_token:t?.captchaToken}},xform:Y});if(s)return this._returnResult({data:{user:null,session:null},error:s});if(!o||!o.session||!o.user){let e=new R;return this._returnResult({data:{user:null,session:null},error:e})}return o.session&&(await this._saveSession(o.session),await this._notifyAllSubscribers(`SIGNED_IN`,o.session)),this._returnResult({data:o,error:s})}catch(e){if(P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async signInWithOtp(e){let t=null;try{if(`email`in e){let{email:n,options:r}=e,i=null,a=null;this.flowType===`pkce`&&([i,a,t]=await this._getCodeChallengeAndMethod());let{error:o}=await J(this.fetch,`POST`,`${this.url}/otp`,{headers:this.headers,body:{email:n,data:r?.data??{},create_user:r?.shouldCreateUser??!0,gotrue_meta_security:{captcha_token:r?.captchaToken},code_challenge:i,code_challenge_method:a},redirectTo:this._maybeAppendFlowIdToRedirect(r?.emailRedirectTo,t)});return this._returnResult({data:{user:null,session:null},error:o})}if(`phone`in e){let{phone:t,options:n}=e,{data:r,error:i}=await J(this.fetch,`POST`,`${this.url}/otp`,{headers:this.headers,body:{phone:t,data:n?.data??{},create_user:n?.shouldCreateUser??!0,gotrue_meta_security:{captcha_token:n?.captchaToken},channel:n?.channel??`sms`}});return this._returnResult({data:{user:null,session:null,messageId:r?.message_id},error:i})}throw new er(`You must provide either an email or phone number.`)}catch(e){if(await G(this.storage,this.storageKey,t),P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async verifyOtp(e){try{let t,n;`options`in e&&(t=e.options?.redirectTo,n=e.options?.captchaToken);let{data:r,error:i}=await J(this.fetch,`POST`,`${this.url}/verify`,{headers:this.headers,body:Object.assign(Object.assign({},e),{gotrue_meta_security:{captcha_token:n}}),redirectTo:t,xform:Y});if(i)throw i;if(!r)throw Error(`An error occurred on token verification.`);let a=r.session,o=r.user;return a?.access_token&&(await this._saveSession(a),await this._notifyAllSubscribers(e.type==`recovery`?`PASSWORD_RECOVERY`:`SIGNED_IN`,a)),this._returnResult({data:{user:o,session:a},error:null})}catch(e){if(P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async signInWithSSO(e){let t=null;try{let n=null,r=null;this.flowType===`pkce`&&([n,r,t]=await this._getCodeChallengeAndMethod());let i=await J(this.fetch,`POST`,`${this.url}/sso`,{body:Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({},`providerId`in e?{provider_id:e.providerId}:null),`domain`in e?{domain:e.domain}:null),{redirect_to:this._maybeAppendFlowIdToRedirect(e.options?.redirectTo,t)}),e?.options?.captchaToken?{gotrue_meta_security:{captcha_token:e.options.captchaToken}}:null),{skip_http_redirect:!0,code_challenge:n,code_challenge_method:r}),headers:this.headers,xform:li});return i.data?.url&&B()&&!e.options?.skipBrowserRedirect&&window.location.assign(i.data.url),this._returnResult(i)}catch(e){if(await G(this.storage,this.storageKey,t),P(e))return this._returnResult({data:null,error:e});throw e}}async reauthenticate(){return await this.initializePromise,this.lock==null?await this._reauthenticate():await this._acquireLock(this.lockAcquireTimeout,async()=>await this._reauthenticate())}async _reauthenticate(){try{return await this._useSession(async e=>{let{data:{session:t},error:n}=e;if(n)throw n;if(!t)throw new L;let{error:r}=await J(this.fetch,`GET`,`${this.url}/reauthenticate`,{headers:this.headers,jwt:t.access_token});return this._returnResult({data:{user:null,session:null},error:r})})}catch(e){if(P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async resend(e){let t=null;try{let n=`${this.url}/resend`;if(`email`in e){let{email:r,type:i,options:a}=e,o=null,s=null;this.flowType===`pkce`&&([o,s,t]=await this._getCodeChallengeAndMethod());let{error:c}=await J(this.fetch,`POST`,n,{headers:this.headers,body:{email:r,type:i,gotrue_meta_security:{captcha_token:a?.captchaToken},code_challenge:o,code_challenge_method:s},redirectTo:this._maybeAppendFlowIdToRedirect(a?.emailRedirectTo,t)});return c&&await G(this.storage,this.storageKey,t),this._returnResult({data:{user:null,session:null},error:c})}else if(`phone`in e){let{phone:t,type:r,options:i}=e,{data:a,error:o}=await J(this.fetch,`POST`,n,{headers:this.headers,body:{phone:t,type:r,gotrue_meta_security:{captcha_token:i?.captchaToken}}});return this._returnResult({data:{user:null,session:null,messageId:a?.message_id},error:o})}throw new er(`You must provide either an email or phone number and a type`)}catch(e){if(await G(this.storage,this.storageKey,t),P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async getSession(){return await this.initializePromise,this.lock==null?await this._useSession(async e=>e):await this._acquireLock(this.lockAcquireTimeout,async()=>this._useSession(async e=>e))}async _acquireLock(e,t){this._debug(`#_acquireLock`,`begin`,e);try{if(this.lockAcquired){let e=this.pendingInLock.length?this.pendingInLock[this.pendingInLock.length-1]:Promise.resolve(),n=(async()=>(await e,await t()))();return this.pendingInLock.push((async()=>{try{await n}catch{}})()),n}return await this.lock(`lock:${this.storageKey}`,e,async()=>{this._debug(`#_acquireLock`,`lock acquired for storage key`,this.storageKey);try{this.lockAcquired=!0;let e=t();for(this.pendingInLock.push((async()=>{try{await e}catch{}})()),await e;this.pendingInLock.length;){let e=[...this.pendingInLock];await Promise.all(e),this.pendingInLock.splice(0,e.length)}return await e}finally{this._debug(`#_acquireLock`,`lock released for storage key`,this.storageKey),this.lockAcquired=!1}})}finally{this._debug(`#_acquireLock`,`end`)}}async _useSession(e){this._debug(`#_useSession`,`begin`);try{return await e(await this.__loadSession())}finally{this._debug(`#_useSession`,`end`)}}async __loadSession(){this._debug(`#__loadSession()`,`begin`),this.lock!=null&&!this.lockAcquired&&this._debug(`#__loadSession()`,`used outside of an acquired lock!`,Error().stack);try{let e=null,t=await U(this.storage,this.storageKey);if(this._debug(`#getSession()`,`session from storage`,t),t!==null&&(this._isValidSession(t)?e=t:(this._debug(`#getSession()`,`session from storage is not valid`),await this._removeSession())),!e)return{data:{session:null},error:null};let n=e.expires_at?e.expires_at*1e3-Date.now()<Gn:!1;if(this._debug(`#__loadSession()`,`session has${n?``:` not`} expired`,`expires_at`,e.expires_at),!n)return{data:{session:await this._hydrateSessionUser(e)},error:null};let{data:r,error:i}=await this._callRefreshToken(e.refresh_token);if(i){let e=await U(this.storage,this.storageKey);return e&&this._isValidSession(e)&&e.expires_at&&e.expires_at*1e3>Date.now()?this._returnResult({data:{session:await this._hydrateSessionUser(e)},error:null}):this._returnResult({data:{session:null},error:i})}return this._returnResult({data:{session:r},error:null})}finally{this._debug(`#__loadSession()`,`end`)}}async _hydrateSessionUser(e){if(this.userStorage){let t=await U(this.userStorage,this.storageKey+`-user`);e.user=t?.user?t.user:ti()}if(this.storage.isServer&&e.user&&!e.user.__isUserNotAvailableProxy){let t={value:this.suppressGetSessionWarning};e.user=ni(e.user,t),t.value&&(this.suppressGetSessionWarning=!0)}return e}async getUser(e){if(e)return await this._getUser(e);await this.initializePromise;let t;return t=this.lock==null?await this._getUser():await this._acquireLock(this.lockAcquireTimeout,async()=>await this._getUser()),t.data.user&&(this.suppressGetSessionWarning=!0),t}async _getUser(e){try{return e?await J(this.fetch,`GET`,`${this.url}/user`,{headers:this.headers,jwt:e,xform:X}):await this._useSession(async e=>{let{data:t,error:n}=e;if(n)throw n;return!t.session?.access_token&&!this.hasCustomAuthorizationHeader?{data:{user:null},error:new L}:await J(this.fetch,`GET`,`${this.url}/user`,{headers:this.headers,jwt:t.session?.access_token??void 0,xform:X})})}catch(e){if(P(e))return $n(e)&&await this._removeSession(),this._returnResult({data:{user:null},error:e});throw e}}async updateUser(e,t={}){return await this.initializePromise,this.lock==null?await this._updateUser(e,t):await this._acquireLock(this.lockAcquireTimeout,async()=>await this._updateUser(e,t))}async _updateUser(e,t={}){let n=null;try{return await this._useSession(async r=>{let{data:i,error:a}=r;if(a)throw a;if(!i.session)throw new L;let o=i.session,s=null,c=null;this.flowType===`pkce`&&e.email!=null&&([s,c,n]=await this._getCodeChallengeAndMethod());let{data:l,error:u}=await J(this.fetch,`PUT`,`${this.url}/user`,{headers:this.headers,redirectTo:this._maybeAppendFlowIdToRedirect(t?.emailRedirectTo,n),body:Object.assign(Object.assign({},e),{code_challenge:s,code_challenge_method:c}),jwt:o.access_token,xform:X});if(u)throw u;return o.user=l.user,await this._saveSession(o),await this._notifyAllSubscribers(`USER_UPDATED`,o),this._returnResult({data:{user:o.user},error:null})})}catch(e){if(await G(this.storage,this.storageKey,n),P(e))return this._returnResult({data:{user:null},error:e});throw e}}async setSession(e){return await this.initializePromise,this.lock==null?await this._setSession(e):await this._acquireLock(this.lockAcquireTimeout,async()=>await this._setSession(e))}async _setSession(e){try{if(!e.access_token||!e.refresh_token)throw new L;let t=Date.now()/1e3,n=t,r=!0,i=null,{payload:a}=jr(e.access_token);if(a.exp&&(n=a.exp,r=n<=t),r){let{data:t,error:n}=await this._callRefreshToken(e.refresh_token);if(n)return this._returnResult({data:{user:null,session:null},error:n});if(!t)return{data:{user:null,session:null},error:null};i=t}else{let{data:r,error:a}=await this._getUser(e.access_token);if(a)return this._returnResult({data:{user:null,session:null},error:a});i={access_token:e.access_token,refresh_token:e.refresh_token,user:r.user,token_type:`bearer`,expires_in:n-t,expires_at:n},await this._saveSession(i),await this._notifyAllSubscribers(`SIGNED_IN`,i)}return this._returnResult({data:{user:i.user,session:i},error:null})}catch(e){if(P(e))return this._returnResult({data:{session:null,user:null},error:e});throw e}}async refreshSession(e){return await this.initializePromise,this.lock==null?await this._refreshSession(e):await this._acquireLock(this.lockAcquireTimeout,async()=>await this._refreshSession(e))}async _refreshSession(e){try{return await this._useSession(async t=>{if(!e){let{data:n,error:r}=t;if(r)throw r;e=n.session??void 0}if(!e?.refresh_token)throw new L;let{data:n,error:r}=await this._callRefreshToken(e.refresh_token);return r?this._returnResult({data:{user:null,session:null},error:r}):n?this._returnResult({data:{user:n.user,session:n},error:null}):this._returnResult({data:{user:null,session:null},error:null})})}catch(e){if(P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async _getSessionFromURL(e,t){try{if(!B())throw new tr(`No browser detected.`);if(e.error||e.error_description||e.error_code)throw new tr(e.error_description||`Error in URL with unspecified error_description`,{error:e.error||`unspecified_error`,code:e.error_code||`unspecified_code`});switch(t){case`implicit`:if(this.flowType===`pkce`)throw new rr(`Not a valid PKCE flow url.`);break;case`pkce`:if(this.flowType===`implicit`)throw new tr(`Not a valid implicit grant flow url.`);break;default:}if(t===`pkce`){if(this._debug(`#_initialize()`,`begin`,`is PKCE flow`,!0),!e.code)throw new rr(`No code detected.`);let{data:t,error:n}=await this._exchangeCodeForSession(e.code,{flowId:e[N]});if(n)throw n;let r=new URL(window.location.href);return r.searchParams.delete(`code`),r.searchParams.delete(N),window.history.replaceState(window.history.state,``,r.toString()),{data:{session:t.session,redirectType:t.redirectType??null},error:null}}let{provider_token:n,provider_refresh_token:r,access_token:i,refresh_token:a,expires_in:o,expires_at:s,token_type:c}=e;if(!i||!o||!a||!c)throw new tr(`No session defined in URL`);let l=Math.round(Date.now()/1e3),u=parseInt(o),d=l+u;s&&(d=parseInt(s));let f=d-l;f*1e3<=M&&console.warn(`@supabase/gotrue-js: Session as retrieved from URL expires in ${f}s, should have been closer to ${u}s`);let p=d-u;l-p>=120?console.warn(`@supabase/gotrue-js: Session as retrieved from URL was issued over 120s ago, URL could be stale`,p,d,l):l-p<0&&console.warn(`@supabase/gotrue-js: Session as retrieved from URL was issued in the future? Check the device clock for skew`,p,d,l);let{data:m,error:h}=await this._getUser(i);if(h)throw h;let g={provider_token:n,provider_refresh_token:r,access_token:i,expires_in:u,expires_at:d,refresh_token:a,token_type:c,user:m.user};return window.location.hash=``,this._debug(`#_getSessionFromURL()`,`clearing window.location.hash`),this._returnResult({data:{session:g,redirectType:e.type},error:null})}catch(e){if(P(e))return this._returnResult({data:{session:null,redirectType:null},error:e});throw e}}_isImplicitGrantCallback(e){return typeof this.detectSessionInUrl==`function`?this.detectSessionInUrl(new URL(window.location.href),e):!!(e.access_token||e.error||e.error_description||e.error_code)}async _isPKCECallback(e){if(!e.code)return!1;let t=zr(e[N]);return t&&await U(this.storage,Vr(this.storageKey,t))?!0:!!await U(this.storage,`${this.storageKey}-code-verifier`)}async signOut(e={scope:`global`}){return await this.initializePromise,this.lock==null?await this._signOut(e):await this._acquireLock(this.lockAcquireTimeout,async()=>await this._signOut(e))}async _signOut({scope:e}={scope:`global`}){return await this._useSession(async t=>{let n=async()=>{await this._removeSession()},{data:r,error:i}=t;if(i&&!$n(i))return this._returnResult({error:i});let a=r.session?.access_token;if(a){let{error:t}=await this.admin.signOut(a,e);if(t&&!(Qn(t)&&(t.status===404||t.status===401||t.status===403)||$n(t)))return e!==`others`&&await n(),this._returnResult({error:t})}return e!==`others`&&await n(),this._returnResult({error:null})})}onAuthStateChange(e){let t=Tr(),n={id:t,callback:e,unsubscribe:()=>{this._debug(`#unsubscribe()`,`state change callback with id removed`,t),this.stateChangeEmitters.delete(t)}};return this._debug(`#onAuthStateChange()`,`registered callback with id`,t),this.stateChangeEmitters.set(t,n),(async()=>{await this.initializePromise,this.lock==null?await this._emitInitialSession(t):await this._acquireLock(this.lockAcquireTimeout,async()=>{this._emitInitialSession(t)})})(),{data:{subscription:n}}}async _emitInitialSession(e){return await this._useSession(async t=>{try{let{data:{session:n},error:r}=t;if(r)throw r;await this.stateChangeEmitters.get(e)?.callback(`INITIAL_SESSION`,n),this._debug(`INITIAL_SESSION`,`callback id`,e,`session`,n)}catch(t){if(await this.stateChangeEmitters.get(e)?.callback(`INITIAL_SESSION`,null),this._debug(`INITIAL_SESSION`,`callback id`,e,`error`,t),lr(t))return;$n(t)||sr(t)||Qn(t)&&(t.code===`refresh_token_not_found`||t.code===`refresh_token_already_used`||t.code===`session_expired`)?console.warn(t):console.error(t)}})}async resetPasswordForEmail(e,t={}){let n=null,r=null,i=null;this.flowType===`pkce`&&([n,r,i]=await this._getCodeChallengeAndMethod(!0));try{return await J(this.fetch,`POST`,`${this.url}/recover`,{body:{email:e,code_challenge:n,code_challenge_method:r,gotrue_meta_security:{captcha_token:t.captchaToken}},headers:this.headers,redirectTo:this._maybeAppendFlowIdToRedirect(t.redirectTo,i)})}catch(e){if(await G(this.storage,this.storageKey,i),P(e))return this._returnResult({data:null,error:e});throw e}}async getUserIdentities(){try{let{data:e,error:t}=await this.getUser();if(t)throw t;return this._returnResult({data:{identities:e.user.identities??[]},error:null})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async linkIdentity(e){return`token`in e?this.linkIdentityIdToken(e):this.linkIdentityOAuth(e)}async linkIdentityOAuth(e){let t=null;try{let{data:n,error:r}=await this._useSession(async n=>{let{data:r,error:i}=n;if(i)throw i;let{url:a,flowId:o}=await this._getUrlForProvider(`${this.url}/user/identities/authorize`,e.provider,{redirectTo:e.options?.redirectTo,scopes:e.options?.scopes,queryParams:e.options?.queryParams,skipBrowserRedirect:!0});return t=o,await J(this.fetch,`GET`,a,{headers:this.headers,jwt:r.session?.access_token??void 0})});if(r)throw r;return B()&&!e.options?.skipBrowserRedirect&&window.location.assign(n?.url),this._returnResult({data:{provider:e.provider,url:n?.url,flowId:t},error:null})}catch(n){if(P(n))return this._returnResult({data:{provider:e.provider,url:null,flowId:t},error:n});throw n}}async linkIdentityIdToken(e){return await this._useSession(async t=>{try{let{error:n,data:{session:r}}=t;if(n)throw n;let{options:i,provider:a,token:o,access_token:s,nonce:c}=e,{data:l,error:u}=await J(this.fetch,`POST`,`${this.url}/token?grant_type=id_token`,{headers:this.headers,jwt:r?.access_token??void 0,body:{provider:a,id_token:o,access_token:s,nonce:c,link_identity:!0,gotrue_meta_security:{captcha_token:i?.captchaToken}},xform:Y});return u?this._returnResult({data:{user:null,session:null},error:u}):!l||!l.session||!l.user?this._returnResult({data:{user:null,session:null},error:new R}):(l.session&&(await this._saveSession(l.session),await this._notifyAllSubscribers(`USER_UPDATED`,l.session)),this._returnResult({data:l,error:u}))}catch(e){if(await G(this.storage,this.storageKey,null),P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}})}async unlinkIdentity(e){try{return await this._useSession(async t=>{let{data:n,error:r}=t;if(r)throw r;return await J(this.fetch,`DELETE`,`${this.url}/user/identities/${e.identity_id}`,{headers:this.headers,jwt:n.session?.access_token??void 0})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _refreshAccessToken(e){let t=`#_refreshAccessToken()`;this._debug(t,`begin`);try{let n=Date.now();return await Nr(async n=>(n>0&&await Mr(200*2**(n-1)),this._debug(t,`refreshing attempt`,n),await J(this.fetch,`POST`,`${this.url}/token?grant_type=refresh_token`,{body:{refresh_token:e},headers:this.headers,xform:Y})),(e,t)=>{let r=200*2**e;return t&&sr(t)&&Date.now()+r-n<M})}catch(e){if(this._debug(t,`error`,e),P(e))return this._returnResult({data:{session:null,user:null},error:e});throw e}finally{this._debug(t,`end`)}}_isValidSession(e){return typeof e==`object`&&!!e&&`access_token`in e&&`refresh_token`in e&&`expires_at`in e}async _handleProviderSignIn(e,t){let{url:n,flowId:r}=await this._getUrlForProvider(`${this.url}/authorize`,e,{redirectTo:t.redirectTo,scopes:t.scopes,queryParams:t.queryParams});return this._debug(`#_handleProviderSignIn()`,`provider`,e,`options`,t,`url`,n),B()&&!t.skipBrowserRedirect&&window.location.assign(n),{data:{provider:e,url:n,flowId:r},error:null}}async _recoverAndRefresh(){let e=`#_recoverAndRefresh()`;this._debug(e,`begin`);try{let t=await U(this.storage,this.storageKey);if(t&&this.userStorage){let e=await U(this.userStorage,this.storageKey+`-user`);!this.storage.isServer&&Object.is(this.storage,this.userStorage)&&!e&&(e={user:t.user},await H(this.userStorage,this.storageKey+`-user`,e)),t.user=e?.user??ti()}else if(t&&!t.user&&!t.user){let e=await U(this.storage,this.storageKey+`-user`);e&&e?.user?(t.user=e.user,await W(this.storage,this.storageKey+`-user`),await H(this.storage,this.storageKey,t)):t.user=ti()}if(this._debug(e,`session from storage`,t),!this._isValidSession(t)){this._debug(e,`session is not valid`),t!==null&&await this._removeSession();return}let n=(t.expires_at??1/0)*1e3-Date.now()<Gn;if(this._debug(e,`session has${n?``:` not`} expired with margin of ${Gn}s`),n){if(this.autoRefreshToken&&t.refresh_token){let{error:n}=await this._callRefreshToken(t.refresh_token);n&&(lr(n)?this._debug(e,`refresh discarded by commit guard`,n):this._debug(e,`refresh failed`,n))}}else if(t.user&&t.user.__isUserNotAvailableProxy===!0)try{let{data:n,error:r}=await this._getUser(t.access_token);!r&&n?.user?(t.user=n.user,await this._saveSession(t),await this._notifyAllSubscribers(`SIGNED_IN`,t)):this._debug(e,`could not get user data, skipping SIGNED_IN notification`)}catch(t){console.error(`Error getting user data:`,t),this._debug(e,`error getting user data, skipping SIGNED_IN notification`,t)}else await this._notifyAllSubscribers(`SIGNED_IN`,t)}catch(t){this._debug(e,`error`,t),sr(t)?console.warn(t):console.error(t);return}finally{this._debug(e,`end`)}}async _callRefreshToken(e){var t,n;if(!e)throw new L;if(this.refreshingDeferred)return this.refreshingDeferred.promise;if(this.lastRefreshFailure&&this.lastRefreshFailure.refreshToken===e&&Date.now()<this.lastRefreshFailure.expiresAt)return this._debug(`#_callRefreshToken()`,`returning cached failure (cooldown active)`),this.lastRefreshFailure.result;let r=`#_callRefreshToken()`;this._debug(r,`begin`);try{this.refreshingDeferred=new Ar,this.refreshingDeferred.promise.then(void 0,()=>{});let t=await U(this.storage,this.storageKey),{data:n,error:i}=await this._refreshAccessToken(e);if(i)throw i;if(!n.session)throw new L;let a=await U(this.storage,this.storageKey);if(t!==null&&(a===null||a.refresh_token!==t.refresh_token)){this._debug(r,`commit guard: storage changed since refresh started, discarding rotated tokens`,{startedWith:`present`,nowHolds:a?`replaced`:`cleared`});let e={data:null,error:new cr};return this.refreshingDeferred.resolve(e),e}let o=this._sessionRemovalEpoch;if(await this._saveSession(n.session),this._sessionRemovalEpoch!==o){this._debug(r,`commit guard (post-save): _removeSession ran during _saveSession, undoing write`),await W(this.storage,this.storageKey),this.userStorage&&await W(this.userStorage,this.storageKey+`-user`);let e={data:null,error:new cr};return this.refreshingDeferred.resolve(e),e}await this._notifyAllSubscribers(`TOKEN_REFRESHED`,n.session);let s={data:n.session,error:null};return this.lastRefreshFailure=null,this.refreshingDeferred.resolve(s),s}catch(i){if(this._debug(r,`error`,i),P(i)){let n={data:null,error:i};if(!sr(i)){let e=await U(this.storage,this.storageKey);e?.expires_at&&e.expires_at*1e3>Date.now()?this._debug(r,`proactive refresh failed, access token still valid — preserving session`):await this._removeSession()}return this.lastRefreshFailure={refreshToken:e,result:n,expiresAt:Date.now()+6e4},(t=this.refreshingDeferred)==null||t.resolve(n),n}throw(n=this.refreshingDeferred)==null||n.reject(i),i}finally{this.refreshingDeferred=null,this._debug(r,`end`)}}async _notifyAllSubscribers(e,t,n=!0){if(this._pendingInitNotifications!==null&&n){this._pendingInitNotifications.push({event:e,session:t,broadcast:n});return}let r=`#_notifyAllSubscribers(${e})`;this._debug(r,`begin`,t,`broadcast = ${n}`);try{this.broadcastChannel&&n&&this.broadcastChannel.postMessage({event:e,session:t});let r=[],i=Array.from(this.stateChangeEmitters.values()).map(async n=>{try{await n.callback(e,t)}catch(e){r.push(e)}});if(await Promise.all(i),r.length>0){for(let e=0;e<r.length;e+=1)console.error(r[e]);throw r[0]}}finally{this._debug(r,`end`)}}async _saveSession(e){this._debug(`#_saveSession()`,e),this.suppressGetSessionWarning=!0;let t=Object.assign({},e),n=t.user&&t.user.__isUserNotAvailableProxy===!0;if(this.userStorage){!n&&t.user&&await H(this.userStorage,this.storageKey+`-user`,{user:t.user});let e=Object.assign({},t);delete e.user;let r=ri(e);await H(this.storage,this.storageKey,r)}else{let e=ri(t);await H(this.storage,this.storageKey,e)}}async _removeSession(){this._sessionRemovalEpoch+=1,this._debug(`#_removeSession()`),this.lastRefreshFailure=null,this.suppressGetSessionWarning=!1,await W(this.storage,this.storageKey),await Kr(this.storage,this.storageKey),await W(this.storage,this.storageKey+`-user`),this.userStorage&&await W(this.userStorage,this.storageKey+`-user`),await this._notifyAllSubscribers(`SIGNED_OUT`,null)}_removeVisibilityChangedCallback(){this._debug(`#_removeVisibilityChangedCallback()`);let e=this.visibilityChangedCallback;this.visibilityChangedCallback=null;try{e&&B()&&window!=null&&window.removeEventListener&&window.removeEventListener(`visibilitychange`,e)}catch(e){console.error(`removing visibilitychange callback failed`,e)}}async _startAutoRefresh(){await this._stopAutoRefresh(),this._debug(`#_startAutoRefresh()`);let e=setInterval(()=>this._autoRefreshTokenTick(),M);this.autoRefreshTicker=e,e&&typeof e==`object`&&typeof e.unref==`function`?e.unref():typeof Deno<`u`&&typeof Deno.unrefTimer==`function`&&Deno.unrefTimer(e);let t=setTimeout(async()=>{await this.initializePromise,await this._autoRefreshTokenTick()},0);this.autoRefreshTickTimeout=t,t&&typeof t==`object`&&typeof t.unref==`function`?t.unref():typeof Deno<`u`&&typeof Deno.unrefTimer==`function`&&Deno.unrefTimer(t)}async _stopAutoRefresh(){this._debug(`#_stopAutoRefresh()`);let e=this.autoRefreshTicker;this.autoRefreshTicker=null,e&&clearInterval(e);let t=this.autoRefreshTickTimeout;this.autoRefreshTickTimeout=null,t&&clearTimeout(t)}async startAutoRefresh(){this._removeVisibilityChangedCallback(),await this._startAutoRefresh()}async stopAutoRefresh(){this._removeVisibilityChangedCallback(),await this._stopAutoRefresh()}async dispose(){var e;this._removeVisibilityChangedCallback(),await this._stopAutoRefresh(),(e=this.broadcastChannel)==null||e.close(),this.broadcastChannel=null,this.stateChangeEmitters.clear()}async _autoRefreshTokenTick(){if(this._debug(`#_autoRefreshTokenTick()`,`begin`),this.lock!=null){try{await this._acquireLock(0,async()=>{try{let e=Date.now();try{return await this._useSession(async t=>{let{data:{session:n}}=t;if(!n||!n.refresh_token||!n.expires_at){this._debug(`#_autoRefreshTokenTick()`,`no session`);return}let r=Math.floor((n.expires_at*1e3-e)/M);this._debug(`#_autoRefreshTokenTick()`,`access token expires in ${r} ticks, a tick lasts ${M}ms, refresh threshold is 3 ticks`),r<=3&&await this._callRefreshToken(n.refresh_token)})}catch(e){console.error(`Auto refresh tick failed with error. This is likely a transient error.`,e)}}finally{this._debug(`#_autoRefreshTokenTick()`,`end`)}})}catch(e){if(e instanceof gi)this._debug(`auto refresh token tick lock not available`);else throw e}return}if(this.refreshingDeferred!==null){this._debug(`#_autoRefreshTokenTick()`,`refresh already in flight, skipping`);return}try{let e=Date.now();try{await this._useSession(async t=>{let{data:{session:n}}=t;if(!n||!n.refresh_token||!n.expires_at){this._debug(`#_autoRefreshTokenTick()`,`no session`);return}let r=Math.floor((n.expires_at*1e3-e)/M);this._debug(`#_autoRefreshTokenTick()`,`access token expires in ${r} ticks, a tick lasts ${M}ms, refresh threshold is 3 ticks`),r<=3&&await this._callRefreshToken(n.refresh_token)})}catch(e){console.error(`Auto refresh tick failed with error. This is likely a transient error.`,e)}}finally{this._debug(`#_autoRefreshTokenTick()`,`end`)}}async _handleVisibilityChange(){if(this._debug(`#_handleVisibilityChange()`),!B()||!(window!=null&&window.addEventListener))return this.autoRefreshToken&&this.startAutoRefresh(),!1;try{this.visibilityChangedCallback=async()=>{try{await this._onVisibilityChanged(!1)}catch(e){this._debug(`#visibilityChangedCallback`,`error`,e)}},window==null||window.addEventListener(`visibilitychange`,this.visibilityChangedCallback),await this._onVisibilityChanged(!0)}catch(e){console.error(`_handleVisibilityChange`,e)}}async _onVisibilityChanged(e){let t=`#_onVisibilityChanged(${e})`;if(this._debug(t,`visibilityState`,document.visibilityState),document.visibilityState===`visible`){if(this.autoRefreshToken&&this._startAutoRefresh(),!e)if(await this.initializePromise,this.lock!=null)await this._acquireLock(this.lockAcquireTimeout,async()=>{if(document.visibilityState!==`visible`){this._debug(t,`acquired the lock to recover the session, but the browser visibilityState is no longer visible, aborting`);return}await this._recoverAndRefresh()});else{if(document.visibilityState!==`visible`){this._debug(t,`visibilityState is no longer visible, skipping recovery`);return}await this._recoverAndRefresh()}}else document.visibilityState===`hidden`&&this.autoRefreshToken&&this._stopAutoRefresh()}async _getUrlForProvider(e,t,n){let r=n?.redirectTo,i=null,a=null,o=null;this.flowType===`pkce`&&([i,a,o]=await this._getCodeChallengeAndMethod(),r=this._maybeAppendFlowIdToRedirect(r,o));let s=[`provider=${encodeURIComponent(t)}`];if(r&&s.push(`redirect_to=${encodeURIComponent(r)}`),n?.scopes&&s.push(`scopes=${encodeURIComponent(n.scopes)}`),i!=null&&a!=null){let e=new URLSearchParams({code_challenge:`${encodeURIComponent(i)}`,code_challenge_method:`${encodeURIComponent(a)}`});s.push(e.toString())}if(n?.queryParams){let e=new URLSearchParams(n.queryParams);s.push(e.toString())}return n?.skipBrowserRedirect&&s.push(`skip_http_redirect=${n.skipBrowserRedirect}`),{url:`${e}?${s.join(`&`)}`,flowId:o}}_maybeAppendFlowIdToRedirect(e,t){return!e||!t||!this.experimental.appendPkceFlowIdToRedirects?e??void 0:qr(e,t)}async _getCodeChallengeAndMethod(e=!1){return Jr(this.storage,this.storageKey,e,e=>this._debug(`#_getCodeChallengeAndMethod()`,`evicted oldest pending PKCE verifier slot`,e))}async _unenroll(e){try{return await this._useSession(async t=>{let{data:n,error:r}=t;return r?this._returnResult({data:null,error:r}):await J(this.fetch,`DELETE`,`${this.url}/factors/${e.factorId}`,{headers:this.headers,jwt:n?.session?.access_token})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _enroll(e){try{return await this._useSession(async t=>{let{data:n,error:r}=t;if(r)return this._returnResult({data:null,error:r});let i=Object.assign({friendly_name:e.friendlyName,factor_type:e.factorType},e.factorType===`phone`?{phone:e.phone}:e.factorType===`totp`?{issuer:e.issuer}:{}),{data:a,error:o}=await J(this.fetch,`POST`,`${this.url}/factors`,{body:i,headers:this.headers,jwt:n?.session?.access_token});return o?this._returnResult({data:null,error:o}):(e.factorType===`totp`&&a.type===`totp`&&a?.totp?.qr_code&&(a.totp.qr_code=`data:image/svg+xml;utf-8,${a.totp.qr_code}`),this._returnResult({data:a,error:null}))})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _verify(e){let t=async()=>{try{return await this._useSession(async t=>{let{data:n,error:r}=t;if(r)return this._returnResult({data:null,error:r});let i=Object.assign({challenge_id:e.challengeId},`webauthn`in e?{webauthn:Object.assign(Object.assign({},e.webauthn),{credential_response:e.webauthn.type===`create`?Ni(e.webauthn.credential_response):Pi(e.webauthn.credential_response)})}:{code:e.code}),{data:a,error:o}=await J(this.fetch,`POST`,`${this.url}/factors/${e.factorId}/verify`,{body:i,headers:this.headers,jwt:n?.session?.access_token});return o?this._returnResult({data:null,error:o}):(await this._saveSession(Object.assign({expires_at:Math.round(Date.now()/1e3)+a.expires_in},a)),await this._notifyAllSubscribers(`MFA_CHALLENGE_VERIFIED`,a),this._returnResult({data:a,error:o}))})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}};return this.lock==null?t():this._acquireLock(this.lockAcquireTimeout,t)}async _challenge(e){let t=async()=>{try{return await this._useSession(async t=>{let{data:n,error:r}=t;if(r)return this._returnResult({data:null,error:r});let i=await J(this.fetch,`POST`,`${this.url}/factors/${e.factorId}/challenge`,{body:e,headers:this.headers,jwt:n?.session?.access_token});if(i.error)return i;let{data:a}=i;if(a.type!==`webauthn`)return{data:a,error:null};switch(a.webauthn.type){case`create`:return{data:Object.assign(Object.assign({},a),{webauthn:Object.assign(Object.assign({},a.webauthn),{credential_options:Object.assign(Object.assign({},a.webauthn.credential_options),{publicKey:ji(a.webauthn.credential_options.publicKey)})})}),error:null};case`request`:return{data:Object.assign(Object.assign({},a),{webauthn:Object.assign(Object.assign({},a.webauthn),{credential_options:Object.assign(Object.assign({},a.webauthn.credential_options),{publicKey:Mi(a.webauthn.credential_options.publicKey)})})}),error:null}}})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}};return this.lock==null?t():this._acquireLock(this.lockAcquireTimeout,t)}async _challengeAndVerify(e){let{data:t,error:n}=await this._challenge({factorId:e.factorId});return n?this._returnResult({data:null,error:n}):await this._verify({factorId:e.factorId,challengeId:t.id,code:e.code})}async _listFactors(){let{data:{user:e},error:t}=await this.getUser();if(t)return{data:null,error:t};let n={all:[],phone:[],totp:[],webauthn:[],recovery_code:[]};for(let t of e?.factors??[])n.all.push(t),t.status===`verified`&&t.factor_type in n&&Array.isArray(n[t.factor_type])&&n[t.factor_type].push(t);return{data:n,error:null}}async _getAuthenticatorAssuranceLevel(e){if(e)try{let{payload:t}=jr(e),n=null;t.aal&&(n=t.aal);let r=n,{data:{user:i},error:a}=await this.getUser(e);if(a)return this._returnResult({data:null,error:a});((i?.factors)?.filter(e=>e.status===`verified`)??[]).length>0&&(r=`aal2`);let o=t.amr||[];return{data:{currentLevel:n,nextLevel:r,currentAuthenticationMethods:o},error:null}}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}let{data:{session:t},error:n}=await this.getSession();if(n)return this._returnResult({data:null,error:n});if(!t)return{data:{currentLevel:null,nextLevel:null,currentAuthenticationMethods:[]},error:null};let{payload:r}=jr(t.access_token),i=null;r.aal&&(i=r.aal);let a=i;(t.user.factors?.filter(e=>e.status===`verified`)??[]).length>0&&(a=`aal2`);let o=r.amr||[];return{data:{currentLevel:i,nextLevel:a,currentAuthenticationMethods:o},error:null}}async _getRecoveryCodesStatus(){ei(this.experimental);try{return await this._useSession(async e=>{let{data:t,error:n}=e;if(n)return this._returnResult({data:null,error:n});let{data:r,error:i}=await J(this.fetch,`GET`,`${this.url}/factors/recovery-codes`,{headers:this.headers,jwt:t?.session?.access_token});return i?this._returnResult({data:null,error:i}):this._returnResult({data:r,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _generateRecoveryCodes(e){ei(this.experimental);try{return await this._useSession(async t=>{let{data:n,error:r}=t;if(r)return this._returnResult({data:null,error:r});let{data:i,error:a}=await J(this.fetch,`POST`,`${this.url}/factors/recovery-codes`,{body:e?.friendlyName?{friendly_name:e.friendlyName}:void 0,headers:this.headers,jwt:n?.session?.access_token});return a?this._returnResult({data:null,error:a}):this._returnResult({data:i,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _verifyRecoveryCode(e){ei(this.experimental);let t=async()=>{try{return await this._useSession(async t=>{let{data:n,error:r}=t;if(r)return this._returnResult({data:null,error:r});let{data:i,error:a}=await J(this.fetch,`POST`,`${this.url}/factors/recovery-codes/verify`,{body:{code:e.code},headers:this.headers,jwt:n?.session?.access_token});if(a)return this._returnResult({data:null,error:a});let o=Object.assign({expires_at:wr(i.expires_in)},i);return await this._saveSession(o),await this._notifyAllSubscribers(`MFA_CHALLENGE_VERIFIED`,o),this._returnResult({data:i,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}};return this.lock==null?t():this._acquireLock(this.lockAcquireTimeout,t)}async _regenerateRecoveryCodes(){ei(this.experimental);try{return await this._useSession(async e=>{let{data:t,error:n}=e;if(n)return this._returnResult({data:null,error:n});let{data:r,error:i}=await J(this.fetch,`POST`,`${this.url}/factors/recovery-codes/regenerate`,{headers:this.headers,jwt:t?.session?.access_token});return i?this._returnResult({data:null,error:i}):this._returnResult({data:r,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _unenrollRecoveryCodes(){ei(this.experimental);try{return await this._useSession(async e=>{let{data:t,error:n}=e;if(n)return this._returnResult({data:null,error:n});let{data:r,error:i}=await J(this.fetch,`DELETE`,`${this.url}/factors/recovery-codes`,{headers:this.headers,jwt:t?.session?.access_token});return i?this._returnResult({data:null,error:i}):this._returnResult({data:r,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _getAuthorizationDetails(e){try{return await this._useSession(async t=>{let{data:{session:n},error:r}=t;return r?this._returnResult({data:null,error:r}):n?await J(this.fetch,`GET`,`${this.url}/oauth/authorizations/${e}`,{headers:this.headers,jwt:n.access_token,xform:e=>({data:e,error:null})}):this._returnResult({data:null,error:new L})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _approveAuthorization(e,t){try{return await this._useSession(async n=>{let{data:{session:r},error:i}=n;if(i)return this._returnResult({data:null,error:i});if(!r)return this._returnResult({data:null,error:new L});let a=await J(this.fetch,`POST`,`${this.url}/oauth/authorizations/${e}/consent`,{headers:this.headers,jwt:r.access_token,body:{action:`approve`},xform:e=>({data:e,error:null})});return a.data&&a.data.redirect_url&&B()&&!t?.skipBrowserRedirect&&window.location.assign(a.data.redirect_url),a})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _denyAuthorization(e,t){try{return await this._useSession(async n=>{let{data:{session:r},error:i}=n;if(i)return this._returnResult({data:null,error:i});if(!r)return this._returnResult({data:null,error:new L});let a=await J(this.fetch,`POST`,`${this.url}/oauth/authorizations/${e}/consent`,{headers:this.headers,jwt:r.access_token,body:{action:`deny`},xform:e=>({data:e,error:null})});return a.data&&a.data.redirect_url&&B()&&!t?.skipBrowserRedirect&&window.location.assign(a.data.redirect_url),a})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _listOAuthGrants(){try{return await this._useSession(async e=>{let{data:{session:t},error:n}=e;return n?this._returnResult({data:null,error:n}):t?await J(this.fetch,`GET`,`${this.url}/user/oauth/grants`,{headers:this.headers,jwt:t.access_token,xform:e=>({data:e,error:null})}):this._returnResult({data:null,error:new L})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _revokeOAuthGrant(e){try{return await this._useSession(async t=>{let{data:{session:n},error:r}=t;return r?this._returnResult({data:null,error:r}):n?(await J(this.fetch,`DELETE`,`${this.url}/user/oauth/grants`,{headers:this.headers,jwt:n.access_token,query:{client_id:e.clientId},noResolveJson:!0}),{data:{},error:null}):this._returnResult({data:null,error:new L})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async fetchJwk(e,t={keys:[]}){let n=t.keys.find(t=>t.kid===e);if(n)return n;let r=Date.now();if(n=this.jwks.keys.find(t=>t.kid===e),n&&this.jwks_cached_at+6e5>r)return n;let{data:i,error:a}=await J(this.fetch,`GET`,`${this.url}/.well-known/jwks.json`,{headers:this.headers});if(a)throw a;return!i.keys||i.keys.length===0||(this.jwks=i,this.jwks_cached_at=r,n=i.keys.find(t=>t.kid===e),!n)?null:n}async getClaims(e,t={}){try{let n=e;if(!n){let{data:e,error:t}=await this.getSession();if(t||!e.session)return this._returnResult({data:null,error:t});n=e.session.access_token}let{header:r,payload:i,signature:a,raw:{header:o,payload:s}}=jr(n);if(!t?.allowExpired)try{Zr(i.exp)}catch(e){throw new fr(e instanceof Error?e.message:`JWT validation failed`)}let c=!r.alg||r.alg.startsWith(`HS`)||!r.kid||!(`crypto`in globalThis&&`subtle`in globalThis.crypto)?null:await this.fetchJwk(r.kid,t?.keys?{keys:t.keys}:t?.jwks);if(!c){let{error:e}=await this.getUser(n);if(e)throw e;return{data:{claims:i,header:r,signature:a},error:null}}let l=Qr(r.alg),u=await crypto.subtle.importKey(`jwk`,c,l,!0,[`verify`]);if(!await crypto.subtle.verify(l,u,a,Cr(`${o}.${s}`)))throw new fr(`Invalid JWT signature`);return{data:{claims:i,header:r,signature:a},error:null}}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async signInWithPasskey(e){try{if(!Ii())return this._returnResult({data:null,error:new F(`Browser does not support WebAuthn`,null)});let{data:t,error:n}=await this._startPasskeyAuthentication({options:{captchaToken:e?.options?.captchaToken}});if(n||!t)return this._returnResult({data:null,error:n});let{data:r,error:i}=await Ri({publicKey:Mi(t.options),signal:e?.options?.signal??Ai.createNewAbortSignal(),mediation:e?.options?.mediation});if(i||!r)return this._returnResult({data:null,error:i??new F(`WebAuthn ceremony failed`,null)});let a=Pi(r);return this._verifyPasskeyAuthentication({challengeId:t.challenge_id,credential:a})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async registerPasskey(e){try{if(!Ii())return this._returnResult({data:null,error:new F(`Browser does not support WebAuthn`,null)});let{data:t,error:n}=await this._startPasskeyRegistration();if(n||!t)return this._returnResult({data:null,error:n});let{data:r,error:i}=await Li({publicKey:ji(t.options),signal:e?.options?.signal??Ai.createNewAbortSignal()});if(i||!r)return this._returnResult({data:null,error:i??new F(`WebAuthn ceremony failed`,null)});let a=Ni(r);return this._verifyPasskeyRegistration({challengeId:t.challenge_id,credential:a})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _startPasskeyRegistration(){try{return await this._useSession(async e=>{let{data:{session:t},error:n}=e;if(n)return this._returnResult({data:null,error:n});if(!t)return this._returnResult({data:null,error:new L});let{data:r,error:i}=await J(this.fetch,`POST`,`${this.url}/passkeys/registration/options`,{headers:this.headers,jwt:t.access_token,body:{}});return i?this._returnResult({data:null,error:i}):this._returnResult({data:r,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _verifyPasskeyRegistration(e){try{return await this._useSession(async t=>{let{data:{session:n},error:r}=t;if(r)return this._returnResult({data:null,error:r});if(!n)return this._returnResult({data:null,error:new L});let{data:i,error:a}=await J(this.fetch,`POST`,`${this.url}/passkeys/registration/verify`,{headers:this.headers,jwt:n.access_token,body:{challenge_id:e.challengeId,credential:e.credential}});return a?this._returnResult({data:null,error:a}):this._returnResult({data:i,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _startPasskeyAuthentication(e){try{let{data:t,error:n}=await J(this.fetch,`POST`,`${this.url}/passkeys/authentication/options`,{headers:this.headers,body:{gotrue_meta_security:{captcha_token:e?.options?.captchaToken}}});return n?this._returnResult({data:null,error:n}):this._returnResult({data:t,error:null})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _verifyPasskeyAuthentication(e){try{let{data:t,error:n}=await J(this.fetch,`POST`,`${this.url}/passkeys/authentication/verify`,{headers:this.headers,body:{challenge_id:e.challengeId,credential:e.credential},xform:Y});return n?this._returnResult({data:null,error:n}):(t.session&&(await this._saveSession(t.session),await this._notifyAllSubscribers(`SIGNED_IN`,t.session)),this._returnResult({data:t,error:null}))}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _listPasskeys(){try{return await this._useSession(async e=>{let{data:{session:t},error:n}=e;if(n)return this._returnResult({data:null,error:n});if(!t)return this._returnResult({data:null,error:new L});let{data:r,error:i}=await J(this.fetch,`GET`,`${this.url}/passkeys`,{headers:this.headers,jwt:t.access_token,xform:e=>({data:e,error:null})});return i?this._returnResult({data:null,error:i}):this._returnResult({data:r,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _updatePasskey(e){try{return await this._useSession(async t=>{let{data:{session:n},error:r}=t;if(r)return this._returnResult({data:null,error:r});if(!n)return this._returnResult({data:null,error:new L});let{data:i,error:a}=await J(this.fetch,`PATCH`,`${this.url}/passkeys/${e.passkeyId}`,{headers:this.headers,jwt:n.access_token,body:{friendly_name:e.friendlyName}});return a?this._returnResult({data:null,error:a}):this._returnResult({data:i,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _deletePasskey(e){try{return await this._useSession(async t=>{let{data:{session:n},error:r}=t;if(r)return this._returnResult({data:null,error:r});if(!n)return this._returnResult({data:null,error:new L});let{error:i}=await J(this.fetch,`DELETE`,`${this.url}/passkeys/${e.passkeyId}`,{headers:this.headers,jwt:n.access_token,noResolveJson:!0});return i?this._returnResult({data:null,error:i}):this._returnResult({data:null,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}};qi.nextInstanceID={};var Ji=qi,Yi=mi,Xi=Ji,Zi=class extends Xi{constructor(e){super(e)}},Qi=class{constructor(e,t,n){this.supabaseUrl=e,this.supabaseKey=t;let r=Un(e);if(!t)throw Error(`supabaseKey is required.`);Nn(t),Vn(n),this.realtimeUrl=new URL(`realtime/v1`,r),this.realtimeUrl.protocol=this.realtimeUrl.protocol.replace(`http`,`ws`),this.authUrl=new URL(`auth/v1`,r),this.storageUrl=new URL(`storage/v1`,r),this.functionsUrl=new URL(`functions/v1`,r);let i=`sb-${r.hostname.split(`.`)[0]}-auth-token`,a={db:yn,realtime:xn,auth:{...bn,storageKey:i},global:vn,tracePropagation:Sn},o=Hn(n??{},a);this.settings=o,this.storageKey=o.auth.storageKey??``,this.headers=o.global.headers??{},o.accessToken?(this.accessToken=o.accessToken,this.auth=new Proxy({},{get:(e,t)=>{throw Error(`@supabase/supabase-js: Supabase Client is configured with the accessToken option, accessing supabase.auth.${String(t)} is not possible`)}})):this.auth=this._initSupabaseAuthClient(o.auth??{},this.headers,o.global.fetch),this.fetch=Pn(t,e,this._getSessionToken.bind(this),o.global.fetch,o.tracePropagation),this.functionsFetch=Pn(t,e,this._getSessionToken.bind(this),o.global.fetch,o.tracePropagation,{omitApiKeyAsBearer:!0}),this.realtime=this._initRealtimeClient({headers:this.headers,accessToken:this._getAccessToken.bind(this),fetch:this.fetch,...o.realtime}),this.accessToken&&Promise.resolve(this.accessToken()).then(e=>this.realtime.setAuth(e)).catch(e=>console.warn(`Failed to set initial Realtime auth token:`,e)),this.rest=new fe(new URL(`rest/v1`,r).href,{headers:this.headers,schema:o.db.schema,fetch:this.fetch,timeout:o.db.timeout,urlLengthLimit:o.db.urlLengthLimit,retry:o.db.retry}),this.storage=new mn(this.storageUrl.href,this.headers,this.fetch,n?.storage),o.accessToken||this._listenForAuthEvents()}get functions(){return new l(this.functionsUrl.href,{headers:this.headers,customFetch:this.functionsFetch})}from(e){return this.rest.from(e)}schema(e){return this.rest.schema(e)}getOpenApiSpec(){return this.rest.getOpenApiSpec()}rpc(e,t={},n={head:!1,get:!1,count:void 0}){return this.rest.rpc(e,t,n)}channel(e,t={config:{}}){return this.realtime.channel(e,t)}getChannels(){return this.realtime.getChannels()}removeChannel(e){return this.realtime.removeChannel(e)}removeAllChannels(){return this.realtime.removeAllChannels()}async _getSessionToken(){if(this.accessToken)return await this.accessToken();let{data:e}=await this.auth.getSession();return e.session?.access_token??null}async _getAccessToken(){return await this._getSessionToken()??this.supabaseKey}_initSupabaseAuthClient({autoRefreshToken:e,persistSession:t,detectSessionInUrl:n,storage:r,userStorage:i,storageKey:a,flowType:o,lock:s,debug:c,throwOnError:l,experimental:u,lockAcquireTimeout:d,skipAutoInitialize:f},p,m){let h={Authorization:`Bearer ${this.supabaseKey}`,apikey:`${this.supabaseKey}`};return new Zi({url:this.authUrl.href,headers:{...h,...p},storageKey:a,autoRefreshToken:e,persistSession:t,detectSessionInUrl:n,storage:r,userStorage:i,flowType:o,lock:s,debug:c,throwOnError:l,experimental:u,fetch:m,lockAcquireTimeout:d,skipAutoInitialize:f,hasCustomAuthorizationHeader:Object.keys(this.headers).some(e=>e.toLowerCase()===`authorization`)})}_initRealtimeClient(e){return new _t(this.realtimeUrl.href,{...e,params:{apikey:this.supabaseKey,...e?.params}})}_listenForAuthEvents(){return this.auth.onAuthStateChange((e,t)=>{this._handleTokenChanged(e,`CLIENT`,t?.access_token)})}_handleTokenChanged(e,t,n){(e===`TOKEN_REFRESHED`||e===`SIGNED_IN`||e===`INITIAL_SESSION`)&&this.changedAccessToken!==n?(this.changedAccessToken=n,this.realtime.setAuth(n)):e===`SIGNED_OUT`&&(this.realtime.setAuth(),t==`STORAGE`&&this.auth.signOut(),this.changedAccessToken=void 0)}};let $i=(e,t,n)=>new Qi(e,t,n);function ea(){if(typeof window<`u`||globalThis.Deno!==void 0)return!1;let e=globalThis.process;if(!e)return!1;let t=e.version;if(t==null)return!1;let n=t.match(/^v(\d+)\./);return n?parseInt(n[1],10)<=20:!1}return ea()&&console.warn(`⚠️  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 22 or later. For more information, visit: https://github.com/orgs/supabase/discussions/45715`),e.AuthAdminApi=Yi,e.AuthApiError=Zn,e.AuthClient=Xi,e.AuthError=Xn,e.AuthImplicitGrantRedirectError=tr,e.AuthInvalidCredentialsError=er,e.AuthInvalidJwtError=fr,e.AuthInvalidTokenResponseError=R,e.AuthPKCECodeVerifierMissingError=ir,e.AuthPKCEGrantCodeExchangeError=rr,e.AuthRefreshDiscardedError=cr,e.AuthRetryableFetchError=or,e.AuthSessionMissingError=L,e.AuthUnknownError=F,e.AuthWeakPasswordError=ur,e.CustomAuthError=I,Object.defineProperty(e,`FunctionRegion`,{enumerable:!0,get:function(){return c}}),e.FunctionsError=i,e.FunctionsFetchError=a,e.FunctionsHttpError=s,e.FunctionsRelayError=o,e.GoTrueAdminApi=mi,e.GoTrueClient=Ji,e.NavigatorLockAcquireTimeoutError=_i,e.PostgrestError=u,e.REALTIME_CHANNEL_STATES=ut,Object.defineProperty(e,`REALTIME_LISTEN_TYPES`,{enumerable:!0,get:function(){return T}}),Object.defineProperty(e,`REALTIME_POSTGRES_CHANGES_LISTEN_EVENT`,{enumerable:!0,get:function(){return lt}}),Object.defineProperty(e,`REALTIME_PRESENCE_LISTEN_EVENTS`,{enumerable:!0,get:function(){return Xe}}),Object.defineProperty(e,`REALTIME_SUBSCRIBE_STATES`,{enumerable:!0,get:function(){return E}}),e.RealtimeChannel=dt,e.RealtimeClient=_t,e.RealtimePostgresFilterBuilder=st,e.RealtimePresence=Ze,e.SIGN_OUT_SCOPES=pi,e.StorageApiError=Pt,e.SupabaseClient=Qi,e.WebSocketFactory=pe,e.createClient=$i,e.isAuthApiError=Qn,e.isAuthError=P,e.isAuthImplicitGrantRedirectError=nr,e.isAuthPKCECodeVerifierMissingError=ar,e.isAuthRefreshDiscardedError=lr,e.isAuthRetryableFetchError=sr,e.isAuthSessionMissingError=$n,e.isAuthWeakPasswordError=dr,e.lockInternals=Z,e.navigatorLock=yi,e.postgresChangesFilter=ct,e.processLock=xi,e})({});</script>
 <script>
-const GAME_VERSION = 1;
+const GAME_VERSION = 2;
 'use strict';
 /* =====================================================================
    PIXEL OCTAGON — core utilities, audio, save data, game data
@@ -1924,7 +1938,8 @@ const City = {
   group: null, built: false, obstacles: [], fadeables: [], cars: [], lampLights: [], winMats: [], lampMats: [], time: 'night', signs: [],
   clamp(p) {
     p.x = clamp(p.x, -CITY_BOUNDS.x, CITY_BOUNDS.x); p.y = clamp(p.y, -CITY_BOUNDS.z, CITY_BOUNDS.z);
-    for (const o of this.obstacles) { // push fighters out of parked cars and props
+    for (const o of this.obstacles.concat(this.themeObs || [])) { // push fighters out of parked cars and props
+      if (o.sec && !(this.secs[o.sec] && this.secs[o.sec].visible)) continue;
       const r = 0.36, dx = p.x - o.x, dz = p.y - o.z;
       const px = o.hx + r - Math.abs(dx), pz = o.hz + r - Math.abs(dz);
       if (px > 0 && pz > 0) { if (px < pz) p.x += Math.sign(dx || 1) * px; else p.y += Math.sign(dz || 1) * pz; }
@@ -1934,8 +1949,11 @@ const City = {
   build(scene) {
     if (this.built) return;
     this.built = true;
-    const g = (this.group = new THREE.Group()); g.visible = false; scene.add(g);
+    const root = (this.group = new THREE.Group()); root.visible = false; scene.add(root);
+    let g = root; this.secs = {};
+    const sec = (n) => { const x = new THREE.Group(); x.name = n; root.add(x); this.secs[n] = x; return x; };
     const lam = (c, extra) => new THREE.MeshLambertMaterial({ color: c, ...(extra || {}) });
+    g = sec('road');
     // --- ground: asphalt with lane paint
     const roadTex = canvasTex(1024, 256, (x, w, h) => {
       x.fillStyle = '#2b2e36'; x.fillRect(0, 0, w, h);
@@ -1954,6 +1972,7 @@ const City = {
       const cw = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 8), lam('#fff', { map: zebra })); cw.rotation.x = -Math.PI / 2; cw.position.set(sx * 10.4, 0.003, 0); cw.receiveShadow = true; g.add(cw);
       const cross = new THREE.Mesh(new THREE.PlaneGeometry(8, 80), lam('#2b2e36')); cross.rotation.x = -Math.PI / 2; cross.position.set(sx * 15.5, 0.002, 0); g.add(cross);
     }
+    g = sec('walk');
     // --- sidewalks with curbs
     const walkTex = canvasTex(256, 256, (x, w, h) => {
       x.fillStyle = '#8b8a86'; x.fillRect(0, 0, w, h);
@@ -1967,6 +1986,7 @@ const City = {
       const sw = new THREE.Mesh(new THREE.BoxGeometry(len, 0.14, 3.2), [lam('#77766f'), lam('#77766f'), lam('#fff', { map: tex }), lam('#77766f'), lam('#6c6b65'), lam('#6c6b65')]);
       sw.position.set(cx, 0.07, sz * 5.6); sw.receiveShadow = true; g.add(sw);
     }
+    g = sec('back');
     // --- buildings behind the far sidewalk
     const facade = (hue, rows, cols, shop) => {
       const W = 128, H = 256;
@@ -2014,12 +2034,14 @@ const City = {
       }
       bx += w + rand(0.1, 0.6);
     }
+    g = sec('sky');
     // distant skyline all around
     const skyM = new THREE.MeshLambertMaterial({ color: '#141826', emissive: new THREE.Color('#0d1020') });
     for (let i = 0; i < 46; i++) {
       const a = (i / 46) * TAU, r = rand(48, 70), w = rand(4, 10), h = rand(12, 40);
       const m = new THREE.Mesh(boxGeo(w, h, w), skyM); m.position.set(Math.cos(a) * r, h / 2, Math.sin(a) * r); g.add(m);
     }
+    g = sec('front');
     // camera side: low shops further back, park strip with a low fence
     for (let x0 = -30; x0 < 30; x0 += rand(6, 9)) {
       const w = rand(5, 7.5), h = rand(4, 7);
@@ -2032,6 +2054,7 @@ const City = {
     const grass = new THREE.Mesh(new THREE.PlaneGeometry(60, 8), lam('#2f4a2c')); grass.rotation.x = -Math.PI / 2; grass.position.set(0, 0.015, 11.2); grass.receiveShadow = true; g.add(grass);
     for (let x0 = -24; x0 <= 24; x0 += 1.6) { const p = vox(g, 0.06, 0.8, 0.06, '#3b404c', x0, 0.4, 7.35, { outline: false, shadow: false }); this.fadeables.push({ o: p, x: x0, z: 7.35 }); }
     const rail = new THREE.Mesh(boxGeo(48, 0.06, 0.06), toon('#3b404c')); rail.position.set(0, 0.78, 7.35); g.add(rail);
+    g = sec('lamps');
     // --- street lamps (a few real lights near the fight)
     const lampMat = new THREE.MeshBasicMaterial({ color: '#ffe3a1' }); this.lampMats.push(lampMat);
     const glowMat = new THREE.MeshBasicMaterial({ color: '#ffd27a', transparent: true, opacity: 0.06, depthWrite: false, side: THREE.DoubleSide }); this.lampMats.push(glowMat);
@@ -2045,6 +2068,7 @@ const City = {
       if (sz > 0) this.fadeables.push({ o: pole, x: x0, z: z0 });
       if (Math.abs(x0) <= 9) { const L = new THREE.PointLight(0xffc97a, 0.9, 11, 1.6); L.position.set(x0, 4.2, z0 - sz * 1.0); g.add(L); this.lampLights.push(L); }
     }
+    g = sec('trees');
     // --- trees in planters
     const leafCols = ['#2f6b3a', '#3c7d43', '#285c33', '#4a8a4a'];
     for (const sz of [-1, 1]) for (let tx = -20; tx <= 20; tx += 6.5) {
@@ -2058,6 +2082,7 @@ const City = {
       if (sz > 0) this.fadeables.push({ o: tr, x: x0, z: z0 });
       this.obstacles.push({ x: x0, z: z0, hx: 0.45, hz: 0.45 }); // outside the bounds anyway, kept for completeness
     }
+    g = sec('props');
     // --- props
     const hyd = new THREE.Group(); hyd.position.set(-3.2, 0.14, -4.5); g.add(hyd);
     vox(hyd, 0.26, 0.55, 0.26, '#c0262e', 0, 0.28, 0); vox(hyd, 0.36, 0.1, 0.14, '#c0262e', 0, 0.4, 0); vox(hyd, 0.2, 0.12, 0.2, '#e0e0e0', 0, 0.62, 0);
@@ -2072,6 +2097,7 @@ const City = {
     const gm = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.9), new THREE.MeshLambertMaterial({ map: graf, transparent: true })); gm.position.set(-9, 1.4, -7.27); g.add(gm);
     // manholes
     for (const mx of [-4.5, 3.8]) { const mh = new THREE.Mesh(new THREE.CircleGeometry(0.45, 12), lam('#1b1d22')); mh.rotation.x = -Math.PI / 2; mh.position.set(mx, 0.004, mx > 0 ? 1.2 : -1.6); g.add(mh); }
+    g = sec('barriers');
     // --- road closure at both ends: sawhorses and cones
     const stripe = canvasTex(64, 16, (x, w, h) => { for (let i = -2; i < 8; i++) { x.fillStyle = i % 2 ? '#f2f2f2' : '#ff7a1a'; x.beginPath(); x.moveTo(i * 10, 0); x.lineTo(i * 10 + 10, 0); x.lineTo(i * 10 + 18, h); x.lineTo(i * 10 + 8, h); x.fill(); } }, true);
     for (const sx of [-1, 1]) {
@@ -2084,13 +2110,15 @@ const City = {
       }
       for (let k = -3; k <= 3; k += 1.5) { const cn = new THREE.Group(); cn.position.set(sx * 8.95, 0, k + 0.7); g.add(cn); vox(cn, 0.32, 0.05, 0.32, '#202020', 0, 0.025, 0, { outline: false }); const c2 = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.5, 6), toon('#ff6a1a')); c2.position.y = 0.3; cn.add(c2); }
     }
+    g = sec('parked');
     // --- parked cars along the far curb (obstacles) and one near the park side
     const parked = [[-6.2, -3.55, 0], [4.6, -3.55, 0], [-1.2, 3.62, Math.PI]];
     for (const [x0, z0, ry] of parked) {
       const car = this.makeCar(pick(['#b8322e', '#2d5fa8', '#e2e2e2', '#2b2b2b', '#c9a227', '#4a7a52'])); car.position.set(x0, 0, z0); car.rotation.y = ry; g.add(car);
-      this.obstacles.push({ x: x0, z: z0, hx: 1.05, hz: 0.5 });
+      this.obstacles.push({ x: x0, z: z0, hx: 1.05, hz: 0.5, sec: 'parked' });
       if (z0 > 0) this.fadeables.push({ o: car, x: x0, z: z0 });
     }
+    g = sec('traffic');
     // --- moving traffic on the cross streets
     for (let i = 0; i < 6; i++) {
       const car = this.makeCar(pick(['#b8322e', '#2d5fa8', '#e2e2e2', '#2b2b2b', '#c9a227', '#4a7a52', '#e86a1c', '#7a3fb0']), true);
@@ -2098,6 +2126,7 @@ const City = {
       const c = { o: car, x: sx * 15.5 + lane * 1.8, z: rand(-40, 40), v: lane * rand(5, 8) };
       car.rotation.y = lane > 0 ? 0 : Math.PI; g.add(car); this.cars.push(c);
     }
+    g = root;
     // --- lighting for the street
     this.hemi = new THREE.HemisphereLight(0x9fb0ff, 0x1a1420, 0.42); g.add(this.hemi);
     const moon = (this.moon = new THREE.DirectionalLight(0xaec4ff, 0.42));
@@ -2136,6 +2165,8 @@ const City = {
   },
   update(dt, focus) {
     if (!this.built || !this.group.visible) return;
+    this.t = (this.t || 0) + dt;
+    for (const a of this.anims || []) a(dt, this.t);
     for (const c of this.cars) {
       c.z += c.v * dt; if (c.z > 45) c.z = -45; if (c.z < -45) c.z = 45;
       c.o.position.set(c.x, 0, c.z);
@@ -2149,11 +2180,339 @@ const City = {
     if (!this.built) return;
     for (const f of this.fadeables) {
       const t = (f.z - look.z) / Math.max(0.01, cam.z - look.z);
-      const hide = t > 0.05 && t < 1.3 && Math.abs(f.x - lerp(look.x, cam.x, clamp(t, 0, 1))) < 2.2 + t * 4; // the view widens toward the camera
+      const hide = t > 0.05 && t < 1.3 && (f.wide || Math.abs(f.x - lerp(look.x, cam.x, clamp(t, 0, 1))) < 2.2 + t * 4); // the view widens toward the camera
       f.o.visible = !hide;
     }
   },
 };
+/* =====================================================================
+   DISTRICTS — every Turf Wars block has its own look around the same
+   fight area: docks, a park, Chinatown, the neon strip, Little Italy,
+   the river, downtown towers, City Hall, the railyard, the projects.
+   ===================================================================== */
+const DISTRICT_THEMES = {
+  street: { hide: [] },
+  docks: { hide: ['road', 'walk', 'back', 'props', 'trees', 'parked', 'traffic', 'barriers', 'front'] },
+  park: { hide: ['road', 'walk', 'back', 'props', 'parked', 'traffic', 'barriers', 'trees', 'front'] },
+  chinatown: { hide: [] },
+  neon: { hide: [], time: 'night' },
+  italy: { hide: ['road'] },
+  river: { hide: ['back', 'parked'] },
+  towers: { hide: ['back'] },
+  cityhall: { hide: ['back', 'parked'] },
+  rail: { hide: ['road', 'walk', 'back', 'props', 'trees', 'parked', 'traffic', 'barriers'] },
+  projects: { hide: ['back'] },
+};
+const DLam = (c, extra) => new THREE.MeshLambertMaterial({ color: c, ...(extra || {}) });
+const DGlow = (c) => new THREE.MeshBasicMaterial({ color: c });
+function dPlane(g, w, d, mat, x, y, z) { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), mat); m.rotation.x = -Math.PI / 2; m.position.set(x, y, z); m.receiveShadow = true; g.add(m); return m; }
+function dTex(w, h, draw, rx = 1, ry = 1) { const t = canvasTex(w, h, draw, true); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); return t; }
+function dNoise(x, w, h, n, a) { for (let i = 0; i < n; i++) { x.fillStyle = `rgba(${Math.random() < 0.5 ? '0,0,0' : '255,255,255'},${Math.random() * a})`; x.fillRect(Math.random() * w, Math.random() * h, 2, 2); } }
+function dTree(g, x, z, s = 1, col) {
+  const t = new THREE.Group(); t.position.set(x, 0, z); g.add(t);
+  vox(t, 0.22 * s, 2.2 * s, 0.22 * s, '#5a3e2b', 0, 1.1 * s, 0);
+  const lc = col || pick(['#2f6b3a', '#3c7d43', '#285c33', '#4a8a4a']);
+  for (let k = 0; k < 6; k++) vox(t, rand(0.8, 1.3) * s, rand(0.7, 1.0) * s, rand(0.8, 1.3) * s, shade(lc, rand(0.85, 1.15)), rand(-0.45, 0.45) * s, (2.3 + rand(0, 0.9)) * s, rand(-0.45, 0.45) * s);
+  return t;
+}
+function dSign(text, col, w = 256, h = 64, bg = '#07080c', font = 40) {
+  return canvasTex(w, h, (x, W, H) => { x.fillStyle = bg; x.fillRect(0, 0, W, H); x.fillStyle = col; x.shadowColor = col; x.shadowBlur = 12; x.font = `bold ${font}px Impact, "Arial Black", sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(text, W / 2, H / 2 + 2); }, true);
+}
+function dFence(g, x0, x1, z, h = 2.2) { // chain-link
+  const tex = dTex(64, 64, (x, w, hh) => { x.clearRect(0, 0, w, hh); x.strokeStyle = '#8a8f99'; x.lineWidth = 3; x.beginPath(); x.moveTo(0, hh / 2); x.lineTo(w / 2, 0); x.lineTo(w, hh / 2); x.lineTo(w / 2, hh); x.closePath(); x.stroke(); }, (x1 - x0) / 0.25, h / 0.25);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, h), new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.3, side: THREE.DoubleSide, color: '#9aa0aa' }));
+  m.position.set((x0 + x1) / 2, h / 2, z); g.add(m);
+  for (let x = x0; x <= x1 + 0.01; x += 2.5) vox(g, 0.07, h + 0.1, 0.07, '#6c717c', x, (h + 0.1) / 2, z, { shadow: false });
+  vox(g, x1 - x0, 0.05, 0.05, '#6c717c', (x0 + x1) / 2, h, z, { outline: false, shadow: false });
+  return m;
+}
+function dWater(g, w, d, x, y, z, col = '#123a5a') {
+  const tex = dTex(128, 128, (c, W, H) => { c.fillStyle = col; c.fillRect(0, 0, W, H); for (let i = 0; i < 70; i++) { c.fillStyle = `rgba(160,210,255,${rand(0.05, 0.22)})`; c.fillRect(Math.random() * W, Math.random() * H, rand(6, 22), 2); } }, w / 6, d / 6);
+  const m = dPlane(g, w, d, new THREE.MeshLambertMaterial({ map: tex, emissive: new THREE.Color(shade(col, 0.45)) }), x, y, z);
+  City.anims.push((dt) => { tex.offset.x += dt * 0.02; tex.offset.y += dt * 0.01; });
+  return m;
+}
+function dCrate(g, x, z, y = 0, s = 0.8, c = '#8a6a43') { const b = vox(g, s, s, s, c, x, y + s / 2, z); vox(g, s * 1.01, s * 0.12, s * 1.01, shade(c, 0.7), x, y + s * 0.5, z, { outline: false, shadow: false }); return b; }
+function dEnds(g, make) { for (const sx of [-1, 1]) make(sx * 9.25); } // something closing off both ends of the fight area
+const DISTRICT_BUILD = {
+  docks(g, v) {
+    const planks = dTex(256, 256, (x, w, h) => { x.fillStyle = '#7a5a3c'; x.fillRect(0, 0, w, h); dNoise(x, w, h, 3000, 0.08); for (let y = 0; y < h; y += 32) { x.fillStyle = 'rgba(30,18,10,.55)'; x.fillRect(0, y, w, 3); for (let k = 0; k < 4; k++) { const px = (y * 7 + k * 71) % w; x.fillRect(px, y, 3, 32); } } }, 16, 5);
+    dPlane(g, 70, 18, DLam('#fff', { map: planks }), 0, 0.002, 0.5);
+    vox(g, 70, 0.4, 0.4, '#3a2a1e', 0, -0.1, -8.3, { shadow: false });
+    for (let x = -24; x <= 24; x += 4) vox(g, 0.35, 0.55, 0.35, '#2a2e38', x, 0.27, -8.0);
+    dWater(g, 220, 120, 0, -0.7, -68.5);
+    const cols = ['#b8322e', '#2d5fa8', '#2f7a4a', '#c9a227', '#e86a1c', '#5a5f6e'];
+    const ribs = dTex(64, 32, (x, w, h) => { x.fillStyle = '#fff'; x.fillRect(0, 0, w, h); for (let i = 0; i < w; i += 6) { x.fillStyle = 'rgba(0,0,0,.18)'; x.fillRect(i, 0, 2, h); } }, 1, 1);
+    for (let x = -22; x <= 22; x += 4.6) {
+      if (v === 'market' && Math.abs(x) < 12) continue;
+      const n = 1 + ((Math.random() * 2) | 0);
+      for (let k = 0; k < n; k++) { const c = new THREE.Mesh(boxGeo(4.2, 1.7, 1.8), new THREE.MeshLambertMaterial({ color: pick(cols), map: ribs })); c.position.set(x, 0.85 + k * 1.72, -5.9); c.castShadow = true; g.add(c); }
+    }
+    if (v === 'market') for (let x = -10; x <= 10; x += 4) { // fish stalls
+      vox(g, 2.8, 0.9, 1.1, '#6b5038', x, 0.45, -5.2);
+      vox(g, 2.6, 0.12, 0.9, '#cfe8ff', x, 0.95, -5.2, { outline: false });
+      for (let k = 0; k < 6; k++) vox(g, 0.32, 0.08, 0.14, pick(['#9fb7c9', '#c9d6df', '#e0a080']), x - 1 + k * 0.4, 1.05, -5.2 + rand(-0.2, 0.2), { outline: false, shadow: false });
+      const aw = new THREE.Mesh(boxGeo(3, 0.1, 1.5), DLam(pick(['#b8322e', '#2d5fa8', '#2f7a4a']))); aw.position.set(x, 2.3, -5.0); aw.rotation.x = 0.3; g.add(aw);
+      vox(g, 0.08, 2.2, 0.08, '#3a3f4c', x - 1.4, 1.1, -4.5); vox(g, 0.08, 2.2, 0.08, '#3a3f4c', x + 1.4, 1.1, -4.5);
+      const sm = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.5), DGlow('#fff')); sm.material = new THREE.MeshBasicMaterial({ map: dSign('FRESH FISH', '#4dd2ff') }); sm.position.set(x, 2.75, -4.55); g.add(sm);
+    }
+    // warehouses on the camera side
+    for (let x = -30; x < 30; x += 9) {
+      const w = 8.4, h = rand(5, 7);
+      const doorT = canvasTex(128, 96, (c, W, H) => { c.fillStyle = '#5a5f6e'; c.fillRect(0, 0, W, H); c.fillStyle = '#3a3f4c'; c.fillRect(30, 30, 68, 66); for (let y = 32; y < H; y += 6) { c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(30, y, 68, 2); } c.fillStyle = '#e8b52a'; c.font = 'bold 20px Impact'; c.textAlign = 'center'; c.fillText('BAY ' + (((x + 30) / 9) | 0 + 1), W / 2, 22); }, true);
+      const sm = DLam('#4a4f5c');
+      const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, 7), [sm, sm, DLam('#2a2e38'), sm, sm, DLam('#fff', { map: doorT })]); b.position.set(x + w / 2, h / 2, 14); g.add(b);
+    }
+    dEnds(g, (x) => { for (const z of [-2.8, -1.6, -0.4, 0.8, 2.0, 3.2]) { dCrate(g, x, z); if (Math.random() < 0.6) dCrate(g, x, z, 0.8, 0.7, '#7a5a3a'); } });
+    const boat = new THREE.Group(); boat.position.set(-8, -0.6, -12); g.add(boat);
+    vox(boat, 7, 1.2, 2.4, '#e9e6dc', 0, 0.4, 0); vox(boat, 7.1, 0.3, 2.45, '#b8322e', 0, -0.05, 0, { outline: false }); vox(boat, 2.4, 1.2, 1.8, '#d9d6cc', 1.2, 1.5, 0);
+    City.anims.push((dt, t) => { boat.position.y = -0.6 + Math.sin(t * 1.2) * 0.08; boat.rotation.z = Math.sin(t * 0.9) * 0.02; });
+    if (v === 'lighthouse') {
+      const lh = new THREE.Group(); lh.position.set(14, 0, -22); g.add(lh);
+      vox(lh, 4, 1.2, 4, '#5a5f6e', 0, 0.2, 0);
+      for (let i = 0; i < 8; i++) vox(lh, 2.2 - i * 0.08, 1.6, 2.2 - i * 0.08, i % 2 ? '#e9e6dc' : '#c0262e', 0, 1.6 + i * 1.6, 0);
+      vox(lh, 1.9, 1.3, 1.9, '#1b2433', 0, 14.6, 0); const lamp = vox(lh, 1.2, 0.9, 1.2, DGlow('#fff3c4'), 0, 14.6, 0, { outline: false });
+      vox(lh, 2.3, 0.3, 2.3, '#c0262e', 0, 15.4, 0);
+      const beam = new THREE.Mesh(new THREE.ConeGeometry(2.4, 26, 12, 1, true), new THREE.MeshBasicMaterial({ color: '#fff3c4', transparent: true, opacity: 0.12, depthWrite: false, side: THREE.DoubleSide }));
+      beam.rotation.z = Math.PI / 2; beam.position.x = 13; const pivot = new THREE.Group(); pivot.position.y = 14.6; pivot.add(beam); lh.add(pivot);
+      City.anims.push((dt) => { pivot.rotation.y += dt * 0.8; });
+      void lamp;
+    }
+    if (v === 'crane') {
+      const cr = new THREE.Group(); cr.position.set(-6, 0, -10); g.add(cr);
+      for (const sx of [-3, 3]) for (const sz of [-1.5, 1.5]) vox(cr, 0.5, 14, 0.5, '#e8b52a', sx, 7, sz);
+      vox(cr, 7, 0.8, 4, '#e8b52a', 0, 14.2, 0); vox(cr, 1.2, 0.8, 22, '#e8b52a', 0, 15, -4);
+      vox(cr, 1.6, 1.4, 1.6, '#3a3f4c', 0, 13.2, 3); const hook = vox(cr, 0.12, 6, 0.12, '#2a2e38', 0, 11.5, -10, { shadow: false });
+      City.anims.push((dt, t) => { hook.position.y = 11.5 + Math.sin(t * 0.4) * 1.5; });
+    }
+  },
+  park(g, v) {
+    const grassT = dTex(128, 128, (x, w, h) => { x.fillStyle = '#3f6e37'; x.fillRect(0, 0, w, h); for (let i = 0; i < 900; i++) { x.fillStyle = Math.random() < 0.5 ? 'rgba(20,50,20,.25)' : 'rgba(140,190,90,.2)'; x.fillRect(Math.random() * w, Math.random() * h, 2, 3); } }, 40, 24);
+    dPlane(g, 160, 100, DLam('#fff', { map: grassT }), 0, 0.001, 0);
+    const pathT = dTex(128, 128, (x, w, h) => { x.fillStyle = '#b39b74'; x.fillRect(0, 0, w, h); dNoise(x, w, h, 1600, 0.12); }, 20, 2);
+    dPlane(g, 70, 7.2, DLam('#fff', { map: pathT }), 0, 0.004, 0);
+    vox(g, 70, 0.08, 0.2, '#8d8a82', 0, 0.04, 3.65, { shadow: false }); vox(g, 70, 0.08, 0.2, '#8d8a82', 0, 0.04, -3.65, { shadow: false });
+    for (let k = 0; k < 46; k++) {
+      const z = Math.random() < 0.65 ? rand(-30, -6) : rand(6, 22), x = rand(-30, 30);
+      if (z > 0 && Math.abs(x) < 4 && z < 10) continue;
+      const t = dTree(g, x, z, rand(0.9, 1.4), v === 'hill' ? pick(['#4a8a4a', '#6b8a3a', '#2f6b3a']) : null);
+      if (z > 0) City.fadeables.push({ o: t, x, z, theme: true });
+    }
+    for (const sz of [-1, 1]) for (let x = -20; x <= 20; x += 5) { const h = new THREE.Group(); h.position.set(x + 2.5, 0, sz * 4.4); g.add(h); vox(h, 3.2, 0.7, 0.7, '#2f5e2c', 0, 0.35, 0); if (sz > 0) City.fadeables.push({ o: h, x: x + 2.5, z: 4.4, theme: true }); }
+    for (const x of [-6, 0, 6]) { const b = new THREE.Group(); b.position.set(x, 0, -4.3); g.add(b); vox(b, 1.8, 0.08, 0.5, '#7a5a3a', 0, 0.45, 0); vox(b, 1.8, 0.4, 0.08, '#7a5a3a', 0, 0.7, -0.22); vox(b, 0.08, 0.45, 0.45, '#2a2e38', -0.8, 0.22, 0); vox(b, 0.08, 0.45, 0.45, '#2a2e38', 0.8, 0.22, 0); }
+    if (v !== 'hill') { // pond with a fountain
+      const pond = new THREE.Mesh(new THREE.CircleGeometry(5, 24), new THREE.MeshLambertMaterial({ color: '#2a5f86', emissive: new THREE.Color('#0d2a44') })); pond.rotation.x = -Math.PI / 2; pond.position.set(0, 0.01, -11); g.add(pond);
+      const ring = new THREE.Mesh(new THREE.RingGeometry(5, 5.5, 24), DLam('#9a958a')); ring.rotation.x = -Math.PI / 2; ring.position.set(0, 0.03, -11); g.add(ring);
+      vox(g, 1.4, 0.8, 1.4, '#c9c4b6', 0, 0.4, -11); vox(g, 0.5, 1.6, 0.5, '#c9c4b6', 0, 1.2, -11); vox(g, 2.0, 0.2, 2.0, '#c9c4b6', 0, 2.0, -11);
+      const jet = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.5, 2.2, 8, 1, true), new THREE.MeshBasicMaterial({ color: '#cfe8ff', transparent: true, opacity: 0.45, depthWrite: false })); jet.position.set(0, 3.0, -11); g.add(jet);
+      City.anims.push((dt, t) => { jet.scale.y = 1 + Math.sin(t * 6) * 0.06; });
+      const st = new THREE.Group(); st.position.set(-13, 0, -6); g.add(st); vox(st, 1.4, 1.2, 1.4, '#8d8a82', 0, 0.6, 0); vox(st, 0.5, 1.6, 0.4, '#5f7a6a', 0, 2.0, 0); vox(st, 0.4, 0.4, 0.4, '#5f7a6a', 0, 3.0, 0);
+    } else { // hillside: hills with little houses
+      for (let k = 0; k < 6; k++) { const hx = -30 + k * 12, hz = rand(-28, -18), hw = rand(14, 20), hh = rand(3, 6); const hill = vox(g, hw, hh, 12, '#4f7d3c', hx, hh / 2 - 0.5, hz, { shadow: false }); hill.rotation.y = rand(-0.2, 0.2);
+        const house = new THREE.Group(); house.position.set(hx + rand(-3, 3), hh - 0.5, hz + 2); g.add(house); vox(house, 3, 2.2, 2.6, pick(['#e9e6dc', '#d9c9a3', '#b8d0e0']), 0, 1.1, 0); const roof = vox(house, 3.4, 0.4, 3, '#8a3a2a', 0, 2.4, 0); roof.rotation.z = 0.05; vox(house, 0.6, 0.6, 0.05, DGlow('#ffd98a'), 0.6, 1.2, 1.32, { outline: false }); }
+    }
+    dEnds(g, (x) => { vox(g, 0.3, 1.0, 7, '#2f5e2c', x, 0.5, 0); for (let z = -3.2; z <= 3.2; z += 0.8) vox(g, 0.06, 1.3, 0.06, '#1b1d22', x - Math.sign(x) * 0.3, 0.65, z, { shadow: false }); });
+  },
+  chinatown(g) {
+    for (const x of [-6, -2, 2, 6]) {
+      vox(g, 0.03, 0.03, 9.6, '#1b1b1f', x, 3.75, 0, { outline: false, shadow: false });
+      for (let k = -2; k <= 2; k++) {
+        const L = new THREE.Group(); L.position.set(x, 3.1 + Math.abs(k) * 0.12, k * 1.8); g.add(L);
+        vox(L, 0.42, 0.5, 0.42, DGlow('#ff3a3a'), 0, 0, 0); vox(L, 0.28, 0.07, 0.28, '#e8b52a', 0, 0.28, 0, { outline: false }); vox(L, 0.28, 0.07, 0.28, '#e8b52a', 0, -0.28, 0, { outline: false });
+        City.anims.push((dt, t) => { L.rotation.z = Math.sin(t * 1.5 + x + k) * 0.06; });
+      }
+    }
+    const red = new THREE.PointLight(0xff4a3a, 0.9, 12, 1.6); red.position.set(0, 3.6, 0); g.add(red);
+    const gate = new THREE.Group(); gate.position.set(-10.6, 0, 0); g.add(gate);
+    for (const z of [-3.9, 3.9]) { vox(gate, 0.6, 5.2, 0.6, '#b8222e', 0, 2.6, z); vox(gate, 0.9, 0.5, 0.9, '#3a3f4c', 0, 0.25, z); }
+    vox(gate, 0.7, 0.5, 9.2, '#b8222e', 0, 4.6, 0); vox(gate, 0.5, 0.35, 8.4, '#e8b52a', 0, 4.1, 0);
+    const roof = vox(gate, 1.8, 0.35, 10.4, '#1f6e4a', 0, 5.3, 0); void roof; vox(gate, 1.2, 0.3, 9.8, '#2a8a5a', 0, 5.6, 0);
+    for (const z of [-5.1, 5.1]) { const tip = vox(gate, 1.8, 0.25, 0.5, '#1f6e4a', 0, 5.5, z); tip.rotation.x = z > 0 ? -0.5 : 0.5; }
+    const plaque = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 0.7), new THREE.MeshBasicMaterial({ map: dSign('CHINATOWN', '#e8b52a', 256, 64, '#7a1018', 34) })); plaque.position.set(0.4, 4.6, 0); plaque.rotation.y = Math.PI / 2; gate.add(plaque);
+    const glyphs = ['福', '龍', '茶', '麵', '樂', '酒'];
+    for (let x = -24; x <= 24; x += 4.2) {
+      const tx = canvasTex(64, 192, (c, W, H) => { c.fillStyle = pick(['#a01828', '#c0262e', '#e8b52a']); c.fillRect(0, 0, W, H); c.fillStyle = '#1b1b1f'; c.font = 'bold 44px serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(pick(glyphs), W / 2, H * 0.3); c.fillText(pick(glyphs), W / 2, H * 0.7); }, true);
+      const b = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 2.4), new THREE.MeshBasicMaterial({ map: tx })); b.position.set(x, 4.6 + rand(0, 1.2), -7.2); g.add(b);
+    }
+    // a second, smaller gate over the far sidewalk, right behind the fight
+    const g2 = new THREE.Group(); g2.position.set(0, 0.14, -5.9); g.add(g2);
+    for (const x of [-2.4, 2.4]) vox(g2, 0.4, 3.6, 0.4, '#b8222e', x, 1.8, 0);
+    vox(g2, 5.6, 0.4, 0.5, '#b8222e', 0, 3.4, 0); vox(g2, 6.6, 0.3, 1.2, '#1f6e4a', 0, 3.85, 0); vox(g2, 5.8, 0.25, 0.9, '#2a8a5a', 0, 4.1, 0);
+    const pl2 = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.5), new THREE.MeshBasicMaterial({ map: dSign('中華街', '#e8b52a', 256, 56, '#7a1018', 40) })); pl2.position.set(0, 3.0, 0.26); g2.add(pl2);
+  },
+  neon(g, v) {
+    const words = v === 'arcade' ? ['ARCADE', 'GAMES', 'HI-SCORE', '1UP', 'PLAY', 'TOKENS'] : ['KARAOKE', 'BAR', 'HOTEL', 'LIVE', '24H', 'CLUB', 'RAMEN', 'TATTOO'];
+    const cols = ['#ff4dc4', '#4dd2ff', '#ffd23f', '#3dfc9a', '#c77dff', '#ff4d6d'];
+    for (let x = -24; x <= 24; x += 3.2) {
+      const c = pick(cols), w = pick(words);
+      const tx = canvasTex(64, 256, (cx, W, H) => { cx.fillStyle = '#07080c'; cx.fillRect(0, 0, W, H); cx.strokeStyle = c; cx.lineWidth = 4; cx.shadowColor = c; cx.shadowBlur = 10; cx.strokeRect(4, 4, W - 8, H - 8); cx.fillStyle = c; cx.font = 'bold 34px Impact, sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; const L = w.slice(0, 6); for (let i = 0; i < L.length; i++) cx.fillText(L[i], W / 2, 26 + i * (H - 40) / Math.max(1, L.length - 0.2)); }, true);
+      const s = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 3.6), new THREE.MeshBasicMaterial({ map: tx })); s.position.set(x, 5.5 + rand(0, 3), -7.0); g.add(s);
+      if (Math.random() < 0.4) City.anims.push((dt, t) => { s.visible = Math.sin(t * 9 + x) > -0.85; });
+    }
+    for (let x = -20; x <= 20; x += 8) { const tube = vox(g, 5, 0.08, 0.08, DGlow(pick(cols)), x, 3.3, -7.15, { outline: false, shadow: false }); void tube; }
+    const p1 = new THREE.PointLight(0xff4dc4, 1.3, 13, 1.5); p1.position.set(-5, 3, -4); g.add(p1);
+    const p2 = new THREE.PointLight(0x4dd2ff, 1.3, 13, 1.5); p2.position.set(5, 3, -4); g.add(p2);
+    const wet = dTex(256, 64, (x, w, h) => { x.clearRect(0, 0, w, h); for (let i = 0; i < 40; i++) { x.fillStyle = pick(['rgba(255,77,196,.18)', 'rgba(77,210,255,.18)', 'rgba(255,210,63,.12)']); x.fillRect(Math.random() * w, 0, rand(2, 6), h); } }, 6, 1);
+    const wm = dPlane(g, 60, 7.6, new THREE.MeshBasicMaterial({ map: wet, transparent: true, depthWrite: false }), 0, 0.006, 0); void wm;
+    if (v === 'arcade') {
+      const mq = new THREE.Mesh(new THREE.PlaneGeometry(9, 1.8), new THREE.MeshBasicMaterial({ map: dSign('★ ARCADE ★', '#ffd23f', 512, 96, '#1a0820', 70) })); mq.position.set(0, 4.6, -7.1); g.add(mq);
+      const bulbs = []; for (let i = 0; i < 18; i++) bulbs.push(vox(g, 0.14, 0.14, 0.05, DGlow('#ffd23f'), -4.4 + i * 0.52, 5.62, -7.08, { outline: false, shadow: false }));
+      City.anims.push((dt, t) => { bulbs.forEach((b, i) => { b.visible = ((i + Math.floor(t * 6)) % 3) !== 0; }); });
+    }
+  },
+  italy(g) {
+    const cob = dTex(256, 256, (x, w, h) => { x.fillStyle = '#5c5246'; x.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 16) for (let i = (y / 16) % 2 ? 8 : 0; i < w; i += 16) { x.fillStyle = `hsl(${rand(25, 40)},${rand(10, 22)}%,${rand(38, 55)}%)`; x.beginPath(); x.ellipse(i + 8, y + 8, 7, 6, 0, 0, TAU); x.fill(); } }, 20, 2);
+    dPlane(g, 80, 8, DLam('#fff', { map: cob }), 0, 0.003, 0);
+    for (const x of [-7.5, -2.5, 2.5, 7.5]) {
+      for (let k = 0; k < 9; k++) { const z = -4.4 + k * 1.1, y = 3.5 - Math.sin((k / 8) * Math.PI) * 0.5; vox(g, 0.14, 0.18, 0.14, DGlow('#ffd98a'), x + Math.sin(k) * 0.3, y, z, { outline: false, shadow: false }); }
+      vox(g, 0.02, 0.02, 9, '#1b1b1f', x, 3.45, 0, { outline: false, shadow: false });
+    }
+    const warm = new THREE.PointLight(0xffc77a, 0.8, 14, 1.6); warm.position.set(0, 3.8, 0); g.add(warm);
+    for (const sz of [-1, 1]) for (let x = -14; x <= 14; x += 4.5) {
+      const T = new THREE.Group(); T.position.set(x + (sz > 0 ? 2 : 0), 0.14, sz * 5.3); g.add(T);
+      const top = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.06, 10), DLam('#e9e6dc')); top.position.y = 0.75; T.add(top); vox(T, 0.08, 0.75, 0.08, '#2a2e38', 0, 0.37, 0);
+      for (const cx of [-0.7, 0.7]) vox(T, 0.4, 0.5, 0.4, '#3a2a1e', cx, 0.25, 0);
+      const um = new THREE.Mesh(new THREE.ConeGeometry(1.1, 0.5, 8), DLam(pick(['#b8322e', '#2f7a4a', '#e9e6dc']))); um.position.y = 2.3; T.add(um); vox(T, 0.05, 1.6, 0.05, '#2a2e38', 0, 1.5, 0, { outline: false });
+      if (sz > 0) City.fadeables.push({ o: T, x: T.position.x, z: T.position.z, theme: true });
+    }
+    for (let x = -22; x <= 22; x += 4) { vox(g, 1.6, 0.35, 0.35, '#6b4a2a', x, 5.0, -7.15); for (let k = 0; k < 4; k++) vox(g, 0.22, 0.22, 0.22, pick(['#c0262e', '#e75aa8', '#ffd23f']), x - 0.6 + k * 0.4, 5.28, -7.1, { outline: false, shadow: false }); }
+    const flag = canvasTex(96, 64, (c) => { c.fillStyle = '#2f8a4a'; c.fillRect(0, 0, 32, 64); c.fillStyle = '#f2f2f2'; c.fillRect(32, 0, 32, 64); c.fillStyle = '#c0262e'; c.fillRect(64, 0, 32, 64); }, true);
+    for (const x of [-9, 9]) { const f = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1), new THREE.MeshBasicMaterial({ map: flag, side: THREE.DoubleSide })); f.position.set(x, 6.5, -7.0); g.add(f); }
+  },
+  river(g) {
+    for (let x = -30; x <= 30; x += 1.6) vox(g, 0.08, 1.0, 0.08, '#2a2e38', x, 0.64, -7.0, { shadow: false });
+    vox(g, 60, 0.08, 0.12, '#2a2e38', 0, 1.12, -7.0, { outline: false });
+    vox(g, 80, 1.2, 0.6, '#6b665c', 0, -0.5, -7.4, { shadow: false });
+    dWater(g, 200, 18, 0, -0.45, -16.6, '#2a6a8a');
+    vox(g, 80, 1.2, 0.6, '#6b665c', 0, -0.5, -25.8, { shadow: false });
+    let fx = -36; while (fx < 36) { const w = rand(5, 9), h = rand(6, 16); const fm = new THREE.MeshLambertMaterial({ color: shade(pick(['#c9b28a', '#b8c4cf', '#d9a07a', '#a8b89a']), rand(0.8, 1.1)), emissive: new THREE.Color('#1a1408') }); const fb = new THREE.Mesh(boxGeo(w, h, 7), fm); fb.position.set(fx + w / 2, h / 2, -30); g.add(fb); fx += w + 0.4; }
+    const br = new THREE.Group(); br.position.set(13, 0, -16.6); g.add(br);
+    vox(br, 5, 0.6, 19, '#8d8a82', 0, 0.9, 0);
+    for (const z of [-4, 4]) vox(br, 4, 2, 1.6, '#7a756c', 0, -0.2, z);
+    for (let z = -9; z <= 9; z += 2) { vox(br, 0.12, 0.9, 0.12, '#2a2e38', -2.3, 1.6, z, { shadow: false }); vox(br, 0.12, 0.9, 0.12, '#2a2e38', 2.3, 1.6, z, { shadow: false }); }
+    for (let i = 0; i < 2; i++) {
+      const b = new THREE.Group(); b.position.set(-30 + i * 30, -0.4, -13 - i * 6); g.add(b);
+      vox(b, 4.5, 0.8, 1.6, pick(['#e9e6dc', '#b8322e']), 0, 0.3, 0); vox(b, 1.6, 0.8, 1.2, '#d9d6cc', -0.6, 1.0, 0);
+      City.anims.push((dt) => { b.position.x += dt * (i ? -1.2 : 1.5); if (b.position.x > 40) b.position.x = -40; if (b.position.x < -40) b.position.x = 40; });
+    }
+  },
+  towers(g, v) {
+    const glass = (hue) => { const tx = canvasTex(64, 256, (c, W, H) => { const gr = c.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, `hsl(${hue},40%,42%)`); gr.addColorStop(1, `hsl(${hue},45%,22%)`); c.fillStyle = gr; c.fillRect(0, 0, W, H); c.fillStyle = 'rgba(255,255,255,.12)'; for (let x = 0; x < W; x += 8) c.fillRect(x, 0, 1, H); for (let y = 0; y < H; y += 8) c.fillRect(0, y, W, 1); }, true); tx.wrapS = tx.wrapT = THREE.RepeatWrapping; return tx; };
+    const lights = (n) => canvasTex(64, 256, (c, W, H) => { c.fillStyle = '#000'; c.fillRect(0, 0, W, H); for (let y = 0; y < H; y += 8) for (let x = 0; x < W; x += 8) if (Math.random() < n) { c.fillStyle = pick(['#ffe7b0', '#cfe8ff', '#fff']); c.fillRect(x + 1, y + 1, 6, 6); } }, true);
+    let x0 = -34;
+    while (x0 < 34) {
+      const w = rand(6, 10), h = rand(22, 50), d = rand(7, 10), hue = pick([195, 205, 215, 180, 225]);
+      const col = glass(hue), em = lights(0.3); col.repeat.set(w / 4, h / 12); em.wrapS = em.wrapT = THREE.RepeatWrapping; em.repeat.set(w / 4, h / 12);
+      const m = new THREE.MeshLambertMaterial({ map: col, emissive: new THREE.Color('#fff'), emissiveMap: em, emissiveIntensity: 0.7 }); City.winMats.push(m);
+      const side = DLam(`hsl(${hue},30%,25%)`);
+      const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), [side, side, DLam('#1c1f27'), side, m, side]); b.position.set(x0 + w / 2, h / 2, -8.2 - d / 2); g.add(b);
+      vox(g, w - 0.6, 3, 0.2, DGlow('#cfe0ee'), x0 + w / 2, 1.6, -8.1, { outline: false, shadow: false });
+      if (Math.random() < 0.5) vox(g, 0.2, 5, 0.2, '#c0262e', x0 + w / 2, h + 2.5, -8.2 - d / 2, { shadow: false });
+      x0 += w + rand(0.5, 1.5);
+    }
+    if (v === 'ticker') { // the money district: a scrolling stock ticker
+      const tk = canvasTex(1024, 48, (c, W, H) => { c.fillStyle = '#05070a'; c.fillRect(0, 0, W, H); c.font = 'bold 30px monospace'; c.textBaseline = 'middle'; let x = 8; for (const s of ['PXL ▲2.4', 'OCT ▼0.8', 'KO ▲5.1', 'JAB ▲1.2', 'BELT ▼1.9', 'VOX ▲3.3', 'GLOVE ▲0.6']) { c.fillStyle = s.includes('▲') ? '#3dfc9a' : '#ff4d6d'; c.fillText(s, x, H / 2); x += 150; } }, true);
+      tk.wrapS = THREE.RepeatWrapping; const t = new THREE.Mesh(new THREE.PlaneGeometry(26, 0.9), new THREE.MeshBasicMaterial({ map: tk })); t.position.set(0, 4.6, -8.0); g.add(t);
+      City.anims.push((dt) => { tk.offset.x += dt * 0.06; });
+      const bank = new THREE.Mesh(new THREE.PlaneGeometry(5, 1.1), new THREE.MeshBasicMaterial({ map: dSign('PIXEL BANK', '#e8b52a', 256, 56, '#0a0d16', 36) })); bank.position.set(-7, 6.2, -8.0); g.add(bank);
+    }
+  },
+  cityhall(g) {
+    const stone = '#d9d4c5', st2 = '#c9c4b6';
+    for (let i = 0; i < 5; i++) vox(g, 26 - i * 0.6, 0.3, 1.2, i % 2 ? stone : st2, 0, 0.15 + i * 0.3, -7.6 - i * 1.0, { shadow: false });
+    vox(g, 30, 9, 12, stone, 0, 6.0, -19);
+    const win = canvasTex(256, 128, (c, W, H) => { c.fillStyle = stone; c.fillRect(0, 0, W, H); for (let x = 12; x < W; x += 32) for (const y of [16, 72]) { c.fillStyle = '#2a3446'; c.fillRect(x, y, 16, 36); c.fillStyle = '#b9b3a3'; c.fillRect(x - 2, y - 4, 20, 4); } }, true);
+    const front = new THREE.Mesh(new THREE.PlaneGeometry(30, 9), DLam('#fff', { map: win })); front.position.set(0, 6, -12.95); g.add(front);
+    vox(g, 18, 0.8, 4.6, stone, 0, 1.75, -10.6);
+    for (let i = 0; i < 8; i++) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.48, 7.2, 10), DLam('#ece8dc')); c.position.set(-7.7 + i * 2.2, 5.75, -9.2); c.castShadow = true; g.add(c); }
+    vox(g, 18.5, 0.9, 4.8, stone, 0, 9.8, -10.6);
+    const ped = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 10.5, 2.8, 3, 1), DLam(st2)); ped.rotation.set(0, 0, 0); ped.scale.set(1, 1, 0.2); ped.position.set(0, 11.6, -9.1); ped.rotation.y = Math.PI / 6; g.add(ped);
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(5, 16, 10, 0, TAU, 0, Math.PI / 2), DLam('#8fb3a0')); dome.position.set(0, 12.5, -19); g.add(dome);
+    vox(g, 9, 2, 9, stone, 0, 11.5, -19); vox(g, 1.4, 2.2, 1.4, stone, 0, 18.4, -19); vox(g, 0.12, 2.5, 0.12, '#2a2e38', 0, 20.8, -19, { shadow: false });
+    const fl = canvasTex(96, 64, (c) => { c.fillStyle = '#2a4f9a'; c.fillRect(0, 0, 96, 64); c.fillStyle = '#e8b52a'; c.font = 'bold 40px serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('★', 48, 34); }, true);
+    for (const x of [-12, 12]) {
+      vox(g, 0.12, 8, 0.12, '#c9ced6', x, 4, -6.8, { shadow: false });
+      const f = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.2), new THREE.MeshLambertMaterial({ map: fl, side: THREE.DoubleSide })); f.position.set(x + 0.95, 7.3, -6.8); g.add(f);
+      City.anims.push((dt, t) => { f.rotation.y = Math.sin(t * 2 + x) * 0.25; });
+    }
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(8, 0.8), new THREE.MeshBasicMaterial({ map: dSign('CITY HALL', '#2a2e38', 384, 40, stone, 30) })); sign.position.set(0, 9.8, -8.17); g.add(sign);
+  },
+  rail(g) {
+    const grav = dTex(128, 128, (x, w, h) => { x.fillStyle = '#6e665a'; x.fillRect(0, 0, w, h); for (let i = 0; i < 2500; i++) { x.fillStyle = `rgba(${Math.random() < 0.5 ? '20,20,20' : '200,190,170'},${rand(0.1, 0.35)})`; x.fillRect(Math.random() * w, Math.random() * h, 2, 2); } }, 40, 30);
+    dPlane(g, 160, 120, DLam('#fff', { map: grav }), 0, 0.001, 0);
+    const track = (z) => { for (let x = -40; x <= 40; x += 0.7) vox(g, 0.22, 0.1, 2.0, '#4a3a2a', x, 0.05, z, { outline: false, shadow: false }); for (const dz of [-0.6, 0.6]) vox(g, 80, 0.12, 0.1, '#9aa0aa', 0, 0.16, z + dz, { outline: false, shadow: false }); };
+    track(-5.2); track(-9); track(6.2);
+    const cols = ['#7a3a2a', '#5a4a3a', '#2d5fa8', '#3a5a3a', '#8a6a2a'];
+    for (let i = 0; i < 6; i++) {
+      const car = new THREE.Group(); car.position.set(-22 + i * 7.6, 0, -9); g.add(car);
+      if (i === 0) { vox(car, 6.6, 2.6, 2.4, '#e8b52a', 0, 1.8, 0); vox(car, 2, 1.2, 2.2, '#2a2e38', -2, 3.6, 0); }
+      else if (i % 3 === 2) { const tank = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 6.4, 12), DLam('#c9ced6')); tank.rotation.z = Math.PI / 2; tank.position.y = 1.9; car.add(tank); }
+      else { vox(car, 6.8, 2.8, 2.4, pick(cols), 0, 1.9, 0); vox(car, 1.6, 2.2, 2.42, '#2a2e38', 0, 1.7, 0, { outline: false }); }
+      vox(car, 6.6, 0.4, 2.0, '#1b1d22', 0, 0.45, 0, { shadow: false });
+    }
+    for (const x of [-12, 12]) { vox(g, 0.18, 4, 0.18, '#2a2e38', x, 2, -6.8); vox(g, 0.5, 1.0, 0.4, '#1b1d22', x, 4, -6.8); vox(g, 0.22, 0.22, 0.05, DGlow(x < 0 ? '#ff3a3a' : '#3dfc9a'), x, 4.2, -6.58, { outline: false }); }
+    for (const x of [-18, 18]) { vox(g, 0.3, 12, 0.3, '#5a5f6e', x, 6, -7.5); vox(g, 2.4, 0.8, 0.6, '#3a3f4c', x, 12, -7.3); vox(g, 2.2, 0.6, 0.1, DGlow('#fffbe0'), x, 12, -6.98, { outline: false }); const L = new THREE.SpotLight(0xfff3d0, 0.9, 30, 0.6, 0.6); L.position.set(x, 12, -7); L.target.position.set(x * 0.3, 0, 0); g.add(L); g.add(L.target); }
+    const fence = dFence(g, -30, 30, 4.7, 2.0); City.fadeables.push({ o: fence, x: 0, z: 4.7, theme: true, wide: true });
+    dEnds(g, (x) => { for (const z of [-2.4, 0, 2.4]) vox(g, 0.6, 0.9, 2.2, '#b9b3a3', x, 0.45, z); });
+  },
+  projects(g, v) {
+    const brick = (lit) => canvasTex(128, 256, (c, W, H) => {
+      c.fillStyle = '#7a3a2a'; c.fillRect(0, 0, W, H);
+      for (let y = 0; y < H; y += 6) for (let x = (y / 6) % 2 ? 0 : 6; x < W; x += 12) { c.fillStyle = `hsl(${rand(8, 18)},${rand(35, 50)}%,${rand(22, 34)}%)`; c.fillRect(x, y, 11, 5); }
+      for (let y = 18; y < H - 30; y += 34) for (let x = 10; x < W; x += 30) { const r = Math.random(); c.fillStyle = r < 0.15 ? '#6b5038' : '#141824'; c.fillRect(x, y, 16, 22); if (lit && r > 0.6) { c.fillStyle = '#ffd98a'; c.fillRect(x + 2, y + 2, 12, 18); } }
+      c.fillStyle = '#2a1e18'; c.fillRect(0, H - 30, W, 30);
+    }, true);
+    let x0 = -30;
+    while (x0 < 30) {
+      const w = rand(8, 11), h = rand(13, 20), d = 8;
+      const col = brick(false), em = brick(true);
+      const m = new THREE.MeshLambertMaterial({ map: col }); const sideM = DLam('#5a2e22');
+      const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), [sideM, sideM, DLam('#2a1e18'), sideM, m, sideM]); b.position.set(x0 + w / 2, h / 2, -7.6 - d / 2); g.add(b);
+      void em;
+      for (let fy = 3; fy < h - 2; fy += 3.2) { vox(g, 2.2, 0.08, 0.9, '#1b1d22', x0 + w * 0.7, fy, -7.1, { shadow: false }); vox(g, 0.06, 3.2, 0.06, '#1b1d22', x0 + w * 0.7 + 1.05, fy + 1.6, -6.7, { outline: false, shadow: false }); const st = vox(g, 0.5, 0.06, 2.4, '#1b1d22', x0 + w * 0.7 - 0.5, fy + 1.6, -7.1, { outline: false, shadow: false }); st.rotation.x = 1.0; st.rotation.y = Math.PI / 2; }
+      x0 += w + 0.3;
+    }
+    dFence(g, -22, -3, -4.75, 2.4); dFence(g, 3, 22, -4.75, 2.4);
+    const barrel = new THREE.Group(); barrel.position.set(-6.5, 0.14, -4.3); g.add(barrel);
+    const bm = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.9, 10), DLam('#4a3a2a')); bm.position.y = 0.45; barrel.add(bm);
+    const fire = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.7, 6), DGlow('#ff7a1a')); fire.position.y = 1.2; barrel.add(fire);
+    const fl = new THREE.PointLight(0xff7a2a, 1.2, 8, 1.6); fl.position.set(-6.5, 1.6, -4.0); g.add(fl);
+    City.anims.push((dt, t) => { const k = 0.8 + Math.sin(t * 17) * 0.15 + Math.sin(t * 7.3) * 0.1; fl.intensity = 1.2 * k; fire.scale.set(1, k, 1); });
+    for (let i = 0; i < 9; i++) vox(g, rand(0.4, 0.6), rand(0.4, 0.55), rand(0.4, 0.6), '#121316', rand(-14, 14), 0.35, rand(-5.2, -4.4));
+    const tags = ['PXL', 'KO', 'RIP', '808', 'WEST', 'ZAP'];
+    for (let x = -24; x <= 24; x += 6) { const c = pick(['#ff4dc4', '#3dfc9a', '#4dd2ff', '#ffd23f']); const t = canvasTex(256, 96, (cx, W, H) => { cx.clearRect(0, 0, W, H); cx.font = 'bold 60px Impact, sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.lineWidth = 8; cx.strokeStyle = '#111'; cx.strokeText(pick(tags), W / 2, H / 2); cx.fillStyle = c; cx.fillText(pick(tags), W / 2, H / 2); }, true); const m = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1), new THREE.MeshLambertMaterial({ map: t, transparent: true })); m.position.set(x, 1.2, -7.55); g.add(m); }
+    if (v === 'skid') { // Skid Row: a stripped car and flickering lights
+      const car = City.makeCar('#5a4a3a'); car.position.set(6.4, 0, -3.7); car.rotation.z = 0.06; g.add(car); City.themeObs.push({ x: 6.4, z: -3.7, hx: 1.05, hz: 0.5 });
+      City.anims.push((dt, t) => { for (const L of City.lampLights) L.intensity = (Math.sin(t * 23 + L.position.x) > 0.75 ? 0.15 : 0.9) * (CITY_TIMES[City.time] || CITY_TIMES.night).lamps; });
+    }
+  },
+};
+Object.assign(City, {
+  anims: [], themeObs: [], themeGroups: {}, theme: 'street',
+  // theme key: "docks" or with a variant, "docks:lighthouse"
+  setTheme(key) {
+    key = key || 'street';
+    const [name, variant] = key.split(':'); const T = DISTRICT_THEMES[name] || DISTRICT_THEMES.street;
+    if (!this.built) { this.theme = key; return; }
+    for (const [n, gr] of Object.entries(this.secs)) gr.visible = !T.hide.includes(n);
+    for (const rec of Object.values(this.themeGroups)) rec.g.visible = false;
+    this.fadeables = this.fadeables.filter((f) => !f.theme);
+    this.anims = []; this.themeObs = [];
+    for (const L of this.lampLights) L.intensity = 0.9 * (CITY_TIMES[this.time] || CITY_TIMES.night).lamps;
+    if (DISTRICT_BUILD[name]) {
+      let rec = this.themeGroups[key];
+      if (!rec) { // built once per district, then reused
+        const g = new THREE.Group(); g.name = 'theme:' + key; this.group.add(g);
+        const fadeBefore = this.fadeables.length;
+        DISTRICT_BUILD[name](g, variant);
+        rec = this.themeGroups[key] = { g, anims: this.anims, obs: this.themeObs, fades: this.fadeables.splice(fadeBefore) };
+      }
+      rec.g.visible = true; this.anims = rec.anims; this.themeObs = rec.obs; this.fadeables.push(...rec.fades);
+    }
+    this.theme = key;
+    if (T.time && this.time !== T.time) this.setTime(T.time);
+  },
+});
 /* =====================================================================
    FIGHTER — state machine, combat rules, movement
    ===================================================================== */
@@ -2868,15 +3227,16 @@ class AI {
     const lowGas = f.stam / f.maxStam < 0.28;
     const oppVuln = o.state === 'hit' || (o.state === 'attack' && o.anim && o.anim.move && o.anim.hitsDone > 0 && o.anim.t > (o.anim.move.cancel || 0.3)) || o.state === 'getup';
     // finisher / super
-    if (f.ready('finisher') && d < 1.6 && Math.random() < 0.2) { I.finisher = true; return; }
-    if (f.ready('super') && d < f.moveFor('super').ideal + 0.45 && Math.random() < 0.04 + this.diff * 0.015) { I.super = true; return; }
+    if (!f.offTarget && f.ready('finisher') && d < 1.6 && Math.random() < 0.2) { I.finisher = true; return; }
+    if (!f.offTarget && f.ready('super') && d < f.moveFor('super').ideal + 0.45 && Math.random() < 0.04 + this.diff * 0.015) { I.super = true; return; }
     if (this.next <= 0) {
       this.next = this.p.think * rand(0.7, 1.4);
       if (Math.random() < this.p.idle) { this.pauseT = rand(0.3, 0.9); }
       // circle direction changes
       this.circleT -= this.p.think; if (this.circleT <= 0) { this.circle = Math.random() < 0.5 ? 1 : -1; this.circleT = rand(1, 3); }
-      const punish = oppVuln && Math.random() < this.p.punish;
-      const attackRoll = Math.random() < this.p.aggr * (lowGas ? 0.45 : 1) * (o.powered ? 0.7 : 1) * (Game.practiceDummy === f ? 0.5 : 1);
+      const side = f.offTarget ? 0.4 : 1; // street fights: attackers you're not facing are less aggressive
+      const punish = oppVuln && Math.random() < this.p.punish * side;
+      const attackRoll = Math.random() < this.p.aggr * side * (lowGas ? 0.45 : 1) * (o.powered ? 0.7 : 1) * (Game.practiceDummy === f ? 0.5 : 1);
       if ((punish || attackRoll) && o.state !== 'down' && o.state !== 'ko') {
         const slot = this.chooseSlot(d, punish);
         if (slot) {
@@ -2892,7 +3252,7 @@ class AI {
         }
       }
       // movement plan
-      const want = lowGas ? pref + 0.9 : (this.dna ? clamp(this.dna.range, 0.9, 2.6) : pref) + rand(-0.1, 0.35);
+      const want = (lowGas ? pref + 0.9 : (this.dna ? clamp(this.dna.range, 0.9, 2.6) : pref) + rand(-0.1, 0.35)) + (f.offTarget ? 0.45 : 0);
       this.wantFwd = clamp((d - want) * 2.2, -1, 1);
       this.wantSide = this.circle * (lowGas ? 0.9 : rand(0.2, 0.7));
       if (f.surroundAng !== undefined) { // street fights: spread out around the player instead of lining up
@@ -3247,8 +3607,8 @@ const Cam = {
       }
       cx /= n; cz /= n;
       const dist = clamp(7.2 + spread * 0.5, 7.6, 11) * (1 - this.zoomPunch * 0.2);
-      wantPos.set(cx * 0.9 - 1.0, 4.1 + spread * 0.25, cz + dist);
-      wantLook.set(cx, 1.0, cz - 0.4);
+      wantPos.set(cx * 0.9 - 1.0, 3.3 + spread * 0.22, cz + dist);
+      wantLook.set(cx, 1.45, cz - 0.6); // tilted up a little so each district's landmarks show behind the fight
     } else if (this.mode === 'replay' && Replay.focus) {
       // tight, low, slowly orbiting shot of the final blow
       const fp = Replay.focus, ax = Replay.axis || new THREE.Vector2(1, 0);
@@ -3456,7 +3816,7 @@ class Match {
     Cam.flip = false;
     this.P = P; this.C = C;
     if (o.mode === 'practice') { Game.practiceDummy = C; C.D.dmg *= 0.5; }
-    if (o.arena) { City.setTime(o.time || 'night'); Game.setArena(o.arena); }
+    if (o.arena) { City.setTime(o.time || 'night'); Game.setArena(o.arena); City.setTheme(o.theme || 'street'); }
     if (o.mode !== 'online') DNA.start(P); else DNA.stop(); // learn how this player fights
     Game.mode = 'fight'; Cam.mode = 'fight'; Cam.side = null; Cam.snap();
     Game.onKO = (att, vic, kind, M) => this.ko(att, vic, kind, M);
@@ -3699,7 +4059,7 @@ class StreetMatch {
     this.wave = 0; this.phase = 'intro'; this.phaseT = 0; this.over = false; this.result = null; this.kos = 0; this.t = 0;
     this.round = 1; this.rounds = this.waves.length; this.clock = 0;
     Replay.reset();
-    Game.setArena('city'); City.setTime(o.time || 'night');
+    Game.setArena('city'); City.setTime(o.time || 'night'); City.setTheme(o.theme || 'street');
     const P = new Fighter({ ...playerCfg(o.profile), look: Shop.look(o.profile) }); // street clothes from the shop
     this.cash = 0;
     P.pos.set(0, 0.6); P.yaw = 0;
@@ -3712,7 +4072,7 @@ class StreetMatch {
     Game.onHit = null; Game.onCombo = null;
     DNA.start(P);
     UI.hud(true, this);
-    UI.banner(o.title || 'STREET FIGHT', o.sub || `The ${esc(this.gang.name)} jumped you. Survive ${this.waves.length} waves.`);
+    UI.banner(o.title || 'STREET FIGHT', o.sub || `The ${esc(this.gang.name)} jumped you${o.place ? ' in ' + esc(o.place) : ''}. Survive ${this.waves.length} waves.`);
     Sound.crowd(0); Sound.bell(1);
   }
   spawnWave(first) {
@@ -3751,8 +4111,20 @@ class StreetMatch {
     return best || this.enemies[this.enemies.length - 1] || null;
   }
   // pick who my attacks go to: close, in front of me, and in the direction I'm pushing
+  // Q / Tab: lock onto the next attacker around you (clockwise); the lock holds until they drop
+  switchTarget() {
+    const P = this.P, A = this.alive(); if (A.length < 2 || this.over) return;
+    const cur = P.opp && P.opp.state !== 'ko' ? P.opp : A[0];
+    const ang = (f) => Math.atan2(f.pos.y - P.pos.y, f.pos.x - P.pos.x), a0 = ang(cur);
+    let best = null, bd = 1e9;
+    for (const f of A) { if (f === cur) continue; let d = a0 - ang(f); while (d <= 0) d += TAU; if (d < bd) { bd = d; best = f; } }
+    if (!best) return;
+    this.locked = best; P.opp = best; this.C = best;
+    FX.text(best, 'TARGET', '#f3b928', 0.7, true); Sound.ui();
+  }
   retarget() {
     const P = this.P, cur = P.opp;
+    if (this.locked) { if (this.locked.state !== 'ko' && this.enemies.includes(this.locked)) { if (P.opp !== this.locked) { P.opp = this.locked; this.C = this.locked; } return; } this.locked = null; }
     if (['attack', 'parry', 'grappled', 'dodge'].includes(P.state) || P.grapple) { if (cur && cur.state !== 'ko') return; }
     const fx = Math.sin(P.yaw), fz = Math.cos(P.yaw);
     const I = P.intent; const mv = P.vel.length() > 0.3 ? P.vel.clone().normalize() : null;
@@ -3771,7 +4143,8 @@ class StreetMatch {
   // everyone comes at you at once; spread them around you so it's a real 2-on-1, 3-on-1…
   surround() {
     const P = this.P, A = this.alive();
-    for (const f of A) f.token = true;
+    // only the one you're fighting goes all out; the others hang back a little and can't use supers
+    for (const f of A) { f.token = true; f.offTarget = A.length > 1 && f !== P.opp; }
     if (A.length < 2) { for (const f of A) f.surroundAng = undefined; return; }
     const arr = A.map((f) => ({ f, a: Math.atan2(f.pos.y - P.pos.y, f.pos.x - P.pos.x) })).sort((x, y) => x.a - y.a);
     const step = TAU / arr.length; let sx = 0, sy = 0;
@@ -3908,11 +4281,16 @@ const TURF_NAMES = [
   'Riverside', 'Downtown', 'City Hall', 'Financial', 'Uptown',
   'Railyard', 'The Projects', 'Midtown', 'Skid Row', 'Hillside',
 ];
+// what each block looks like when you fight there (and on the map)
+const TURF_THEMES = ['docks', 'docks:market', 'docks', 'docks:lighthouse', 'docks:crane',
+  'chinatown', 'neon', 'park', 'neon:arcade', 'italy',
+  'river', 'towers', 'cityhall', 'towers:ticker', 'street',
+  'rail', 'projects', 'street', 'projects:skid', 'park:hill'];
 const TURF = TURF_NAMES.map((name, i) => {
   const c = i % TURF_COLS, r = (i / TURF_COLS) | 0;
   const core = Math.hypot(c - 2, (r - 1.5) * 1.3); // the middle of the map is the hardest
   const tier = clamp(Math.round(4 - core * 1.45), 0, 4);
-  return { id: 'd' + i, i, name, c, r, tier, gang: GANGS[(i * 7 + 3) % GANGS.length], time: ['night', 'dusk', 'night', 'day'][(i * 5 + 1) % 4] };
+  return { id: 'd' + i, i, name, c, r, tier, theme: TURF_THEMES[i], gang: GANGS[(i * 7 + 3) % GANGS.length], time: ['night', 'dusk', 'night', 'day'][(i * 5 + 1) % 4] };
 });
 const TURF_LOCAL_KEY = 'pixelOctagon.turf.v1';
 // talk to the project's REST API directly: one quick request, no extra library
@@ -4027,7 +4405,7 @@ const Turf = {
     if (!p.turfCollected) { p.turfCollected = Date.now(); persist(); }
     const ownerId = row && row.owner_id;
     if (!ownerId) { // the local crew holds it: street fight, two waves and their leader
-      startStreet({ mode: 'street', profile: p, tier: d.tier, gang: d.gang, time: d.time, district: d.id, waves: [{ n: 2 }, { n: 2, leader: true }],
+      startStreet({ mode: 'street', profile: p, tier: d.tier, gang: d.gang, time: d.time, theme: d.theme, district: d.id, waves: [{ n: 2 }, { n: 2, leader: true }],
         title: d.name.toUpperCase(), sub: `Take the block from the ${esc(d.gang.name)}`,
         onReport: (won) => { if (won) Turf.claim(d, null); } });
       return;
@@ -4037,7 +4415,7 @@ const Turf = {
     const cfg = { ...DNA.cloneCfg({ name: F.name || row.owner_name, nick: F.nick, style: F.style || 'boxing', look: F.look || defaultLook('boxing'), stats: F.stats || botStats('boxing', 4), evolved: F.evolved, level: F.level, dna: row.dna }), name: (F.name || row.owner_name) };
     cfg.look = { ...cfg.look }; if (!cfg.look.street) cfg.look.street = Shop.sc(OUTFIT_DEFAULT);
     const diff = DNA.cloneDiff(F.level);
-    startFight({ mode: 'turf', profile: p, opp: cfg, diff, arena: 'city', time: d.time, streetClothes: true, cash: 60 + d.tier * 40, label: d.name + ' · ' + row.owner_name + '\'s block',
+    startFight({ mode: 'turf', profile: p, opp: cfg, diff, arena: 'city', time: d.time, theme: d.theme, streetClothes: true, cash: 60 + d.tier * 40, label: d.name + ' · ' + row.owner_name + '\'s block',
       onReport: (won) => { if (won) Turf.claim(d, ownerId); else Turf.defended(d, Turf.tag(p)); } });
   },
   refresh() { if (UI.screen === 'turf' && Game.mode !== 'fight' && !UI.el.hidden) { const sc = UI.el.querySelector('.scroll'); const top = sc ? sc.scrollTop : 0; UI.show(SCREENS.turf()); const s2 = UI.el.querySelector('.scroll'); if (s2) s2.scrollTop = top; } },
@@ -4147,8 +4525,8 @@ const Shop = {
 /* =====================================================================
    UI — menus, creator, training, HUD, results
    ===================================================================== */
-const KEYCAP = { light: 'J', medium: 'K', heavy: 'L', block: 'I', counter: 'O', super: 'U', dodge: 'SPACE', finisher: 'F' };
-const SLOT_LABEL = { light: 'Light', medium: 'Medium', heavy: 'Heavy', block: 'Block', counter: 'Counter', super: 'Super', dodge: 'Dodge', finisher: 'Finisher' };
+const KEYCAP = { target: 'Q', light: 'J', medium: 'K', heavy: 'L', block: 'I', counter: 'O', super: 'U', dodge: 'SPACE', finisher: 'F' };
+const SLOT_LABEL = { target: 'Target', light: 'Light', medium: 'Medium', heavy: 'Heavy', block: 'Block', counter: 'Counter', super: 'Super', dodge: 'Dodge', finisher: 'Finisher' };
 const UI = {
   el: null, screen: 'title', draft: null, editId: null, confirm: null, sel: {}, hudEls: null,
   init() {
@@ -4224,8 +4602,9 @@ const UI = {
     $('#supL').innerHTML = '<b></b>'.repeat(5); $('#supR').innerHTML = '<b></b>'.repeat(5);
     const slots = ['light', 'medium', 'heavy', 'block', 'counter', 'super', 'dodge'];
     if (P.evolved) slots.push('finisher');
+    if (match.multi) slots.push('target');
     $('#mvbar').innerHTML = slots.map((s) => {
-      const name = s === 'block' ? 'Block' : s === 'counter' ? 'Counter' : s === 'dodge' ? 'Dodge' : MOVES[P.st.moves[s]].name;
+      const name = s === 'block' ? 'Block' : s === 'counter' ? 'Counter' : s === 'dodge' ? 'Dodge' : s === 'target' ? 'Switch Target' : MOVES[P.st.moves[s]].name;
       return `<div class="mv" data-slot="${s}"><span class="k">${KEYCAP[s]}</span><span class="l">${esc(name)}</span><i class="cd"></i></div>`;
     }).join('');
     this.hudEls = {
@@ -4318,7 +4697,8 @@ const UI = {
     });
     for (const m of H.mv) {
       let frac = 0, ready = false, off = false;
-      if (m.slot === 'super') { frac = 1 - P.meter / 100; ready = P.meter >= 100; }
+      if (m.slot === 'target') { frac = 0; ready = false; off = match.alive().length < 2; }
+      else if (m.slot === 'super') { frac = 1 - P.meter / 100; ready = P.meter >= 100; }
       else if (m.slot === 'finisher') { ready = P.ready('finisher'); off = !ready; frac = ready ? 0 : 1; }
       else if (m.slot === 'block') { frac = 1 - P.guard / P.maxGuard; off = P.guardBrokenT > 0; }
       else if (m.slot === 'dodge') { frac = clamp(P.dodgeCd / 0.6, 0, 1); off = frac > 0 || P.stam < 8; }
@@ -4335,7 +4715,7 @@ const UI = {
       <button data-k="KeyA">◀</button><button data-k="KeyI">BLK</button><button data-k="KeyD">▶</button>
       <span></span><button data-k="KeyS">▼</button><span></span></div>
       <div class="acts"><button data-k="KeyJ">Lt</button><button data-k="KeyK">Md</button><button data-k="KeyL">Hv</button>
-      <button data-k="KeyO">Ctr</button><button data-k="TouchSuper">Sup</button><button data-k="TouchDodge">Dodge</button><button data-k="KeyF">Fin</button></div>`;
+      <button data-k="KeyO">Ctr</button><button data-k="TouchSuper">Sup</button><button data-k="TouchDodge">Dodge</button><button data-k="KeyF">Fin</button><button data-k="TouchTarget">Tgt</button></div>`;
     T.querySelectorAll('button').forEach((b) => {
       const k = b.dataset.k;
       const down = (e) => { e.preventDefault(); b.classList.add('on'); keyDown(k, false); };
@@ -4590,6 +4970,7 @@ const SCREENS = {
           <b>Dodge</b><span><span class="kbd">SPACE</span>. Hold a direction to slip that way; with no direction you stay put and use your style's head movement (bob &amp; weave, lean back, duck). Make an attack miss and time slows down on your opponent for a moment, and your next hit does +30%.</span>
           <b>Ground punch</b><span>When your opponent is knocked down, <span class="kbd">J</span> punches down at them on the mat.</span>
           <b>Finisher</b><span><span class="kbd">F</span> (evolved fighters only)</span>
+          <b>Switch target</b><span><span class="kbd">Q</span> or <span class="kbd">TAB</span> in Street Fight and Turf Wars. Locks onto the next attacker around you. The ones you're not facing hang back and can't use supers.</span>
           <b>Pause</b><span><span class="kbd">ESC</span> or <span class="kbd">P</span></span></div></div>
         <div class="card"><h3>The rules</h3><p class="small">
           <b>Cooldowns.</b> Medium and heavy moves have about a 1-second cooldown. Light moves recover faster. Speed shortens all of them.<br><br>
@@ -4848,20 +5229,14 @@ Object.assign(SCREENS, {
     if (!Turf.busy && (!Turf.loadedAt || Date.now() - Turf.loadedAt > 20000)) setTimeout(() => Turf.load(), 0);
     if (Turf.mode === 'loading' && !Turf.loadedAt) return `<div class="panel wide"><h2>Turf Wars</h2><p class="muted">Loading the city…</p>${backBtn()}</div>`;
     const R = Turf.rows;
-    const tiles = TURF.map((d) => {
-      const r = R[d.id] || {}, mine = Turf.isMine(r), owned = !!r.owner_id;
-      const bg = mine ? 'rgba(243,185,40,.35)' : owned ? `hsla(${Turf.hue(r.owner_id)},60%,45%,.45)` : shade(d.gang.color, 0.35);
-      const who = mine ? 'YOU' : owned ? r.owner_name : d.gang.name;
-      return `<button class="tile ${Turf.sel === d.id ? 'sel' : ''} ${mine ? 'mine' : owned ? 'player' : 'gang'}" data-act="turfSel" data-id="${d.id}" style="background:${bg}">
-        <span class="tn">${esc(d.name)}</span><span class="tw">${esc(who || '')}</span><span class="tt" style="color:${DIFFS[d.tier].color}">${'★'.repeat(d.tier + 1)}</span></button>`;
-    }).join('');
+    const tiles = turfMapSVG(R, Turf.sel);
     const d = TURF.find((x) => x.id === Turf.sel);
     let side = `<p class="small">Pick a block on the map.</p><p class="small muted">Gold blocks are yours. Coloured ones belong to other players and are guarded by their clone. Dark ones are held by a local crew: beat the crew and their leader to take it.</p>`;
     if (d) {
       const r = R[d.id] || {}, mine = Turf.isMine(r);
       const F = r.fighter || {};
       side = `<h3>${esc(d.name)}</h3>
-        <p class="small"><span style="color:${DIFFS[d.tier].color}">${DIFFS[d.tier].name}</span> block · ${d.time}</p>
+        <p class="small"><span style="color:${DIFFS[d.tier].color}">${DIFFS[d.tier].name}</span> block · ${d.time} · ${esc(THEME_INFO[d.theme.split(':')[0]] || 'City street')}</p>
         ${mine ? `<p>Yours. Your clone guards it${r.defenses ? ` and has held it <b>${r.defenses}</b> time${r.defenses === 1 ? '' : 's'}` : ''}.</p>`
           : r.owner_id ? `<p>Held by <b>${esc(r.owner_name)}</b>${F.style ? ` · ${esc(STYLES[F.style].name)} · LV ${F.level || '?'}` : ''}${r.defenses ? ` · defended ${r.defenses}×` : ''}</p><p class="small muted">You fight their clone: same style, stats and habits as them.</p>`
             : `<p>Held by the <b style="color:${d.gang.color}">${esc(d.gang.name)}</b>.</p><p class="small muted">Street fight: two waves, then their leader.</p>`}
@@ -4878,7 +5253,7 @@ Object.assign(SCREENS, {
 
     return `<div class="panel wide"><div class="row" style="justify-content:space-between"><h2>Turf Wars</h2><span class="small">You are <b style="color:var(--gold)">${esc(p.turfName)}</b> <button class="linkbtn" data-act="turfRename">change</button></span></div>${status}
       ${Turf.note ? `<div class="confirm"><p>${esc(Turf.note)}</p></div>` : ''}
-      <div class="scroll"><div class="turfwrap"><div class="turfmap">${tiles}</div><div class="card turfside">${side}</div></div>
+      <div class="scroll"><div class="turfwrap"><div class="mapbox">${tiles}<div class="small muted maplegend"><span><i style="background:var(--gold)"></i>Yours</span><span><i style="background:hsl(200,70%,58%)"></i>Other players</span><span><i class="hz"></i>Local crews</span><span style="color:var(--gold)">★</span> = difficulty</div></div><div class="card turfside">${side}</div></div>
         <div class="grid2" style="margin-top:12px"><div class="card"><h3>Top crews</h3>${board}</div>
           <div class="card"><h3>Your blocks: ${mineN}</h3><p class="small">Each block pays 20 XP an hour while you hold it (up to 8 hours banked).</p>
             ${trib ? `<button class="btn primary" data-act="turfCollect">Collect ${trib} XP</button>` : `<p class="small muted">${mineN ? 'Nothing to collect yet.' : 'Take a block to start earning.'}</p>`}</div></div>
@@ -4894,7 +5269,7 @@ Object.assign(ACT, {
   shopPreview: () => { const p = activeFighter(); const it = SHOP_BY_ID[UI.shopTry]; UI.draft = { name: p.name, nick: p.nick, style: p.style, look: Shop.look(p, it) }; if (UI.screen === 'shop') Preview.set(UI.draft); },
   stTier: (d) => { UI.sel.street.tier = +d.v; UI.show(SCREENS.street()); },
   stTime: (d) => { UI.sel.street.time = d.v; UI.show(SCREENS.street()); },
-  streetGo: () => { const s = UI.sel.street || { tier: 0, time: 'night' }; startStreet({ mode: 'street', profile: activeFighter(), tier: s.tier, time: s.time, gang: pick(GANGS) }); },
+  streetGo: () => { const s = UI.sel.street || { tier: 0, time: 'night' }; const d = pick(TURF); startStreet({ mode: 'street', profile: activeFighter(), tier: s.tier, time: s.time, gang: pick(GANGS), theme: d.theme, place: d.name }); },
   streetAgain: () => { const o = UI.lastStreetOpts; if (o) startStreet({ ...o, gang: o.district ? o.gang : pick(GANGS) }); },
   sparClone: (d) => {
     const p = SAVE.fighters.find((f) => f.id === d.id) || activeFighter(); if (!p) return;
@@ -4911,6 +5286,93 @@ Object.assign(ACT, {
   turfRefresh: () => { Turf.note = ''; Turf.load(); },
   turfCollect: () => { const x = Turf.collect(); Turf.note = x ? '+' + x + ' XP collected from your blocks.' : ''; Sound.levelUp(); Turf.refresh(); },
 });
+/* =====================================================================
+   CITY MAP — the Turf Wars map drawn as a little pixel city: water up
+   top, each block drawn as what it is (docks, park, towers…), coloured
+   by whoever holds it.
+   ===================================================================== */
+const THEME_INFO = {
+  street: 'City street', docks: 'Waterfront docks', park: 'Park', chinatown: 'Chinatown streets', neon: 'Neon strip', italy: 'Cobblestone café street',
+  river: 'Riverside walk', towers: 'Glass towers', cityhall: 'City Hall steps', rail: 'Railyard', projects: 'Brick tenements',
+};
+function mapArt(theme, x, y, w, h, seed) {
+  let s = seed * 9301 + 49297; const R = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
+  const [t, v] = theme.split(':'), o = [];
+  const rect = (rx, ry, rw, rh, f, extra = '') => o.push(`<rect x="${(x + rx).toFixed(1)}" y="${(y + ry).toFixed(1)}" width="${rw.toFixed(1)}" height="${rh.toFixed(1)}" fill="${f}" ${extra}/>`);
+  const circ = (cx, cy, r, f) => o.push(`<circle cx="${(x + cx).toFixed(1)}" cy="${(y + cy).toFixed(1)}" r="${r.toFixed(1)}" fill="${f}"/>`);
+  const blocks = (cols, base, light) => { for (let i = 0; i < 6; i++) { const bw = 18 + R() * 16, bh = 14 + R() * 14; const bx = 4 + R() * (w - bw - 8), by = 4 + R() * (h - bh - 8); rect(bx, by, bw, bh, pick2(cols, R)); rect(bx + 2, by + 2, bw - 4, 3, light); } rect(0, 0, w, h, 'none', `stroke="${base}" stroke-width="2"`); };
+  if (t === 'docks') {
+    rect(0, 0, w, h, '#6b4f35'); for (let i = 6; i < h; i += 7) rect(0, i, w, 1, 'rgba(0,0,0,.35)');
+    for (let i = 0; i < 5; i++) rect(4 + i * 18, h - 22, 15, 9, pick2(['#b8322e', '#2d5fa8', '#2f7a4a', '#c9a227', '#e86a1c'], R));
+    if (v === 'lighthouse') { rect(w / 2 - 4, 6, 8, 34, '#e9e6dc'); for (let k = 0; k < 4; k++) rect(w / 2 - 4, 6 + k * 9, 8, 4, '#c0262e'); circ(w / 2, 6, 5, '#fff3c4'); }
+    if (v === 'crane') { rect(10, 10, 4, 36, '#e8b52a'); rect(10, 10, 60, 4, '#e8b52a'); rect(64, 14, 1.5, 18, '#2a2e38'); }
+    if (v === 'market') for (let i = 0; i < 4; i++) { rect(8 + i * 21, 16, 17, 10, i % 2 ? '#b8322e' : '#f2f2f2'); rect(8 + i * 21, 27, 17, 6, '#cfe8ff'); }
+  } else if (t === 'park') {
+    rect(0, 0, w, h, v === 'hill' ? '#567d3c' : '#3f6e37'); rect(0, h / 2 - 5, w, 10, '#b39b74');
+    if (v !== 'hill') { o.push(`<ellipse cx="${x + w / 2}" cy="${y + 22}" rx="20" ry="11" fill="#2a5f86" stroke="#9a958a" stroke-width="2"/>`); circ(w / 2, 22, 3, '#cfe8ff'); }
+    else for (let i = 0; i < 4; i++) { const hx = 8 + i * 22; rect(hx, 12 + (i % 2) * 8, 12, 9, '#e9e6dc'); rect(hx - 1, 10 + (i % 2) * 8, 14, 3, '#8a3a2a'); }
+    for (let i = 0; i < 14; i++) { const tx = 6 + R() * (w - 12), ty = R() < 0.5 ? 6 + R() * (h / 2 - 16) : h / 2 + 10 + R() * (h / 2 - 16); circ(tx, ty, 4 + R() * 3, pick2(['#2f6b3a', '#285c33', '#4a8a4a'], R)); }
+  } else if (t === 'chinatown') {
+    rect(0, 0, w, h, '#3a2626'); blocks(['#9a2a2a', '#b8322e', '#7a1f24'], '#e8b52a', '#1f6e4a');
+    for (let i = 0; i < 6; i++) circ(10 + i * 15, h / 2, 2.6, '#ff3a3a');
+  } else if (t === 'neon') {
+    rect(0, 0, w, h, '#1a1030'); blocks(['#2a1e44', '#241838', '#30204a'], '#3a2a5a', '#3a2a5a');
+    for (let i = 0; i < 12; i++) rect(4 + R() * (w - 12), 4 + R() * (h - 8), 6 + R() * 6, 2.5, pick2(['#ff4dc4', '#4dd2ff', '#ffd23f', '#3dfc9a'], R));
+    if (v === 'arcade') { rect(w / 2 - 22, h - 26, 44, 12, '#1a0820', 'stroke="#ffd23f" stroke-width="2"'); }
+  } else if (t === 'italy') {
+    rect(0, 0, w, h, '#5c5246'); blocks(['#b5562e', '#c46a3a', '#a8482a'], '#d9c9a3', '#e9d5b0');
+    for (let i = 0; i < 4; i++) circ(14 + i * 22, h - 12, 4, pick2(['#b8322e', '#2f7a4a', '#e9e6dc'], R));
+  } else if (t === 'river') {
+    rect(0, 0, w, h, '#4a4f3c'); o.push(`<path d="M${x} ${y + h * 0.25} L${x + w} ${y + h * 0.55} L${x + w} ${y + h * 0.8} L${x} ${y + h * 0.5} Z" fill="#2a6a8a"/>`);
+    rect(w * 0.62, 0, 8, h, '#8d8a82');
+  } else if (t === 'towers') {
+    rect(0, 0, w, h, '#2a3446');
+    for (let i = 0; i < 6; i++) { const bx = 6 + (i % 3) * 30, by = 8 + ((i / 3) | 0) * 40, bw = 22, bh = 30; rect(bx, by, bw, bh, '#3d5a7a'); rect(bx, by, bw, 5, '#9fc4e0'); rect(bx + bw - 4, by, 4, bh, '#24384f'); }
+    if (v === 'ticker') rect(4, h - 10, w - 8, 5, '#05070a', 'stroke="#3dfc9a" stroke-width="1"');
+  } else if (t === 'cityhall') {
+    rect(0, 0, w, h, '#3a3f4c'); rect(14, 14, w - 28, 44, '#d9d4c5'); circ(w / 2, 36, 12, '#8fb3a0');
+    for (let i = 0; i < 6; i++) rect(18 + i * 11, 54, 4, 14, '#ece8dc');
+    rect(10, h - 16, w - 20, 8, '#c9c4b6');
+  } else if (t === 'rail') {
+    rect(0, 0, w, h, '#6e665a');
+    for (const ty of [h * 0.28, h * 0.55, h * 0.8]) { rect(0, ty, w, 5, '#4a3a2a'); rect(0, ty + 1, w, 1, '#9aa0aa'); rect(0, ty + 3, w, 1, '#9aa0aa'); }
+    for (let i = 0; i < 4; i++) rect(4 + i * 22, h * 0.28 - 7, 19, 8, pick2(['#7a3a2a', '#2d5fa8', '#e8b52a', '#3a5a3a'], R));
+  } else if (t === 'projects') {
+    rect(0, 0, w, h, '#3a2a24'); blocks(['#7a3a2a', '#6b3424', '#8a4430'], '#5a2e22', '#2a1e18');
+    rect(4, h - 8, w - 8, 2, '#9aa0aa');
+    if (v === 'skid') circ(w - 14, h - 16, 3, '#ff7a1a');
+  } else { rect(0, 0, w, h, '#3a3f4c'); blocks(['#4a4f5c', '#555b6a', '#3f4452'], '#2a2e38', '#6a7082'); }
+  return o.join('');
+}
+function pick2(arr, R) { return arr[(R() * arr.length) | 0]; }
+function turfMapSVG(R, sel) {
+  const CW = 100, CH = 92, X0 = 10, Y0 = 46, GAP = 6, W = X0 * 2 + TURF_COLS * CW + (TURF_COLS - 1) * GAP;
+  const out = [`<svg class="citymap" viewBox="0 0 ${W} ${Y0 + 4 * (CH + GAP) + 6}" role="img" aria-label="City map">`,
+    `<defs><pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="4" height="8" fill="rgba(0,0,0,.35)"/></pattern>
+     <pattern id="waves" width="24" height="10" patternUnits="userSpaceOnUse"><path d="M0 6 Q6 2 12 6 T24 6" stroke="rgba(160,210,255,.35)" fill="none" stroke-width="1.5"/></pattern></defs>`,
+    `<rect width="${W}" height="1000" fill="#1b1d22"/>`,
+    `<rect width="${W}" height="${Y0 - 4}" fill="#163a58"/><rect width="${W}" height="${Y0 - 4}" fill="url(#waves)"/>`,
+    `<text x="${W / 2}" y="24" text-anchor="middle" class="mt-water">THE BAY</text>`];
+  // streets between the blocks
+  for (let c = 1; c < TURF_COLS; c++) { const sx = X0 + c * (CW + GAP) - GAP / 2; out.push(`<line x1="${sx}" y1="${Y0}" x2="${sx}" y2="1000" stroke="#e8b52a" stroke-width="0.8" stroke-dasharray="4 4" opacity=".5"/>`); }
+  for (let r = 1; r < TURF_ROWS; r++) { const sy = Y0 + r * (CH + GAP) - GAP / 2; out.push(`<line x1="0" y1="${sy}" x2="${W}" y2="${sy}" stroke="#e8b52a" stroke-width="0.8" stroke-dasharray="4 4" opacity=".5"/>`); }
+  for (const d of TURF) {
+    const x = X0 + d.c * (CW + GAP), y = Y0 + d.r * (CH + GAP), r = R[d.id] || {}, mine = Turf.isMine(r), owned = !!r.owner_id;
+    const col = mine ? '#f3b928' : owned ? `hsl(${Turf.hue(r.owner_id)},70%,58%)` : d.gang.color;
+    const who = mine ? 'YOU' : owned ? r.owner_name : d.gang.name;
+    out.push(`<g class="dz ${sel === d.id ? 'sel' : ''} ${mine ? 'mine' : ''}" data-act="turfSel" data-id="${d.id}" tabindex="0">`,
+      `<clipPath id="cp${d.i}"><rect x="${x}" y="${y}" width="${CW}" height="${CH}"/></clipPath><g clip-path="url(#cp${d.i})">${mapArt(d.theme, x, y, CW, CH, d.i + 1)}</g>`,
+      owned ? `<rect x="${x}" y="${y}" width="${CW}" height="${CH}" fill="${col}" opacity="${mine ? 0.28 : 0.3}"/>` : `<rect x="${x}" y="${y}" width="${CW}" height="${CH}" fill="url(#hatch)"/>`,
+      `<rect class="bd" x="${x + 1.5}" y="${y + 1.5}" width="${CW - 3}" height="${CH - 3}" fill="none" stroke="${col}" stroke-width="${owned ? 3 : 1.5}" ${owned ? '' : 'stroke-dasharray="5 3" opacity=".8"'}/>`,
+      `<rect x="${x}" y="${y + CH - 30}" width="${CW}" height="30" fill="rgba(6,7,11,.72)"/>`,
+      `<text x="${x + 5}" y="${y + CH - 18}" class="mt-name">${esc(d.name.toUpperCase())}</text>`,
+      `<text x="${x + 5}" y="${y + CH - 6}" class="mt-who" fill="${col}">${esc(String(who || '').slice(0, 18))}</text>`,
+      `<text x="${x + CW - 5}" y="${y + 12}" text-anchor="end" class="mt-star" fill="${DIFFS[d.tier].color}">${'★'.repeat(d.tier + 1)}</text>`,
+      `</g>`);
+  }
+  out.push('</svg>');
+  return out.join('');
+}
 /* =====================================================================
    UPDATES — checks the game's GitHub repo for a newer version and
    downloads it. Saves live in the browser, so progress carries over.
@@ -5439,6 +5901,7 @@ function setMenuScene(kind) {
   Game.mode = 'menu'; Sound.fx = false; FX.enabled = false;
   const wantCity = kind === 'creator' && UI.screen === 'shop'; // try clothes on in the street
   if ((Game.arena === 'city') !== wantCity) Game.setArena(wantCity ? 'city' : 'octagon');
+  if (wantCity) City.setTheme('street');
   if (kind === 'creator') {
     for (const f of Game.fighters) f.rig.root.visible = false;
     if (UI.draft) Preview.set(UI.draft);
@@ -5507,7 +5970,7 @@ const KEYS = {};
 const lastTap = {};
 let dashReq = null, dodgeReq = false, spaceAt = 0;
 const ATTACK_KEYS = { KeyJ: 'light', KeyZ: 'light', KeyK: 'medium', KeyX: 'medium', KeyL: 'heavy', KeyC: 'heavy', KeyO: 'counter', KeyV: 'counter', KeyU: 'super', KeyF: 'finisher', KeyB: 'finisher' };
-const GAME_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyI', 'ShiftLeft', 'ShiftRight', ...Object.keys(ATTACK_KEYS)]);
+const GAME_KEYS = new Set(['KeyQ', 'Tab', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyI', 'ShiftLeft', 'ShiftRight', ...Object.keys(ATTACK_KEYS)]);
 function keyDown(code, repeat) {
   Sound.init();
   const was = KEYS[code]; KEYS[code] = true;
@@ -5521,6 +5984,7 @@ function keyDown(code, repeat) {
   }
   if (Game.paused || M.over) return;
   if (code === 'Space') { dodgeReq = true; return; }
+  if (code === 'KeyQ' || code === 'Tab' || code === 'TouchTarget') { if (M.switchTarget) M.switchTarget(); return; }
   if (code === 'TouchDodge') { dodgeReq = true; return; }
   if (code === 'TouchSuper') { M.P.queued = { slot: 'super', t: Game.time }; return; }
   const slot = ATTACK_KEYS[code];
