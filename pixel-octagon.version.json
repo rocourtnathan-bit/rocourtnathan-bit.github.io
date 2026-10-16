@@ -1,1 +1,1 @@
-{"v": 26, "notes": "Online: a relay server is now built into the game for everyone, so school and work networks that block direct links connect through it automatically (the badge says RELAY). Nothing to set up. Both players should update."}
+{"v": 27, "notes": "Racer: silky smooth on every screen (cars are drawn between physics steps, no more stutter on 120/144 Hz displays). The ghost is recorded on the physics clock and played back along a smooth curve, and fades when it's right on top of you. New: a live +/- gap to your best lap at the top of the screen."}
