@@ -1,1 +1,1 @@
-{"v": 18, "notes": "Online boxing: when you join a fight your own fighter now walks, punches, blocks and dodges the instant you press a key (no more waiting on the host). Faster updates on direct links for both players. Both players should update."}
+{"v": 19, "notes": "Chat: Global (everyone playing) and Party (your fight room, Hoops lobby or race lobby). Press T or the chat button. Online: no more move prediction; faster updates, keys sent instantly, auto-reconnects to a direct link, and the ping badge now shows route, jitter and packet loss. Both players should update."}
