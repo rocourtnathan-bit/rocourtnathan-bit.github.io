@@ -676,7 +676,7 @@ var supabase=(function(e){function t(e,t){var n={};for(var r in e)Object.prototy
 Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/auth-js: Invalid SIWE message field "resources". Every resource must be a valid string. Provided value: ${t}`);e+=`\n- ${t}`}m+=e}return`${p}\n${m}`}var Q=class extends Error{constructor({message:e,code:t,cause:n,name:r}){super(e,{cause:n}),this.__isWebAuthnError=!0,this.name=r??(n instanceof Error?n.name:void 0)??`Unknown Error`,this.code=t}toJSON(){return{name:this.name,message:this.message,code:this.code}}},Di=class extends Q{constructor(e,t){super({code:`ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY`,cause:t,message:e}),this.name=`WebAuthnUnknownError`,this.originalError=t}};function Oi({error:e,options:t}){let{publicKey:n}=t;if(!n)throw Error(`options was missing required publicKey property`);if(e.name===`AbortError`){if(t.signal instanceof AbortSignal)return new Q({message:`Registration ceremony was sent an abort signal`,code:`ERROR_CEREMONY_ABORTED`,cause:e})}else if(e.name===`ConstraintError`){if(n.authenticatorSelection?.requireResidentKey===!0)return new Q({message:`Discoverable credentials were required but no available authenticator supported it`,code:`ERROR_AUTHENTICATOR_MISSING_DISCOVERABLE_CREDENTIAL_SUPPORT`,cause:e});if(t.mediation===`conditional`&&n.authenticatorSelection?.userVerification===`required`)return new Q({message:`User verification was required during automatic registration but it could not be performed`,code:`ERROR_AUTO_REGISTER_USER_VERIFICATION_FAILURE`,cause:e});if(n.authenticatorSelection?.userVerification===`required`)return new Q({message:`User verification was required but no available authenticator supported it`,code:`ERROR_AUTHENTICATOR_MISSING_USER_VERIFICATION_SUPPORT`,cause:e})}else if(e.name===`InvalidStateError`)return new Q({message:`The authenticator was previously registered`,code:`ERROR_AUTHENTICATOR_PREVIOUSLY_REGISTERED`,cause:e});else if(e.name===`NotAllowedError`)return new Q({message:e.message,code:`ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY`,cause:e});else if(e.name===`NotSupportedError`)return n.pubKeyCredParams.filter(e=>e.type===`public-key`).length===0?new Q({message:`No entry in pubKeyCredParams was of type "public-key"`,code:`ERROR_MALFORMED_PUBKEYCREDPARAMS`,cause:e}):new Q({message:`No available authenticator supported any of the specified pubKeyCredParams algorithms`,code:`ERROR_AUTHENTICATOR_NO_SUPPORTED_PUBKEYCREDPARAMS_ALG`,cause:e});else if(e.name===`SecurityError`){let t=window.location.hostname;if(Fi(t)){if(n.rp.id!==t)return new Q({message:`The RP ID "${n.rp.id}" is invalid for this domain`,code:`ERROR_INVALID_RP_ID`,cause:e})}else return new Q({message:`${window.location.hostname} is an invalid domain`,code:`ERROR_INVALID_DOMAIN`,cause:e})}else if(e.name===`TypeError`){if(n.user.id.byteLength<1||n.user.id.byteLength>64)return new Q({message:`User ID was not between 1 and 64 characters`,code:`ERROR_INVALID_USER_ID_LENGTH`,cause:e})}else if(e.name===`UnknownError`)return new Q({message:`The authenticator was unable to process the specified options, or could not create a new credential`,code:`ERROR_AUTHENTICATOR_GENERAL_ERROR`,cause:e});return new Q({message:`a Non-Webauthn related error has occurred`,code:`ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY`,cause:e})}function ki({error:e,options:t}){let{publicKey:n}=t;if(!n)throw Error(`options was missing required publicKey property`);if(e.name===`AbortError`){if(t.signal instanceof AbortSignal)return new Q({message:`Authentication ceremony was sent an abort signal`,code:`ERROR_CEREMONY_ABORTED`,cause:e})}else if(e.name===`NotAllowedError`)return new Q({message:e.message,code:`ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY`,cause:e});else if(e.name===`SecurityError`){let t=window.location.hostname;if(Fi(t)){if(n.rpId!==t)return new Q({message:`The RP ID "${n.rpId}" is invalid for this domain`,code:`ERROR_INVALID_RP_ID`,cause:e})}else return new Q({message:`${window.location.hostname} is an invalid domain`,code:`ERROR_INVALID_DOMAIN`,cause:e})}else if(e.name===`UnknownError`)return new Q({message:`The authenticator was unable to process the specified options, or could not create a new assertion signature`,code:`ERROR_AUTHENTICATOR_GENERAL_ERROR`,cause:e});return new Q({message:`a Non-Webauthn related error has occurred`,code:`ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY`,cause:e})}let Ai=new class{createNewAbortSignal(){if(this.controller){let e=Error(`Cancelling existing WebAuthn API call for new one`);e.name=`AbortError`,this.controller.abort(e)}let e=new AbortController;return this.controller=e,e.signal}cancelCeremony(){if(this.controller){let e=Error(`Manually cancelling existing WebAuthn API call`);e.name=`AbortError`,this.controller.abort(e),this.controller=void 0}}};function ji(e){if(!e)throw Error(`Credential creation options are required`);if(typeof PublicKeyCredential<`u`&&`parseCreationOptionsFromJSON`in PublicKeyCredential&&typeof PublicKeyCredential.parseCreationOptionsFromJSON==`function`)return PublicKeyCredential.parseCreationOptionsFromJSON(e);let{challenge:n,user:r,excludeCredentials:i}=e,a=t(e,[`challenge`,`user`,`excludeCredentials`]),o=Sr(n).buffer,s=Object.assign(Object.assign({},r),{id:Sr(r.id).buffer}),c=Object.assign(Object.assign({},a),{challenge:o,user:s});if(i&&i.length>0){c.excludeCredentials=Array(i.length);for(let e=0;e<i.length;e++){let t=i[e];c.excludeCredentials[e]=Object.assign(Object.assign({},t),{id:Sr(t.id).buffer,type:t.type||`public-key`,transports:t.transports})}}return c}function Mi(e){if(!e)throw Error(`Credential request options are required`);if(typeof PublicKeyCredential<`u`&&`parseRequestOptionsFromJSON`in PublicKeyCredential&&typeof PublicKeyCredential.parseRequestOptionsFromJSON==`function`)return PublicKeyCredential.parseRequestOptionsFromJSON(e);let{challenge:n,allowCredentials:r}=e,i=t(e,[`challenge`,`allowCredentials`]),a=Sr(n).buffer,o=Object.assign(Object.assign({},i),{challenge:a});if(r&&r.length>0){o.allowCredentials=Array(r.length);for(let e=0;e<r.length;e++){let t=r[e];o.allowCredentials[e]=Object.assign(Object.assign({},t),{id:Sr(t.id).buffer,type:t.type||`public-key`,transports:t.transports})}}return o}function Ni(e){if(`toJSON`in e&&typeof e.toJSON==`function`)return e.toJSON();let t=e;return{id:e.id,rawId:e.id,response:{attestationObject:z(new Uint8Array(e.response.attestationObject)),clientDataJSON:z(new Uint8Array(e.response.clientDataJSON))},type:`public-key`,clientExtensionResults:e.getClientExtensionResults(),authenticatorAttachment:t.authenticatorAttachment??void 0}}function Pi(e){if(`toJSON`in e&&typeof e.toJSON==`function`)return e.toJSON();let t=e,n=e.getClientExtensionResults(),r=e.response;return{id:e.id,rawId:e.id,response:{authenticatorData:z(new Uint8Array(r.authenticatorData)),clientDataJSON:z(new Uint8Array(r.clientDataJSON)),signature:z(new Uint8Array(r.signature)),userHandle:r.userHandle?z(new Uint8Array(r.userHandle)):void 0},type:`public-key`,clientExtensionResults:n,authenticatorAttachment:t.authenticatorAttachment??void 0}}function Fi(e){return e===`localhost`||/^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$/i.test(e)}function Ii(){return!!(B()&&`PublicKeyCredential`in window&&window.PublicKeyCredential&&`credentials`in navigator&&typeof(navigator==null?void 0:navigator.credentials)?.create==`function`&&typeof(navigator==null?void 0:navigator.credentials)?.get==`function`)}async function Li(e){try{let t=await navigator.credentials.create(e);return t?t instanceof PublicKeyCredential?{data:t,error:null}:{data:null,error:new Di(`Browser returned unexpected credential type`,t)}:{data:null,error:new Di(`Empty credential response`,t)}}catch(t){return{data:null,error:Oi({error:t,options:e})}}}async function Ri(e){try{let t=await navigator.credentials.get(e);return t?t instanceof PublicKeyCredential?{data:t,error:null}:{data:null,error:new Di(`Browser returned unexpected credential type`,t)}:{data:null,error:new Di(`Empty credential response`,t)}}catch(t){return{data:null,error:ki({error:t,options:e})}}}let zi={hints:[`security-key`],authenticatorSelection:{authenticatorAttachment:`cross-platform`,requireResidentKey:!1,userVerification:`preferred`,residentKey:`discouraged`},attestation:`direct`},Bi={userVerification:`preferred`,hints:[`security-key`],attestation:`direct`};function Vi(...e){let t=e=>typeof e==`object`&&!!e&&!Array.isArray(e),n=e=>e instanceof ArrayBuffer||ArrayBuffer.isView(e),r={};for(let i of e)if(i)for(let e in i){let a=i[e];if(a!==void 0)if(Array.isArray(a))r[e]=a;else if(n(a))r[e]=a;else if(t(a)){let n=r[e];t(n)?r[e]=Vi(n,a):r[e]=Vi(a)}else r[e]=a}return r}function Hi(e,t){return Vi(zi,e,t||{})}function Ui(e,t){return Vi(Bi,e,t||{})}var Wi=class{constructor(e){this.client=e,this.enroll=this._enroll.bind(this),this.challenge=this._challenge.bind(this),this.verify=this._verify.bind(this),this.authenticate=this._authenticate.bind(this),this.register=this._register.bind(this)}async _enroll(e){return this.client.mfa.enroll(Object.assign(Object.assign({},e),{factorType:`webauthn`}))}async _challenge({factorId:e,webauthn:t,friendlyName:n,signal:r},i){try{let{data:a,error:o}=await this.client.mfa.challenge({factorId:e,webauthn:t});if(!a)return{data:null,error:o};let s=r??Ai.createNewAbortSignal();if(a.webauthn.type===`create`){let{user:e}=a.webauthn.credential_options.publicKey;if(!e.name){let t=n;if(t)e.name=`${e.id}:${t}`;else{let t=(await this.client.getUser()).data.user,n=t?.user_metadata?.name||t?.email||t?.id||`User`;e.name=`${e.id}:${n}`}}e.displayName||=e.name}switch(a.webauthn.type){case`create`:{let{data:t,error:n}=await Li({publicKey:Hi(a.webauthn.credential_options.publicKey,i?.create),signal:s});return t?{data:{factorId:e,challengeId:a.id,webauthn:{type:a.webauthn.type,credential_response:t}},error:null}:{data:null,error:n}}case`request`:{let t=Ui(a.webauthn.credential_options.publicKey,i?.request),{data:n,error:r}=await Ri(Object.assign(Object.assign({},a.webauthn.credential_options),{publicKey:t,signal:s}));return n?{data:{factorId:e,challengeId:a.id,webauthn:{type:a.webauthn.type,credential_response:n}},error:null}:{data:null,error:r}}}}catch(e){return P(e)?{data:null,error:e}:{data:null,error:new F(`Unexpected error in challenge`,e)}}}async _verify({challengeId:e,factorId:t,webauthn:n}){return this.client.mfa.verify({factorId:t,challengeId:e,webauthn:n})}async _authenticate({factorId:e,webauthn:{rpId:t=typeof window<`u`?window.location.hostname:void 0,rpOrigins:n=typeof window<`u`?[window.location.origin]:void 0,signal:r}={}},i){if(!t)return{data:null,error:new Xn(`rpId is required for WebAuthn authentication`)};try{if(!Ii())return{data:null,error:new F(`Browser does not support WebAuthn`,null)};let{data:a,error:o}=await this.challenge({factorId:e,webauthn:{rpId:t,rpOrigins:n},signal:r},{request:i});if(!a)return{data:null,error:o};let{webauthn:s}=a;return this._verify({factorId:e,challengeId:a.challengeId,webauthn:{type:s.type,rpId:t,rpOrigins:n,credential_response:s.credential_response}})}catch(e){return P(e)?{data:null,error:e}:{data:null,error:new F(`Unexpected error in authenticate`,e)}}}async _register({friendlyName:e,webauthn:{rpId:t=typeof window<`u`?window.location.hostname:void 0,rpOrigins:n=typeof window<`u`?[window.location.origin]:void 0,signal:r}={}},i){if(!t)return{data:null,error:new Xn(`rpId is required for WebAuthn registration`)};try{if(!Ii())return{data:null,error:new F(`Browser does not support WebAuthn`,null)};let{data:a,error:o}=await this._enroll({friendlyName:e});if(!a)return await this.client.mfa.listFactors().then(t=>t.data?.all.find(t=>t.factor_type===`webauthn`&&t.friendly_name===e&&t.status===`unverified`)).then(e=>e?this.client.mfa.unenroll({factorId:e?.id}):void 0),{data:null,error:o};let{data:s,error:c}=await this._challenge({factorId:a.id,friendlyName:a.friendly_name,webauthn:{rpId:t,rpOrigins:n},signal:r},{create:i});return s?this._verify({factorId:a.id,challengeId:s.challengeId,webauthn:{rpId:t,rpOrigins:n,type:s.webauthn.type,credential_response:s.webauthn.credential_response}}):{data:null,error:c}}catch(e){return P(e)?{data:null,error:e}:{data:null,error:new F(`Unexpected error in register`,e)}}}};Si();let Gi={url:`http://localhost:9999`,storageKey:`supabase.auth.token`,autoRefreshToken:!0,persistSession:!0,detectSessionInUrl:!0,headers:Kn,flowType:`implicit`,debug:!1,hasCustomAuthorizationHeader:!1,throwOnError:!1,lockAcquireTimeout:5e3,skipAutoInitialize:!1,experimental:{}},$={},Ki=!1;var qi=class e{get jwks(){return $[this.storageKey]?.jwks??{keys:[]}}set jwks(e){$[this.storageKey]=Object.assign(Object.assign({},$[this.storageKey]),{jwks:e})}get jwks_cached_at(){return $[this.storageKey]?.cachedAt??-(2**53-1)}set jwks_cached_at(e){$[this.storageKey]=Object.assign(Object.assign({},$[this.storageKey]),{cachedAt:e})}constructor(t){var n;this.userStorage=null,this.memoryStorage=null,this.stateChangeEmitters=new Map,this.autoRefreshTicker=null,this.autoRefreshTickTimeout=null,this.visibilityChangedCallback=null,this.refreshingDeferred=null,this.lastRefreshFailure=null,this._sessionRemovalEpoch=0,this.initializePromise=null,this._pendingInitNotifications=null,this.detectSessionInUrl=!0,this.hasCustomAuthorizationHeader=!1,this.suppressGetSessionWarning=!1,this.lock=null,this.lockAcquired=!1,this.pendingInLock=[],this.broadcastChannel=null,this.logger=console.log;let r=Object.assign(Object.assign({},Gi),t);if(this.storageKey=r.storageKey,this.instanceID=e.nextInstanceID[this.storageKey]??0,e.nextInstanceID[this.storageKey]=this.instanceID+1,this.logDebugMessages=!!r.debug,typeof r.debug==`function`&&(this.logger=r.debug),this.instanceID>0&&B()){let e=`${this._logPrefix()} Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.`;console.warn(e),this.logDebugMessages&&console.trace(e)}if(this.persistSession=r.persistSession,this.autoRefreshToken=r.autoRefreshToken,this.experimental=r.experimental??{},this.admin=new mi({url:r.url,headers:r.headers,fetch:r.fetch,experimental:this.experimental}),this.url=r.url,this.headers=r.headers,this.fetch=Or(r.fetch),this.detectSessionInUrl=r.detectSessionInUrl,this.flowType=r.flowType,this.hasCustomAuthorizationHeader=r.hasCustomAuthorizationHeader,this.throwOnError=r.throwOnError,this.lockAcquireTimeout=r.lockAcquireTimeout,r.lock!=null&&(this.lock=r.lock,Ki||(Ki=!0,console.warn(`${this._logPrefix()} The "lock" option is deprecated and will be removed in v3. The client now coordinates session refreshes without a lock, so most apps can drop the option. See https://github.com/supabase/supabase-js/blob/master/packages/core/auth-js/migrations/lockless-coordination.md`))),this.jwks||(this.jwks={keys:[]},this.jwks_cached_at=-(2**53-1)),this.mfa={verify:this._verify.bind(this),enroll:this._enroll.bind(this),unenroll:this._unenroll.bind(this),challenge:this._challenge.bind(this),listFactors:this._listFactors.bind(this),challengeAndVerify:this._challengeAndVerify.bind(this),getAuthenticatorAssuranceLevel:this._getAuthenticatorAssuranceLevel.bind(this),webauthn:new Wi(this),recoveryCodes:{getStatus:this._getRecoveryCodesStatus.bind(this),generate:this._generateRecoveryCodes.bind(this),verify:this._verifyRecoveryCode.bind(this),regenerate:this._regenerateRecoveryCodes.bind(this),unenroll:this._unenrollRecoveryCodes.bind(this)}},this.oauth={getAuthorizationDetails:this._getAuthorizationDetails.bind(this),approveAuthorization:this._approveAuthorization.bind(this),denyAuthorization:this._denyAuthorization.bind(this),listGrants:this._listOAuthGrants.bind(this),revokeGrant:this._revokeOAuthGrant.bind(this)},this.passkey={startRegistration:this._startPasskeyRegistration.bind(this),verifyRegistration:this._verifyPasskeyRegistration.bind(this),startAuthentication:this._startPasskeyAuthentication.bind(this),verifyAuthentication:this._verifyPasskeyAuthentication.bind(this),list:this._listPasskeys.bind(this),update:this._updatePasskey.bind(this),delete:this._deletePasskey.bind(this)},this.persistSession?(r.storage?this.storage=r.storage:Er()?this.storage=globalThis.localStorage:(this.memoryStorage={},this.storage=hi(this.memoryStorage)),r.userStorage&&(this.userStorage=r.userStorage)):(this.memoryStorage={},this.storage=hi(this.memoryStorage)),B()&&globalThis.BroadcastChannel&&this.persistSession&&this.storageKey){try{this.broadcastChannel=new globalThis.BroadcastChannel(this.storageKey)}catch(e){console.error(`Failed to create a new BroadcastChannel, multi-tab state changes will not be available`,e)}(n=this.broadcastChannel)==null||n.addEventListener(`message`,async e=>{this._debug(`received broadcast notification from other tab or client`,e),(e.data.event===`TOKEN_REFRESHED`||e.data.event===`SIGNED_IN`)&&(this.lastRefreshFailure=null);try{await this._notifyAllSubscribers(e.data.event,e.data.session,!1)}catch(e){this._debug(`#broadcastChannel`,`error`,e)}})}r.skipAutoInitialize||this.initialize().catch(e=>{this._debug(`#initialize()`,`error`,e)})}isThrowOnErrorEnabled(){return this.throwOnError}_returnResult(e){if(this.throwOnError&&e&&e.error)throw e.error;return e}_logPrefix(){return`GoTrueClient@${this.storageKey}:${this.instanceID} (${Wn}) ${new Date().toISOString()}`}_debug(...e){return this.logDebugMessages&&this.logger(this._logPrefix(),...e),this}async initialize(){if(this.initializePromise)return await this.initializePromise;this._pendingInitNotifications=[],this.initializePromise=(async()=>this.lock==null?await this._initialize():await this._acquireLock(this.lockAcquireTimeout,async()=>await this._initialize()))();let e=await this.initializePromise,t=this._pendingInitNotifications??[];this._pendingInitNotifications=null;for(let e of t)await this._notifyAllSubscribers(e.event,e.session,e.broadcast);return e}async _initialize(){try{let e={},t=`none`;if(B()&&(e=Dr(window.location.href),this._isImplicitGrantCallback(e)?t=`implicit`:await this._isPKCECallback(e)&&(t=`pkce`)),B()&&this.detectSessionInUrl&&t!==`none`){let{data:n,error:r}=await this._getSessionFromURL(e,t);if(r){if(this._debug(`#_initialize()`,`error detecting session from URL`,r),nr(r)){let e=r.details?.code;if(e===`identity_already_exists`||e===`identity_not_found`||e===`single_identity_not_deletable`)return{error:r}}return{error:r}}let{session:i,redirectType:a}=n;return this._debug(`#_initialize()`,`detected session in URL`,i,`redirect type`,a),await this._saveSession(i),setTimeout(async()=>{a===`recovery`?await this._notifyAllSubscribers(`PASSWORD_RECOVERY`,i):await this._notifyAllSubscribers(`SIGNED_IN`,i)},0),{error:null}}return await this._recoverAndRefresh(),{error:null}}catch(e){return P(e)?this._returnResult({error:e}):this._returnResult({error:new F(`Unexpected error during initialization`,e)})}finally{await this._handleVisibilityChange(),this._debug(`#_initialize()`,`end`)}}async signInAnonymously(e){try{let{data:t,error:n}=await J(this.fetch,`POST`,`${this.url}/signup`,{headers:this.headers,body:{data:e?.options?.data??{},gotrue_meta_security:{captcha_token:e?.options?.captchaToken}},xform:Y});if(n||!t)return this._returnResult({data:{user:null,session:null},error:n});let r=t.session,i=t.user;return t.session&&(await this._saveSession(t.session),await this._notifyAllSubscribers(`SIGNED_IN`,r)),this._returnResult({data:{user:i,session:r},error:null})}catch(e){if(P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async signUp(e){let t=null;try{let n;if(`email`in e){let{email:r,password:i,options:a}=e,o=null,s=null;this.flowType===`pkce`&&([o,s,t]=await this._getCodeChallengeAndMethod()),n=await J(this.fetch,`POST`,`${this.url}/signup`,{headers:this.headers,redirectTo:this._maybeAppendFlowIdToRedirect(a?.emailRedirectTo,t),body:{email:r,password:i,data:a?.data??{},gotrue_meta_security:{captcha_token:a?.captchaToken},code_challenge:o,code_challenge_method:s},xform:Y})}else if(`phone`in e){let{phone:t,password:r,options:i}=e;n=await J(this.fetch,`POST`,`${this.url}/signup`,{headers:this.headers,body:{phone:t,password:r,data:i?.data??{},channel:i?.channel??`sms`,gotrue_meta_security:{captcha_token:i?.captchaToken}},xform:Y})}else throw new er(`You must provide either an email or phone number and a password`);let{data:r,error:i}=n;if(i||!r)return await G(this.storage,this.storageKey,t),this._returnResult({data:{user:null,session:null},error:i});let a=r.session,o=r.user;return r.session&&(await this._saveSession(r.session),await this._notifyAllSubscribers(`SIGNED_IN`,a)),this._returnResult({data:{user:o,session:a},error:null})}catch(e){if(await G(this.storage,this.storageKey,t),P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async signInWithPassword(e){try{let t;if(`email`in e){let{email:n,password:r,options:i}=e;t=await J(this.fetch,`POST`,`${this.url}/token?grant_type=password`,{headers:this.headers,body:{email:n,password:r,gotrue_meta_security:{captcha_token:i?.captchaToken}},xform:ci})}else if(`phone`in e){let{phone:n,password:r,options:i}=e;t=await J(this.fetch,`POST`,`${this.url}/token?grant_type=password`,{headers:this.headers,body:{phone:n,password:r,gotrue_meta_security:{captcha_token:i?.captchaToken}},xform:ci})}else throw new er(`You must provide either an email or phone number and a password`);let{data:n,error:r}=t;if(r)return this._returnResult({data:{user:null,session:null},error:r});if(!n||!n.session||!n.user){let e=new R;return this._returnResult({data:{user:null,session:null},error:e})}return n.session&&(await this._saveSession(n.session),await this._notifyAllSubscribers(`SIGNED_IN`,n.session)),this._returnResult({data:Object.assign({user:n.user,session:n.session},n.weak_password?{weakPassword:n.weak_password}:null),error:r})}catch(e){if(P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async signInWithOAuth(e){return await this._handleProviderSignIn(e.provider,{redirectTo:e.options?.redirectTo,scopes:e.options?.scopes,queryParams:e.options?.queryParams,skipBrowserRedirect:e.options?.skipBrowserRedirect})}async exchangeCodeForSession(e,t){return await this.initializePromise,this.lock==null?this._exchangeCodeForSession(e,t):this._acquireLock(this.lockAcquireTimeout,async()=>this._exchangeCodeForSession(e,t))}async signInWithWeb3(e){let{chain:t}=e;switch(t){case`ethereum`:return await this.signInWithEthereum(e);case`solana`:return await this.signInWithSolana(e);default:throw Error(`@supabase/auth-js: Unsupported chain "${t}"`)}}async signInWithEthereum(e){let t,n;if(`message`in e)t=e.message,n=e.signature;else{let{chain:r,wallet:i,statement:a,options:o}=e,s;if(B())if(typeof i==`object`)s=i;else{let e=window;if(`ethereum`in e&&typeof e.ethereum==`object`&&`request`in e.ethereum&&typeof e.ethereum.request==`function`)s=e.ethereum;else throw Error(`@supabase/auth-js: No compatible Ethereum wallet interface on the window object (window.ethereum) detected. Make sure the user already has a wallet installed and connected for this app. Prefer passing the wallet interface object directly to signInWithWeb3({ chain: 'ethereum', wallet: resolvedUserWallet }) instead.`)}else{if(typeof i!=`object`||!o?.url)throw Error(`@supabase/auth-js: Both wallet and url must be specified in non-browser environments.`);s=i}let c=new URL(o?.url??window.location.href),l=await s.request({method:`eth_requestAccounts`}).then(e=>e).catch(()=>{throw Error(`@supabase/auth-js: Wallet method eth_requestAccounts is missing or invalid`)});if(!l||l.length===0)throw Error(`@supabase/auth-js: No accounts available. Please ensure the wallet is connected.`);let u=Ci(l[0]),d=o?.signInWithEthereum?.chainId;d||=wi(await s.request({method:`eth_chainId`})),t=Ei({domain:c.host,address:u,statement:a,uri:c.href,version:`1`,chainId:d,nonce:o?.signInWithEthereum?.nonce,issuedAt:o?.signInWithEthereum?.issuedAt??new Date,expirationTime:o?.signInWithEthereum?.expirationTime,notBefore:o?.signInWithEthereum?.notBefore,requestId:o?.signInWithEthereum?.requestId,resources:o?.signInWithEthereum?.resources}),n=await s.request({method:`personal_sign`,params:[Ti(t),u]})}try{let{data:r,error:i}=await J(this.fetch,`POST`,`${this.url}/token?grant_type=web3`,{headers:this.headers,body:Object.assign({chain:`ethereum`,message:t,signature:n},e.options?.captchaToken?{gotrue_meta_security:{captcha_token:e.options?.captchaToken}}:null),xform:Y});if(i)throw i;if(!r||!r.session||!r.user){let e=new R;return this._returnResult({data:{user:null,session:null},error:e})}return r.session&&(await this._saveSession(r.session),await this._notifyAllSubscribers(`SIGNED_IN`,r.session)),this._returnResult({data:Object.assign({},r),error:i})}catch(e){if(P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async signInWithSolana(e){let t,n;if(`message`in e)t=e.message,n=e.signature;else{let{chain:r,wallet:i,statement:a,options:o}=e,s;if(B())if(typeof i==`object`)s=i;else{let e=window;if(`solana`in e&&typeof e.solana==`object`&&(`signIn`in e.solana&&typeof e.solana.signIn==`function`||`signMessage`in e.solana&&typeof e.solana.signMessage==`function`))s=e.solana;else throw Error(`@supabase/auth-js: No compatible Solana wallet interface on the window object (window.solana) detected. Make sure the user already has a wallet installed and connected for this app. Prefer passing the wallet interface object directly to signInWithWeb3({ chain: 'solana', wallet: resolvedUserWallet }) instead.`)}else{if(typeof i!=`object`||!o?.url)throw Error(`@supabase/auth-js: Both wallet and url must be specified in non-browser environments.`);s=i}let c=new URL(o?.url??window.location.href);if(`signIn`in s&&s.signIn){let e=await s.signIn(Object.assign(Object.assign(Object.assign({issuedAt:new Date().toISOString()},o?.signInWithSolana),{version:`1`,domain:c.host,uri:c.href}),a?{statement:a}:null)),r;if(Array.isArray(e)&&e[0]&&typeof e[0]==`object`)r=e[0];else if(e&&typeof e==`object`&&`signedMessage`in e&&`signature`in e)r=e;else throw Error(`@supabase/auth-js: Wallet method signIn() returned unrecognized value`);if(`signedMessage`in r&&`signature`in r&&(typeof r.signedMessage==`string`||r.signedMessage instanceof Uint8Array)&&r.signature instanceof Uint8Array)t=typeof r.signedMessage==`string`?r.signedMessage:new TextDecoder().decode(r.signedMessage),n=r.signature;else throw Error(`@supabase/auth-js: Wallet method signIn() API returned object without signedMessage and signature fields`)}else{if(!(`signMessage`in s)||typeof s.signMessage!=`function`||!(`publicKey`in s)||typeof s!=`object`||!s.publicKey||!(`toBase58`in s.publicKey)||typeof s.publicKey.toBase58!=`function`)throw Error(`@supabase/auth-js: Wallet does not have a compatible signMessage() and publicKey.toBase58() API`);t=[`${c.host} wants you to sign in with your Solana account:`,s.publicKey.toBase58(),...a?[``,a,``]:[``],`Version: 1`,`URI: ${c.href}`,`Issued At: ${o?.signInWithSolana?.issuedAt??new Date().toISOString()}`,...o?.signInWithSolana?.notBefore?[`Not Before: ${o.signInWithSolana.notBefore}`]:[],...o?.signInWithSolana?.expirationTime?[`Expiration Time: ${o.signInWithSolana.expirationTime}`]:[],...o?.signInWithSolana?.chainId?[`Chain ID: ${o.signInWithSolana.chainId}`]:[],...o?.signInWithSolana?.nonce?[`Nonce: ${o.signInWithSolana.nonce}`]:[],...o?.signInWithSolana?.requestId?[`Request ID: ${o.signInWithSolana.requestId}`]:[],...o?.signInWithSolana?.resources?.length?[`Resources`,...o.signInWithSolana.resources.map(e=>`- ${e}`)]:[]].join(`
 `);let e=await s.signMessage(new TextEncoder().encode(t),`utf8`);if(!e||!(e instanceof Uint8Array))throw Error(`@supabase/auth-js: Wallet signMessage() API returned an recognized value`);n=e}}try{let{data:r,error:i}=await J(this.fetch,`POST`,`${this.url}/token?grant_type=web3`,{headers:this.headers,body:Object.assign({chain:`solana`,message:t,signature:z(n)},e.options?.captchaToken?{gotrue_meta_security:{captcha_token:e.options?.captchaToken}}:null),xform:Y});if(i)throw i;if(!r||!r.session||!r.user){let e=new R;return this._returnResult({data:{user:null,session:null},error:e})}return r.session&&(await this._saveSession(r.session),await this._notifyAllSubscribers(`SIGNED_IN`,r.session)),this._returnResult({data:Object.assign({},r),error:i})}catch(e){if(P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async _exchangeCodeForSession(e,t){let n=t?.flowId!=null,r=n?zr(t?.flowId):B()?zr(Dr(window.location.href)[N]):null;n&&!r&&this._debug(`#_exchangeCodeForSession()`,`provided flowId is not a valid flow id`,t?.flowId);let{verifier:i,flowId:a}=n&&!r?{verifier:null,flowId:null}:await Gr(this.storage,this.storageKey,r),[o,s]=(i??``).split(`/`);try{if(!o&&this.flowType===`pkce`)throw new ir;let{data:t,error:n}=await J(this.fetch,`POST`,`${this.url}/token?grant_type=pkce`,{headers:this.headers,body:{auth_code:e,code_verifier:o},xform:Y});if(await G(this.storage,this.storageKey,a),n)throw n;if(!t||!t.session||!t.user){let e=new R;return this._returnResult({data:{user:null,session:null,redirectType:null},error:e})}return t.session&&(await this._saveSession(t.session),await this._notifyAllSubscribers(s===`recovery`?`PASSWORD_RECOVERY`:`SIGNED_IN`,t.session)),this._returnResult({data:Object.assign(Object.assign({},t),{redirectType:s??null}),error:n})}catch(e){if(await G(this.storage,this.storageKey,a),P(e))return this._returnResult({data:{user:null,session:null,redirectType:null},error:e});throw e}}async signInWithIdToken(e){try{let{options:t,provider:n,token:r,access_token:i,nonce:a}=e,{data:o,error:s}=await J(this.fetch,`POST`,`${this.url}/token?grant_type=id_token`,{headers:this.headers,body:{provider:n,id_token:r,access_token:i,nonce:a,gotrue_meta_security:{captcha_token:t?.captchaToken}},xform:Y});if(s)return this._returnResult({data:{user:null,session:null},error:s});if(!o||!o.session||!o.user){let e=new R;return this._returnResult({data:{user:null,session:null},error:e})}return o.session&&(await this._saveSession(o.session),await this._notifyAllSubscribers(`SIGNED_IN`,o.session)),this._returnResult({data:o,error:s})}catch(e){if(P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async signInWithOtp(e){let t=null;try{if(`email`in e){let{email:n,options:r}=e,i=null,a=null;this.flowType===`pkce`&&([i,a,t]=await this._getCodeChallengeAndMethod());let{error:o}=await J(this.fetch,`POST`,`${this.url}/otp`,{headers:this.headers,body:{email:n,data:r?.data??{},create_user:r?.shouldCreateUser??!0,gotrue_meta_security:{captcha_token:r?.captchaToken},code_challenge:i,code_challenge_method:a},redirectTo:this._maybeAppendFlowIdToRedirect(r?.emailRedirectTo,t)});return this._returnResult({data:{user:null,session:null},error:o})}if(`phone`in e){let{phone:t,options:n}=e,{data:r,error:i}=await J(this.fetch,`POST`,`${this.url}/otp`,{headers:this.headers,body:{phone:t,data:n?.data??{},create_user:n?.shouldCreateUser??!0,gotrue_meta_security:{captcha_token:n?.captchaToken},channel:n?.channel??`sms`}});return this._returnResult({data:{user:null,session:null,messageId:r?.message_id},error:i})}throw new er(`You must provide either an email or phone number.`)}catch(e){if(await G(this.storage,this.storageKey,t),P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async verifyOtp(e){try{let t,n;`options`in e&&(t=e.options?.redirectTo,n=e.options?.captchaToken);let{data:r,error:i}=await J(this.fetch,`POST`,`${this.url}/verify`,{headers:this.headers,body:Object.assign(Object.assign({},e),{gotrue_meta_security:{captcha_token:n}}),redirectTo:t,xform:Y});if(i)throw i;if(!r)throw Error(`An error occurred on token verification.`);let a=r.session,o=r.user;return a?.access_token&&(await this._saveSession(a),await this._notifyAllSubscribers(e.type==`recovery`?`PASSWORD_RECOVERY`:`SIGNED_IN`,a)),this._returnResult({data:{user:o,session:a},error:null})}catch(e){if(P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async signInWithSSO(e){let t=null;try{let n=null,r=null;this.flowType===`pkce`&&([n,r,t]=await this._getCodeChallengeAndMethod());let i=await J(this.fetch,`POST`,`${this.url}/sso`,{body:Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({},`providerId`in e?{provider_id:e.providerId}:null),`domain`in e?{domain:e.domain}:null),{redirect_to:this._maybeAppendFlowIdToRedirect(e.options?.redirectTo,t)}),e?.options?.captchaToken?{gotrue_meta_security:{captcha_token:e.options.captchaToken}}:null),{skip_http_redirect:!0,code_challenge:n,code_challenge_method:r}),headers:this.headers,xform:li});return i.data?.url&&B()&&!e.options?.skipBrowserRedirect&&window.location.assign(i.data.url),this._returnResult(i)}catch(e){if(await G(this.storage,this.storageKey,t),P(e))return this._returnResult({data:null,error:e});throw e}}async reauthenticate(){return await this.initializePromise,this.lock==null?await this._reauthenticate():await this._acquireLock(this.lockAcquireTimeout,async()=>await this._reauthenticate())}async _reauthenticate(){try{return await this._useSession(async e=>{let{data:{session:t},error:n}=e;if(n)throw n;if(!t)throw new L;let{error:r}=await J(this.fetch,`GET`,`${this.url}/reauthenticate`,{headers:this.headers,jwt:t.access_token});return this._returnResult({data:{user:null,session:null},error:r})})}catch(e){if(P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async resend(e){let t=null;try{let n=`${this.url}/resend`;if(`email`in e){let{email:r,type:i,options:a}=e,o=null,s=null;this.flowType===`pkce`&&([o,s,t]=await this._getCodeChallengeAndMethod());let{error:c}=await J(this.fetch,`POST`,n,{headers:this.headers,body:{email:r,type:i,gotrue_meta_security:{captcha_token:a?.captchaToken},code_challenge:o,code_challenge_method:s},redirectTo:this._maybeAppendFlowIdToRedirect(a?.emailRedirectTo,t)});return c&&await G(this.storage,this.storageKey,t),this._returnResult({data:{user:null,session:null},error:c})}else if(`phone`in e){let{phone:t,type:r,options:i}=e,{data:a,error:o}=await J(this.fetch,`POST`,n,{headers:this.headers,body:{phone:t,type:r,gotrue_meta_security:{captcha_token:i?.captchaToken}}});return this._returnResult({data:{user:null,session:null,messageId:a?.message_id},error:o})}throw new er(`You must provide either an email or phone number and a type`)}catch(e){if(await G(this.storage,this.storageKey,t),P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async getSession(){return await this.initializePromise,this.lock==null?await this._useSession(async e=>e):await this._acquireLock(this.lockAcquireTimeout,async()=>this._useSession(async e=>e))}async _acquireLock(e,t){this._debug(`#_acquireLock`,`begin`,e);try{if(this.lockAcquired){let e=this.pendingInLock.length?this.pendingInLock[this.pendingInLock.length-1]:Promise.resolve(),n=(async()=>(await e,await t()))();return this.pendingInLock.push((async()=>{try{await n}catch{}})()),n}return await this.lock(`lock:${this.storageKey}`,e,async()=>{this._debug(`#_acquireLock`,`lock acquired for storage key`,this.storageKey);try{this.lockAcquired=!0;let e=t();for(this.pendingInLock.push((async()=>{try{await e}catch{}})()),await e;this.pendingInLock.length;){let e=[...this.pendingInLock];await Promise.all(e),this.pendingInLock.splice(0,e.length)}return await e}finally{this._debug(`#_acquireLock`,`lock released for storage key`,this.storageKey),this.lockAcquired=!1}})}finally{this._debug(`#_acquireLock`,`end`)}}async _useSession(e){this._debug(`#_useSession`,`begin`);try{return await e(await this.__loadSession())}finally{this._debug(`#_useSession`,`end`)}}async __loadSession(){this._debug(`#__loadSession()`,`begin`),this.lock!=null&&!this.lockAcquired&&this._debug(`#__loadSession()`,`used outside of an acquired lock!`,Error().stack);try{let e=null,t=await U(this.storage,this.storageKey);if(this._debug(`#getSession()`,`session from storage`,t),t!==null&&(this._isValidSession(t)?e=t:(this._debug(`#getSession()`,`session from storage is not valid`),await this._removeSession())),!e)return{data:{session:null},error:null};let n=e.expires_at?e.expires_at*1e3-Date.now()<Gn:!1;if(this._debug(`#__loadSession()`,`session has${n?``:` not`} expired`,`expires_at`,e.expires_at),!n)return{data:{session:await this._hydrateSessionUser(e)},error:null};let{data:r,error:i}=await this._callRefreshToken(e.refresh_token);if(i){let e=await U(this.storage,this.storageKey);return e&&this._isValidSession(e)&&e.expires_at&&e.expires_at*1e3>Date.now()?this._returnResult({data:{session:await this._hydrateSessionUser(e)},error:null}):this._returnResult({data:{session:null},error:i})}return this._returnResult({data:{session:r},error:null})}finally{this._debug(`#__loadSession()`,`end`)}}async _hydrateSessionUser(e){if(this.userStorage){let t=await U(this.userStorage,this.storageKey+`-user`);e.user=t?.user?t.user:ti()}if(this.storage.isServer&&e.user&&!e.user.__isUserNotAvailableProxy){let t={value:this.suppressGetSessionWarning};e.user=ni(e.user,t),t.value&&(this.suppressGetSessionWarning=!0)}return e}async getUser(e){if(e)return await this._getUser(e);await this.initializePromise;let t;return t=this.lock==null?await this._getUser():await this._acquireLock(this.lockAcquireTimeout,async()=>await this._getUser()),t.data.user&&(this.suppressGetSessionWarning=!0),t}async _getUser(e){try{return e?await J(this.fetch,`GET`,`${this.url}/user`,{headers:this.headers,jwt:e,xform:X}):await this._useSession(async e=>{let{data:t,error:n}=e;if(n)throw n;return!t.session?.access_token&&!this.hasCustomAuthorizationHeader?{data:{user:null},error:new L}:await J(this.fetch,`GET`,`${this.url}/user`,{headers:this.headers,jwt:t.session?.access_token??void 0,xform:X})})}catch(e){if(P(e))return $n(e)&&await this._removeSession(),this._returnResult({data:{user:null},error:e});throw e}}async updateUser(e,t={}){return await this.initializePromise,this.lock==null?await this._updateUser(e,t):await this._acquireLock(this.lockAcquireTimeout,async()=>await this._updateUser(e,t))}async _updateUser(e,t={}){let n=null;try{return await this._useSession(async r=>{let{data:i,error:a}=r;if(a)throw a;if(!i.session)throw new L;let o=i.session,s=null,c=null;this.flowType===`pkce`&&e.email!=null&&([s,c,n]=await this._getCodeChallengeAndMethod());let{data:l,error:u}=await J(this.fetch,`PUT`,`${this.url}/user`,{headers:this.headers,redirectTo:this._maybeAppendFlowIdToRedirect(t?.emailRedirectTo,n),body:Object.assign(Object.assign({},e),{code_challenge:s,code_challenge_method:c}),jwt:o.access_token,xform:X});if(u)throw u;return o.user=l.user,await this._saveSession(o),await this._notifyAllSubscribers(`USER_UPDATED`,o),this._returnResult({data:{user:o.user},error:null})})}catch(e){if(await G(this.storage,this.storageKey,n),P(e))return this._returnResult({data:{user:null},error:e});throw e}}async setSession(e){return await this.initializePromise,this.lock==null?await this._setSession(e):await this._acquireLock(this.lockAcquireTimeout,async()=>await this._setSession(e))}async _setSession(e){try{if(!e.access_token||!e.refresh_token)throw new L;let t=Date.now()/1e3,n=t,r=!0,i=null,{payload:a}=jr(e.access_token);if(a.exp&&(n=a.exp,r=n<=t),r){let{data:t,error:n}=await this._callRefreshToken(e.refresh_token);if(n)return this._returnResult({data:{user:null,session:null},error:n});if(!t)return{data:{user:null,session:null},error:null};i=t}else{let{data:r,error:a}=await this._getUser(e.access_token);if(a)return this._returnResult({data:{user:null,session:null},error:a});i={access_token:e.access_token,refresh_token:e.refresh_token,user:r.user,token_type:`bearer`,expires_in:n-t,expires_at:n},await this._saveSession(i),await this._notifyAllSubscribers(`SIGNED_IN`,i)}return this._returnResult({data:{user:i.user,session:i},error:null})}catch(e){if(P(e))return this._returnResult({data:{session:null,user:null},error:e});throw e}}async refreshSession(e){return await this.initializePromise,this.lock==null?await this._refreshSession(e):await this._acquireLock(this.lockAcquireTimeout,async()=>await this._refreshSession(e))}async _refreshSession(e){try{return await this._useSession(async t=>{if(!e){let{data:n,error:r}=t;if(r)throw r;e=n.session??void 0}if(!e?.refresh_token)throw new L;let{data:n,error:r}=await this._callRefreshToken(e.refresh_token);return r?this._returnResult({data:{user:null,session:null},error:r}):n?this._returnResult({data:{user:n.user,session:n},error:null}):this._returnResult({data:{user:null,session:null},error:null})})}catch(e){if(P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}}async _getSessionFromURL(e,t){try{if(!B())throw new tr(`No browser detected.`);if(e.error||e.error_description||e.error_code)throw new tr(e.error_description||`Error in URL with unspecified error_description`,{error:e.error||`unspecified_error`,code:e.error_code||`unspecified_code`});switch(t){case`implicit`:if(this.flowType===`pkce`)throw new rr(`Not a valid PKCE flow url.`);break;case`pkce`:if(this.flowType===`implicit`)throw new tr(`Not a valid implicit grant flow url.`);break;default:}if(t===`pkce`){if(this._debug(`#_initialize()`,`begin`,`is PKCE flow`,!0),!e.code)throw new rr(`No code detected.`);let{data:t,error:n}=await this._exchangeCodeForSession(e.code,{flowId:e[N]});if(n)throw n;let r=new URL(window.location.href);return r.searchParams.delete(`code`),r.searchParams.delete(N),window.history.replaceState(window.history.state,``,r.toString()),{data:{session:t.session,redirectType:t.redirectType??null},error:null}}let{provider_token:n,provider_refresh_token:r,access_token:i,refresh_token:a,expires_in:o,expires_at:s,token_type:c}=e;if(!i||!o||!a||!c)throw new tr(`No session defined in URL`);let l=Math.round(Date.now()/1e3),u=parseInt(o),d=l+u;s&&(d=parseInt(s));let f=d-l;f*1e3<=M&&console.warn(`@supabase/gotrue-js: Session as retrieved from URL expires in ${f}s, should have been closer to ${u}s`);let p=d-u;l-p>=120?console.warn(`@supabase/gotrue-js: Session as retrieved from URL was issued over 120s ago, URL could be stale`,p,d,l):l-p<0&&console.warn(`@supabase/gotrue-js: Session as retrieved from URL was issued in the future? Check the device clock for skew`,p,d,l);let{data:m,error:h}=await this._getUser(i);if(h)throw h;let g={provider_token:n,provider_refresh_token:r,access_token:i,expires_in:u,expires_at:d,refresh_token:a,token_type:c,user:m.user};return window.location.hash=``,this._debug(`#_getSessionFromURL()`,`clearing window.location.hash`),this._returnResult({data:{session:g,redirectType:e.type},error:null})}catch(e){if(P(e))return this._returnResult({data:{session:null,redirectType:null},error:e});throw e}}_isImplicitGrantCallback(e){return typeof this.detectSessionInUrl==`function`?this.detectSessionInUrl(new URL(window.location.href),e):!!(e.access_token||e.error||e.error_description||e.error_code)}async _isPKCECallback(e){if(!e.code)return!1;let t=zr(e[N]);return t&&await U(this.storage,Vr(this.storageKey,t))?!0:!!await U(this.storage,`${this.storageKey}-code-verifier`)}async signOut(e={scope:`global`}){return await this.initializePromise,this.lock==null?await this._signOut(e):await this._acquireLock(this.lockAcquireTimeout,async()=>await this._signOut(e))}async _signOut({scope:e}={scope:`global`}){return await this._useSession(async t=>{let n=async()=>{await this._removeSession()},{data:r,error:i}=t;if(i&&!$n(i))return this._returnResult({error:i});let a=r.session?.access_token;if(a){let{error:t}=await this.admin.signOut(a,e);if(t&&!(Qn(t)&&(t.status===404||t.status===401||t.status===403)||$n(t)))return e!==`others`&&await n(),this._returnResult({error:t})}return e!==`others`&&await n(),this._returnResult({error:null})})}onAuthStateChange(e){let t=Tr(),n={id:t,callback:e,unsubscribe:()=>{this._debug(`#unsubscribe()`,`state change callback with id removed`,t),this.stateChangeEmitters.delete(t)}};return this._debug(`#onAuthStateChange()`,`registered callback with id`,t),this.stateChangeEmitters.set(t,n),(async()=>{await this.initializePromise,this.lock==null?await this._emitInitialSession(t):await this._acquireLock(this.lockAcquireTimeout,async()=>{this._emitInitialSession(t)})})(),{data:{subscription:n}}}async _emitInitialSession(e){return await this._useSession(async t=>{try{let{data:{session:n},error:r}=t;if(r)throw r;await this.stateChangeEmitters.get(e)?.callback(`INITIAL_SESSION`,n),this._debug(`INITIAL_SESSION`,`callback id`,e,`session`,n)}catch(t){if(await this.stateChangeEmitters.get(e)?.callback(`INITIAL_SESSION`,null),this._debug(`INITIAL_SESSION`,`callback id`,e,`error`,t),lr(t))return;$n(t)||sr(t)||Qn(t)&&(t.code===`refresh_token_not_found`||t.code===`refresh_token_already_used`||t.code===`session_expired`)?console.warn(t):console.error(t)}})}async resetPasswordForEmail(e,t={}){let n=null,r=null,i=null;this.flowType===`pkce`&&([n,r,i]=await this._getCodeChallengeAndMethod(!0));try{return await J(this.fetch,`POST`,`${this.url}/recover`,{body:{email:e,code_challenge:n,code_challenge_method:r,gotrue_meta_security:{captcha_token:t.captchaToken}},headers:this.headers,redirectTo:this._maybeAppendFlowIdToRedirect(t.redirectTo,i)})}catch(e){if(await G(this.storage,this.storageKey,i),P(e))return this._returnResult({data:null,error:e});throw e}}async getUserIdentities(){try{let{data:e,error:t}=await this.getUser();if(t)throw t;return this._returnResult({data:{identities:e.user.identities??[]},error:null})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async linkIdentity(e){return`token`in e?this.linkIdentityIdToken(e):this.linkIdentityOAuth(e)}async linkIdentityOAuth(e){let t=null;try{let{data:n,error:r}=await this._useSession(async n=>{let{data:r,error:i}=n;if(i)throw i;let{url:a,flowId:o}=await this._getUrlForProvider(`${this.url}/user/identities/authorize`,e.provider,{redirectTo:e.options?.redirectTo,scopes:e.options?.scopes,queryParams:e.options?.queryParams,skipBrowserRedirect:!0});return t=o,await J(this.fetch,`GET`,a,{headers:this.headers,jwt:r.session?.access_token??void 0})});if(r)throw r;return B()&&!e.options?.skipBrowserRedirect&&window.location.assign(n?.url),this._returnResult({data:{provider:e.provider,url:n?.url,flowId:t},error:null})}catch(n){if(P(n))return this._returnResult({data:{provider:e.provider,url:null,flowId:t},error:n});throw n}}async linkIdentityIdToken(e){return await this._useSession(async t=>{try{let{error:n,data:{session:r}}=t;if(n)throw n;let{options:i,provider:a,token:o,access_token:s,nonce:c}=e,{data:l,error:u}=await J(this.fetch,`POST`,`${this.url}/token?grant_type=id_token`,{headers:this.headers,jwt:r?.access_token??void 0,body:{provider:a,id_token:o,access_token:s,nonce:c,link_identity:!0,gotrue_meta_security:{captcha_token:i?.captchaToken}},xform:Y});return u?this._returnResult({data:{user:null,session:null},error:u}):!l||!l.session||!l.user?this._returnResult({data:{user:null,session:null},error:new R}):(l.session&&(await this._saveSession(l.session),await this._notifyAllSubscribers(`USER_UPDATED`,l.session)),this._returnResult({data:l,error:u}))}catch(e){if(await G(this.storage,this.storageKey,null),P(e))return this._returnResult({data:{user:null,session:null},error:e});throw e}})}async unlinkIdentity(e){try{return await this._useSession(async t=>{let{data:n,error:r}=t;if(r)throw r;return await J(this.fetch,`DELETE`,`${this.url}/user/identities/${e.identity_id}`,{headers:this.headers,jwt:n.session?.access_token??void 0})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _refreshAccessToken(e){let t=`#_refreshAccessToken()`;this._debug(t,`begin`);try{let n=Date.now();return await Nr(async n=>(n>0&&await Mr(200*2**(n-1)),this._debug(t,`refreshing attempt`,n),await J(this.fetch,`POST`,`${this.url}/token?grant_type=refresh_token`,{body:{refresh_token:e},headers:this.headers,xform:Y})),(e,t)=>{let r=200*2**e;return t&&sr(t)&&Date.now()+r-n<M})}catch(e){if(this._debug(t,`error`,e),P(e))return this._returnResult({data:{session:null,user:null},error:e});throw e}finally{this._debug(t,`end`)}}_isValidSession(e){return typeof e==`object`&&!!e&&`access_token`in e&&`refresh_token`in e&&`expires_at`in e}async _handleProviderSignIn(e,t){let{url:n,flowId:r}=await this._getUrlForProvider(`${this.url}/authorize`,e,{redirectTo:t.redirectTo,scopes:t.scopes,queryParams:t.queryParams});return this._debug(`#_handleProviderSignIn()`,`provider`,e,`options`,t,`url`,n),B()&&!t.skipBrowserRedirect&&window.location.assign(n),{data:{provider:e,url:n,flowId:r},error:null}}async _recoverAndRefresh(){let e=`#_recoverAndRefresh()`;this._debug(e,`begin`);try{let t=await U(this.storage,this.storageKey);if(t&&this.userStorage){let e=await U(this.userStorage,this.storageKey+`-user`);!this.storage.isServer&&Object.is(this.storage,this.userStorage)&&!e&&(e={user:t.user},await H(this.userStorage,this.storageKey+`-user`,e)),t.user=e?.user??ti()}else if(t&&!t.user&&!t.user){let e=await U(this.storage,this.storageKey+`-user`);e&&e?.user?(t.user=e.user,await W(this.storage,this.storageKey+`-user`),await H(this.storage,this.storageKey,t)):t.user=ti()}if(this._debug(e,`session from storage`,t),!this._isValidSession(t)){this._debug(e,`session is not valid`),t!==null&&await this._removeSession();return}let n=(t.expires_at??1/0)*1e3-Date.now()<Gn;if(this._debug(e,`session has${n?``:` not`} expired with margin of ${Gn}s`),n){if(this.autoRefreshToken&&t.refresh_token){let{error:n}=await this._callRefreshToken(t.refresh_token);n&&(lr(n)?this._debug(e,`refresh discarded by commit guard`,n):this._debug(e,`refresh failed`,n))}}else if(t.user&&t.user.__isUserNotAvailableProxy===!0)try{let{data:n,error:r}=await this._getUser(t.access_token);!r&&n?.user?(t.user=n.user,await this._saveSession(t),await this._notifyAllSubscribers(`SIGNED_IN`,t)):this._debug(e,`could not get user data, skipping SIGNED_IN notification`)}catch(t){console.error(`Error getting user data:`,t),this._debug(e,`error getting user data, skipping SIGNED_IN notification`,t)}else await this._notifyAllSubscribers(`SIGNED_IN`,t)}catch(t){this._debug(e,`error`,t),sr(t)?console.warn(t):console.error(t);return}finally{this._debug(e,`end`)}}async _callRefreshToken(e){var t,n;if(!e)throw new L;if(this.refreshingDeferred)return this.refreshingDeferred.promise;if(this.lastRefreshFailure&&this.lastRefreshFailure.refreshToken===e&&Date.now()<this.lastRefreshFailure.expiresAt)return this._debug(`#_callRefreshToken()`,`returning cached failure (cooldown active)`),this.lastRefreshFailure.result;let r=`#_callRefreshToken()`;this._debug(r,`begin`);try{this.refreshingDeferred=new Ar,this.refreshingDeferred.promise.then(void 0,()=>{});let t=await U(this.storage,this.storageKey),{data:n,error:i}=await this._refreshAccessToken(e);if(i)throw i;if(!n.session)throw new L;let a=await U(this.storage,this.storageKey);if(t!==null&&(a===null||a.refresh_token!==t.refresh_token)){this._debug(r,`commit guard: storage changed since refresh started, discarding rotated tokens`,{startedWith:`present`,nowHolds:a?`replaced`:`cleared`});let e={data:null,error:new cr};return this.refreshingDeferred.resolve(e),e}let o=this._sessionRemovalEpoch;if(await this._saveSession(n.session),this._sessionRemovalEpoch!==o){this._debug(r,`commit guard (post-save): _removeSession ran during _saveSession, undoing write`),await W(this.storage,this.storageKey),this.userStorage&&await W(this.userStorage,this.storageKey+`-user`);let e={data:null,error:new cr};return this.refreshingDeferred.resolve(e),e}await this._notifyAllSubscribers(`TOKEN_REFRESHED`,n.session);let s={data:n.session,error:null};return this.lastRefreshFailure=null,this.refreshingDeferred.resolve(s),s}catch(i){if(this._debug(r,`error`,i),P(i)){let n={data:null,error:i};if(!sr(i)){let e=await U(this.storage,this.storageKey);e?.expires_at&&e.expires_at*1e3>Date.now()?this._debug(r,`proactive refresh failed, access token still valid — preserving session`):await this._removeSession()}return this.lastRefreshFailure={refreshToken:e,result:n,expiresAt:Date.now()+6e4},(t=this.refreshingDeferred)==null||t.resolve(n),n}throw(n=this.refreshingDeferred)==null||n.reject(i),i}finally{this.refreshingDeferred=null,this._debug(r,`end`)}}async _notifyAllSubscribers(e,t,n=!0){if(this._pendingInitNotifications!==null&&n){this._pendingInitNotifications.push({event:e,session:t,broadcast:n});return}let r=`#_notifyAllSubscribers(${e})`;this._debug(r,`begin`,t,`broadcast = ${n}`);try{this.broadcastChannel&&n&&this.broadcastChannel.postMessage({event:e,session:t});let r=[],i=Array.from(this.stateChangeEmitters.values()).map(async n=>{try{await n.callback(e,t)}catch(e){r.push(e)}});if(await Promise.all(i),r.length>0){for(let e=0;e<r.length;e+=1)console.error(r[e]);throw r[0]}}finally{this._debug(r,`end`)}}async _saveSession(e){this._debug(`#_saveSession()`,e),this.suppressGetSessionWarning=!0;let t=Object.assign({},e),n=t.user&&t.user.__isUserNotAvailableProxy===!0;if(this.userStorage){!n&&t.user&&await H(this.userStorage,this.storageKey+`-user`,{user:t.user});let e=Object.assign({},t);delete e.user;let r=ri(e);await H(this.storage,this.storageKey,r)}else{let e=ri(t);await H(this.storage,this.storageKey,e)}}async _removeSession(){this._sessionRemovalEpoch+=1,this._debug(`#_removeSession()`),this.lastRefreshFailure=null,this.suppressGetSessionWarning=!1,await W(this.storage,this.storageKey),await Kr(this.storage,this.storageKey),await W(this.storage,this.storageKey+`-user`),this.userStorage&&await W(this.userStorage,this.storageKey+`-user`),await this._notifyAllSubscribers(`SIGNED_OUT`,null)}_removeVisibilityChangedCallback(){this._debug(`#_removeVisibilityChangedCallback()`);let e=this.visibilityChangedCallback;this.visibilityChangedCallback=null;try{e&&B()&&window!=null&&window.removeEventListener&&window.removeEventListener(`visibilitychange`,e)}catch(e){console.error(`removing visibilitychange callback failed`,e)}}async _startAutoRefresh(){await this._stopAutoRefresh(),this._debug(`#_startAutoRefresh()`);let e=setInterval(()=>this._autoRefreshTokenTick(),M);this.autoRefreshTicker=e,e&&typeof e==`object`&&typeof e.unref==`function`?e.unref():typeof Deno<`u`&&typeof Deno.unrefTimer==`function`&&Deno.unrefTimer(e);let t=setTimeout(async()=>{await this.initializePromise,await this._autoRefreshTokenTick()},0);this.autoRefreshTickTimeout=t,t&&typeof t==`object`&&typeof t.unref==`function`?t.unref():typeof Deno<`u`&&typeof Deno.unrefTimer==`function`&&Deno.unrefTimer(t)}async _stopAutoRefresh(){this._debug(`#_stopAutoRefresh()`);let e=this.autoRefreshTicker;this.autoRefreshTicker=null,e&&clearInterval(e);let t=this.autoRefreshTickTimeout;this.autoRefreshTickTimeout=null,t&&clearTimeout(t)}async startAutoRefresh(){this._removeVisibilityChangedCallback(),await this._startAutoRefresh()}async stopAutoRefresh(){this._removeVisibilityChangedCallback(),await this._stopAutoRefresh()}async dispose(){var e;this._removeVisibilityChangedCallback(),await this._stopAutoRefresh(),(e=this.broadcastChannel)==null||e.close(),this.broadcastChannel=null,this.stateChangeEmitters.clear()}async _autoRefreshTokenTick(){if(this._debug(`#_autoRefreshTokenTick()`,`begin`),this.lock!=null){try{await this._acquireLock(0,async()=>{try{let e=Date.now();try{return await this._useSession(async t=>{let{data:{session:n}}=t;if(!n||!n.refresh_token||!n.expires_at){this._debug(`#_autoRefreshTokenTick()`,`no session`);return}let r=Math.floor((n.expires_at*1e3-e)/M);this._debug(`#_autoRefreshTokenTick()`,`access token expires in ${r} ticks, a tick lasts ${M}ms, refresh threshold is 3 ticks`),r<=3&&await this._callRefreshToken(n.refresh_token)})}catch(e){console.error(`Auto refresh tick failed with error. This is likely a transient error.`,e)}}finally{this._debug(`#_autoRefreshTokenTick()`,`end`)}})}catch(e){if(e instanceof gi)this._debug(`auto refresh token tick lock not available`);else throw e}return}if(this.refreshingDeferred!==null){this._debug(`#_autoRefreshTokenTick()`,`refresh already in flight, skipping`);return}try{let e=Date.now();try{await this._useSession(async t=>{let{data:{session:n}}=t;if(!n||!n.refresh_token||!n.expires_at){this._debug(`#_autoRefreshTokenTick()`,`no session`);return}let r=Math.floor((n.expires_at*1e3-e)/M);this._debug(`#_autoRefreshTokenTick()`,`access token expires in ${r} ticks, a tick lasts ${M}ms, refresh threshold is 3 ticks`),r<=3&&await this._callRefreshToken(n.refresh_token)})}catch(e){console.error(`Auto refresh tick failed with error. This is likely a transient error.`,e)}}finally{this._debug(`#_autoRefreshTokenTick()`,`end`)}}async _handleVisibilityChange(){if(this._debug(`#_handleVisibilityChange()`),!B()||!(window!=null&&window.addEventListener))return this.autoRefreshToken&&this.startAutoRefresh(),!1;try{this.visibilityChangedCallback=async()=>{try{await this._onVisibilityChanged(!1)}catch(e){this._debug(`#visibilityChangedCallback`,`error`,e)}},window==null||window.addEventListener(`visibilitychange`,this.visibilityChangedCallback),await this._onVisibilityChanged(!0)}catch(e){console.error(`_handleVisibilityChange`,e)}}async _onVisibilityChanged(e){let t=`#_onVisibilityChanged(${e})`;if(this._debug(t,`visibilityState`,document.visibilityState),document.visibilityState===`visible`){if(this.autoRefreshToken&&this._startAutoRefresh(),!e)if(await this.initializePromise,this.lock!=null)await this._acquireLock(this.lockAcquireTimeout,async()=>{if(document.visibilityState!==`visible`){this._debug(t,`acquired the lock to recover the session, but the browser visibilityState is no longer visible, aborting`);return}await this._recoverAndRefresh()});else{if(document.visibilityState!==`visible`){this._debug(t,`visibilityState is no longer visible, skipping recovery`);return}await this._recoverAndRefresh()}}else document.visibilityState===`hidden`&&this.autoRefreshToken&&this._stopAutoRefresh()}async _getUrlForProvider(e,t,n){let r=n?.redirectTo,i=null,a=null,o=null;this.flowType===`pkce`&&([i,a,o]=await this._getCodeChallengeAndMethod(),r=this._maybeAppendFlowIdToRedirect(r,o));let s=[`provider=${encodeURIComponent(t)}`];if(r&&s.push(`redirect_to=${encodeURIComponent(r)}`),n?.scopes&&s.push(`scopes=${encodeURIComponent(n.scopes)}`),i!=null&&a!=null){let e=new URLSearchParams({code_challenge:`${encodeURIComponent(i)}`,code_challenge_method:`${encodeURIComponent(a)}`});s.push(e.toString())}if(n?.queryParams){let e=new URLSearchParams(n.queryParams);s.push(e.toString())}return n?.skipBrowserRedirect&&s.push(`skip_http_redirect=${n.skipBrowserRedirect}`),{url:`${e}?${s.join(`&`)}`,flowId:o}}_maybeAppendFlowIdToRedirect(e,t){return!e||!t||!this.experimental.appendPkceFlowIdToRedirects?e??void 0:qr(e,t)}async _getCodeChallengeAndMethod(e=!1){return Jr(this.storage,this.storageKey,e,e=>this._debug(`#_getCodeChallengeAndMethod()`,`evicted oldest pending PKCE verifier slot`,e))}async _unenroll(e){try{return await this._useSession(async t=>{let{data:n,error:r}=t;return r?this._returnResult({data:null,error:r}):await J(this.fetch,`DELETE`,`${this.url}/factors/${e.factorId}`,{headers:this.headers,jwt:n?.session?.access_token})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _enroll(e){try{return await this._useSession(async t=>{let{data:n,error:r}=t;if(r)return this._returnResult({data:null,error:r});let i=Object.assign({friendly_name:e.friendlyName,factor_type:e.factorType},e.factorType===`phone`?{phone:e.phone}:e.factorType===`totp`?{issuer:e.issuer}:{}),{data:a,error:o}=await J(this.fetch,`POST`,`${this.url}/factors`,{body:i,headers:this.headers,jwt:n?.session?.access_token});return o?this._returnResult({data:null,error:o}):(e.factorType===`totp`&&a.type===`totp`&&a?.totp?.qr_code&&(a.totp.qr_code=`data:image/svg+xml;utf-8,${a.totp.qr_code}`),this._returnResult({data:a,error:null}))})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _verify(e){let t=async()=>{try{return await this._useSession(async t=>{let{data:n,error:r}=t;if(r)return this._returnResult({data:null,error:r});let i=Object.assign({challenge_id:e.challengeId},`webauthn`in e?{webauthn:Object.assign(Object.assign({},e.webauthn),{credential_response:e.webauthn.type===`create`?Ni(e.webauthn.credential_response):Pi(e.webauthn.credential_response)})}:{code:e.code}),{data:a,error:o}=await J(this.fetch,`POST`,`${this.url}/factors/${e.factorId}/verify`,{body:i,headers:this.headers,jwt:n?.session?.access_token});return o?this._returnResult({data:null,error:o}):(await this._saveSession(Object.assign({expires_at:Math.round(Date.now()/1e3)+a.expires_in},a)),await this._notifyAllSubscribers(`MFA_CHALLENGE_VERIFIED`,a),this._returnResult({data:a,error:o}))})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}};return this.lock==null?t():this._acquireLock(this.lockAcquireTimeout,t)}async _challenge(e){let t=async()=>{try{return await this._useSession(async t=>{let{data:n,error:r}=t;if(r)return this._returnResult({data:null,error:r});let i=await J(this.fetch,`POST`,`${this.url}/factors/${e.factorId}/challenge`,{body:e,headers:this.headers,jwt:n?.session?.access_token});if(i.error)return i;let{data:a}=i;if(a.type!==`webauthn`)return{data:a,error:null};switch(a.webauthn.type){case`create`:return{data:Object.assign(Object.assign({},a),{webauthn:Object.assign(Object.assign({},a.webauthn),{credential_options:Object.assign(Object.assign({},a.webauthn.credential_options),{publicKey:ji(a.webauthn.credential_options.publicKey)})})}),error:null};case`request`:return{data:Object.assign(Object.assign({},a),{webauthn:Object.assign(Object.assign({},a.webauthn),{credential_options:Object.assign(Object.assign({},a.webauthn.credential_options),{publicKey:Mi(a.webauthn.credential_options.publicKey)})})}),error:null}}})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}};return this.lock==null?t():this._acquireLock(this.lockAcquireTimeout,t)}async _challengeAndVerify(e){let{data:t,error:n}=await this._challenge({factorId:e.factorId});return n?this._returnResult({data:null,error:n}):await this._verify({factorId:e.factorId,challengeId:t.id,code:e.code})}async _listFactors(){let{data:{user:e},error:t}=await this.getUser();if(t)return{data:null,error:t};let n={all:[],phone:[],totp:[],webauthn:[],recovery_code:[]};for(let t of e?.factors??[])n.all.push(t),t.status===`verified`&&t.factor_type in n&&Array.isArray(n[t.factor_type])&&n[t.factor_type].push(t);return{data:n,error:null}}async _getAuthenticatorAssuranceLevel(e){if(e)try{let{payload:t}=jr(e),n=null;t.aal&&(n=t.aal);let r=n,{data:{user:i},error:a}=await this.getUser(e);if(a)return this._returnResult({data:null,error:a});((i?.factors)?.filter(e=>e.status===`verified`)??[]).length>0&&(r=`aal2`);let o=t.amr||[];return{data:{currentLevel:n,nextLevel:r,currentAuthenticationMethods:o},error:null}}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}let{data:{session:t},error:n}=await this.getSession();if(n)return this._returnResult({data:null,error:n});if(!t)return{data:{currentLevel:null,nextLevel:null,currentAuthenticationMethods:[]},error:null};let{payload:r}=jr(t.access_token),i=null;r.aal&&(i=r.aal);let a=i;(t.user.factors?.filter(e=>e.status===`verified`)??[]).length>0&&(a=`aal2`);let o=r.amr||[];return{data:{currentLevel:i,nextLevel:a,currentAuthenticationMethods:o},error:null}}async _getRecoveryCodesStatus(){ei(this.experimental);try{return await this._useSession(async e=>{let{data:t,error:n}=e;if(n)return this._returnResult({data:null,error:n});let{data:r,error:i}=await J(this.fetch,`GET`,`${this.url}/factors/recovery-codes`,{headers:this.headers,jwt:t?.session?.access_token});return i?this._returnResult({data:null,error:i}):this._returnResult({data:r,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _generateRecoveryCodes(e){ei(this.experimental);try{return await this._useSession(async t=>{let{data:n,error:r}=t;if(r)return this._returnResult({data:null,error:r});let{data:i,error:a}=await J(this.fetch,`POST`,`${this.url}/factors/recovery-codes`,{body:e?.friendlyName?{friendly_name:e.friendlyName}:void 0,headers:this.headers,jwt:n?.session?.access_token});return a?this._returnResult({data:null,error:a}):this._returnResult({data:i,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _verifyRecoveryCode(e){ei(this.experimental);let t=async()=>{try{return await this._useSession(async t=>{let{data:n,error:r}=t;if(r)return this._returnResult({data:null,error:r});let{data:i,error:a}=await J(this.fetch,`POST`,`${this.url}/factors/recovery-codes/verify`,{body:{code:e.code},headers:this.headers,jwt:n?.session?.access_token});if(a)return this._returnResult({data:null,error:a});let o=Object.assign({expires_at:wr(i.expires_in)},i);return await this._saveSession(o),await this._notifyAllSubscribers(`MFA_CHALLENGE_VERIFIED`,o),this._returnResult({data:i,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}};return this.lock==null?t():this._acquireLock(this.lockAcquireTimeout,t)}async _regenerateRecoveryCodes(){ei(this.experimental);try{return await this._useSession(async e=>{let{data:t,error:n}=e;if(n)return this._returnResult({data:null,error:n});let{data:r,error:i}=await J(this.fetch,`POST`,`${this.url}/factors/recovery-codes/regenerate`,{headers:this.headers,jwt:t?.session?.access_token});return i?this._returnResult({data:null,error:i}):this._returnResult({data:r,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _unenrollRecoveryCodes(){ei(this.experimental);try{return await this._useSession(async e=>{let{data:t,error:n}=e;if(n)return this._returnResult({data:null,error:n});let{data:r,error:i}=await J(this.fetch,`DELETE`,`${this.url}/factors/recovery-codes`,{headers:this.headers,jwt:t?.session?.access_token});return i?this._returnResult({data:null,error:i}):this._returnResult({data:r,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _getAuthorizationDetails(e){try{return await this._useSession(async t=>{let{data:{session:n},error:r}=t;return r?this._returnResult({data:null,error:r}):n?await J(this.fetch,`GET`,`${this.url}/oauth/authorizations/${e}`,{headers:this.headers,jwt:n.access_token,xform:e=>({data:e,error:null})}):this._returnResult({data:null,error:new L})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _approveAuthorization(e,t){try{return await this._useSession(async n=>{let{data:{session:r},error:i}=n;if(i)return this._returnResult({data:null,error:i});if(!r)return this._returnResult({data:null,error:new L});let a=await J(this.fetch,`POST`,`${this.url}/oauth/authorizations/${e}/consent`,{headers:this.headers,jwt:r.access_token,body:{action:`approve`},xform:e=>({data:e,error:null})});return a.data&&a.data.redirect_url&&B()&&!t?.skipBrowserRedirect&&window.location.assign(a.data.redirect_url),a})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _denyAuthorization(e,t){try{return await this._useSession(async n=>{let{data:{session:r},error:i}=n;if(i)return this._returnResult({data:null,error:i});if(!r)return this._returnResult({data:null,error:new L});let a=await J(this.fetch,`POST`,`${this.url}/oauth/authorizations/${e}/consent`,{headers:this.headers,jwt:r.access_token,body:{action:`deny`},xform:e=>({data:e,error:null})});return a.data&&a.data.redirect_url&&B()&&!t?.skipBrowserRedirect&&window.location.assign(a.data.redirect_url),a})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _listOAuthGrants(){try{return await this._useSession(async e=>{let{data:{session:t},error:n}=e;return n?this._returnResult({data:null,error:n}):t?await J(this.fetch,`GET`,`${this.url}/user/oauth/grants`,{headers:this.headers,jwt:t.access_token,xform:e=>({data:e,error:null})}):this._returnResult({data:null,error:new L})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _revokeOAuthGrant(e){try{return await this._useSession(async t=>{let{data:{session:n},error:r}=t;return r?this._returnResult({data:null,error:r}):n?(await J(this.fetch,`DELETE`,`${this.url}/user/oauth/grants`,{headers:this.headers,jwt:n.access_token,query:{client_id:e.clientId},noResolveJson:!0}),{data:{},error:null}):this._returnResult({data:null,error:new L})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async fetchJwk(e,t={keys:[]}){let n=t.keys.find(t=>t.kid===e);if(n)return n;let r=Date.now();if(n=this.jwks.keys.find(t=>t.kid===e),n&&this.jwks_cached_at+6e5>r)return n;let{data:i,error:a}=await J(this.fetch,`GET`,`${this.url}/.well-known/jwks.json`,{headers:this.headers});if(a)throw a;return!i.keys||i.keys.length===0||(this.jwks=i,this.jwks_cached_at=r,n=i.keys.find(t=>t.kid===e),!n)?null:n}async getClaims(e,t={}){try{let n=e;if(!n){let{data:e,error:t}=await this.getSession();if(t||!e.session)return this._returnResult({data:null,error:t});n=e.session.access_token}let{header:r,payload:i,signature:a,raw:{header:o,payload:s}}=jr(n);if(!t?.allowExpired)try{Zr(i.exp)}catch(e){throw new fr(e instanceof Error?e.message:`JWT validation failed`)}let c=!r.alg||r.alg.startsWith(`HS`)||!r.kid||!(`crypto`in globalThis&&`subtle`in globalThis.crypto)?null:await this.fetchJwk(r.kid,t?.keys?{keys:t.keys}:t?.jwks);if(!c){let{error:e}=await this.getUser(n);if(e)throw e;return{data:{claims:i,header:r,signature:a},error:null}}let l=Qr(r.alg),u=await crypto.subtle.importKey(`jwk`,c,l,!0,[`verify`]);if(!await crypto.subtle.verify(l,u,a,Cr(`${o}.${s}`)))throw new fr(`Invalid JWT signature`);return{data:{claims:i,header:r,signature:a},error:null}}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async signInWithPasskey(e){try{if(!Ii())return this._returnResult({data:null,error:new F(`Browser does not support WebAuthn`,null)});let{data:t,error:n}=await this._startPasskeyAuthentication({options:{captchaToken:e?.options?.captchaToken}});if(n||!t)return this._returnResult({data:null,error:n});let{data:r,error:i}=await Ri({publicKey:Mi(t.options),signal:e?.options?.signal??Ai.createNewAbortSignal(),mediation:e?.options?.mediation});if(i||!r)return this._returnResult({data:null,error:i??new F(`WebAuthn ceremony failed`,null)});let a=Pi(r);return this._verifyPasskeyAuthentication({challengeId:t.challenge_id,credential:a})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async registerPasskey(e){try{if(!Ii())return this._returnResult({data:null,error:new F(`Browser does not support WebAuthn`,null)});let{data:t,error:n}=await this._startPasskeyRegistration();if(n||!t)return this._returnResult({data:null,error:n});let{data:r,error:i}=await Li({publicKey:ji(t.options),signal:e?.options?.signal??Ai.createNewAbortSignal()});if(i||!r)return this._returnResult({data:null,error:i??new F(`WebAuthn ceremony failed`,null)});let a=Ni(r);return this._verifyPasskeyRegistration({challengeId:t.challenge_id,credential:a})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _startPasskeyRegistration(){try{return await this._useSession(async e=>{let{data:{session:t},error:n}=e;if(n)return this._returnResult({data:null,error:n});if(!t)return this._returnResult({data:null,error:new L});let{data:r,error:i}=await J(this.fetch,`POST`,`${this.url}/passkeys/registration/options`,{headers:this.headers,jwt:t.access_token,body:{}});return i?this._returnResult({data:null,error:i}):this._returnResult({data:r,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _verifyPasskeyRegistration(e){try{return await this._useSession(async t=>{let{data:{session:n},error:r}=t;if(r)return this._returnResult({data:null,error:r});if(!n)return this._returnResult({data:null,error:new L});let{data:i,error:a}=await J(this.fetch,`POST`,`${this.url}/passkeys/registration/verify`,{headers:this.headers,jwt:n.access_token,body:{challenge_id:e.challengeId,credential:e.credential}});return a?this._returnResult({data:null,error:a}):this._returnResult({data:i,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _startPasskeyAuthentication(e){try{let{data:t,error:n}=await J(this.fetch,`POST`,`${this.url}/passkeys/authentication/options`,{headers:this.headers,body:{gotrue_meta_security:{captcha_token:e?.options?.captchaToken}}});return n?this._returnResult({data:null,error:n}):this._returnResult({data:t,error:null})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _verifyPasskeyAuthentication(e){try{let{data:t,error:n}=await J(this.fetch,`POST`,`${this.url}/passkeys/authentication/verify`,{headers:this.headers,body:{challenge_id:e.challengeId,credential:e.credential},xform:Y});return n?this._returnResult({data:null,error:n}):(t.session&&(await this._saveSession(t.session),await this._notifyAllSubscribers(`SIGNED_IN`,t.session)),this._returnResult({data:t,error:null}))}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _listPasskeys(){try{return await this._useSession(async e=>{let{data:{session:t},error:n}=e;if(n)return this._returnResult({data:null,error:n});if(!t)return this._returnResult({data:null,error:new L});let{data:r,error:i}=await J(this.fetch,`GET`,`${this.url}/passkeys`,{headers:this.headers,jwt:t.access_token,xform:e=>({data:e,error:null})});return i?this._returnResult({data:null,error:i}):this._returnResult({data:r,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _updatePasskey(e){try{return await this._useSession(async t=>{let{data:{session:n},error:r}=t;if(r)return this._returnResult({data:null,error:r});if(!n)return this._returnResult({data:null,error:new L});let{data:i,error:a}=await J(this.fetch,`PATCH`,`${this.url}/passkeys/${e.passkeyId}`,{headers:this.headers,jwt:n.access_token,body:{friendly_name:e.friendlyName}});return a?this._returnResult({data:null,error:a}):this._returnResult({data:i,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}async _deletePasskey(e){try{return await this._useSession(async t=>{let{data:{session:n},error:r}=t;if(r)return this._returnResult({data:null,error:r});if(!n)return this._returnResult({data:null,error:new L});let{error:i}=await J(this.fetch,`DELETE`,`${this.url}/passkeys/${e.passkeyId}`,{headers:this.headers,jwt:n.access_token,noResolveJson:!0});return i?this._returnResult({data:null,error:i}):this._returnResult({data:null,error:null})})}catch(e){if(P(e))return this._returnResult({data:null,error:e});throw e}}};qi.nextInstanceID={};var Ji=qi,Yi=mi,Xi=Ji,Zi=class extends Xi{constructor(e){super(e)}},Qi=class{constructor(e,t,n){this.supabaseUrl=e,this.supabaseKey=t;let r=Un(e);if(!t)throw Error(`supabaseKey is required.`);Nn(t),Vn(n),this.realtimeUrl=new URL(`realtime/v1`,r),this.realtimeUrl.protocol=this.realtimeUrl.protocol.replace(`http`,`ws`),this.authUrl=new URL(`auth/v1`,r),this.storageUrl=new URL(`storage/v1`,r),this.functionsUrl=new URL(`functions/v1`,r);let i=`sb-${r.hostname.split(`.`)[0]}-auth-token`,a={db:yn,realtime:xn,auth:{...bn,storageKey:i},global:vn,tracePropagation:Sn},o=Hn(n??{},a);this.settings=o,this.storageKey=o.auth.storageKey??``,this.headers=o.global.headers??{},o.accessToken?(this.accessToken=o.accessToken,this.auth=new Proxy({},{get:(e,t)=>{throw Error(`@supabase/supabase-js: Supabase Client is configured with the accessToken option, accessing supabase.auth.${String(t)} is not possible`)}})):this.auth=this._initSupabaseAuthClient(o.auth??{},this.headers,o.global.fetch),this.fetch=Pn(t,e,this._getSessionToken.bind(this),o.global.fetch,o.tracePropagation),this.functionsFetch=Pn(t,e,this._getSessionToken.bind(this),o.global.fetch,o.tracePropagation,{omitApiKeyAsBearer:!0}),this.realtime=this._initRealtimeClient({headers:this.headers,accessToken:this._getAccessToken.bind(this),fetch:this.fetch,...o.realtime}),this.accessToken&&Promise.resolve(this.accessToken()).then(e=>this.realtime.setAuth(e)).catch(e=>console.warn(`Failed to set initial Realtime auth token:`,e)),this.rest=new fe(new URL(`rest/v1`,r).href,{headers:this.headers,schema:o.db.schema,fetch:this.fetch,timeout:o.db.timeout,urlLengthLimit:o.db.urlLengthLimit,retry:o.db.retry}),this.storage=new mn(this.storageUrl.href,this.headers,this.fetch,n?.storage),o.accessToken||this._listenForAuthEvents()}get functions(){return new l(this.functionsUrl.href,{headers:this.headers,customFetch:this.functionsFetch})}from(e){return this.rest.from(e)}schema(e){return this.rest.schema(e)}getOpenApiSpec(){return this.rest.getOpenApiSpec()}rpc(e,t={},n={head:!1,get:!1,count:void 0}){return this.rest.rpc(e,t,n)}channel(e,t={config:{}}){return this.realtime.channel(e,t)}getChannels(){return this.realtime.getChannels()}removeChannel(e){return this.realtime.removeChannel(e)}removeAllChannels(){return this.realtime.removeAllChannels()}async _getSessionToken(){if(this.accessToken)return await this.accessToken();let{data:e}=await this.auth.getSession();return e.session?.access_token??null}async _getAccessToken(){return await this._getSessionToken()??this.supabaseKey}_initSupabaseAuthClient({autoRefreshToken:e,persistSession:t,detectSessionInUrl:n,storage:r,userStorage:i,storageKey:a,flowType:o,lock:s,debug:c,throwOnError:l,experimental:u,lockAcquireTimeout:d,skipAutoInitialize:f},p,m){let h={Authorization:`Bearer ${this.supabaseKey}`,apikey:`${this.supabaseKey}`};return new Zi({url:this.authUrl.href,headers:{...h,...p},storageKey:a,autoRefreshToken:e,persistSession:t,detectSessionInUrl:n,storage:r,userStorage:i,flowType:o,lock:s,debug:c,throwOnError:l,experimental:u,fetch:m,lockAcquireTimeout:d,skipAutoInitialize:f,hasCustomAuthorizationHeader:Object.keys(this.headers).some(e=>e.toLowerCase()===`authorization`)})}_initRealtimeClient(e){return new _t(this.realtimeUrl.href,{...e,params:{apikey:this.supabaseKey,...e?.params}})}_listenForAuthEvents(){return this.auth.onAuthStateChange((e,t)=>{this._handleTokenChanged(e,`CLIENT`,t?.access_token)})}_handleTokenChanged(e,t,n){(e===`TOKEN_REFRESHED`||e===`SIGNED_IN`||e===`INITIAL_SESSION`)&&this.changedAccessToken!==n?(this.changedAccessToken=n,this.realtime.setAuth(n)):e===`SIGNED_OUT`&&(this.realtime.setAuth(),t==`STORAGE`&&this.auth.signOut(),this.changedAccessToken=void 0)}};let $i=(e,t,n)=>new Qi(e,t,n);function ea(){if(typeof window<`u`||globalThis.Deno!==void 0)return!1;let e=globalThis.process;if(!e)return!1;let t=e.version;if(t==null)return!1;let n=t.match(/^v(\d+)\./);return n?parseInt(n[1],10)<=20:!1}return ea()&&console.warn(`⚠️  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 22 or later. For more information, visit: https://github.com/orgs/supabase/discussions/45715`),e.AuthAdminApi=Yi,e.AuthApiError=Zn,e.AuthClient=Xi,e.AuthError=Xn,e.AuthImplicitGrantRedirectError=tr,e.AuthInvalidCredentialsError=er,e.AuthInvalidJwtError=fr,e.AuthInvalidTokenResponseError=R,e.AuthPKCECodeVerifierMissingError=ir,e.AuthPKCEGrantCodeExchangeError=rr,e.AuthRefreshDiscardedError=cr,e.AuthRetryableFetchError=or,e.AuthSessionMissingError=L,e.AuthUnknownError=F,e.AuthWeakPasswordError=ur,e.CustomAuthError=I,Object.defineProperty(e,`FunctionRegion`,{enumerable:!0,get:function(){return c}}),e.FunctionsError=i,e.FunctionsFetchError=a,e.FunctionsHttpError=s,e.FunctionsRelayError=o,e.GoTrueAdminApi=mi,e.GoTrueClient=Ji,e.NavigatorLockAcquireTimeoutError=_i,e.PostgrestError=u,e.REALTIME_CHANNEL_STATES=ut,Object.defineProperty(e,`REALTIME_LISTEN_TYPES`,{enumerable:!0,get:function(){return T}}),Object.defineProperty(e,`REALTIME_POSTGRES_CHANGES_LISTEN_EVENT`,{enumerable:!0,get:function(){return lt}}),Object.defineProperty(e,`REALTIME_PRESENCE_LISTEN_EVENTS`,{enumerable:!0,get:function(){return Xe}}),Object.defineProperty(e,`REALTIME_SUBSCRIBE_STATES`,{enumerable:!0,get:function(){return E}}),e.RealtimeChannel=dt,e.RealtimeClient=_t,e.RealtimePostgresFilterBuilder=st,e.RealtimePresence=Ze,e.SIGN_OUT_SCOPES=pi,e.StorageApiError=Pt,e.SupabaseClient=Qi,e.WebSocketFactory=pe,e.createClient=$i,e.isAuthApiError=Qn,e.isAuthError=P,e.isAuthImplicitGrantRedirectError=nr,e.isAuthPKCECodeVerifierMissingError=ar,e.isAuthRefreshDiscardedError=lr,e.isAuthRetryableFetchError=sr,e.isAuthSessionMissingError=$n,e.isAuthWeakPasswordError=dr,e.lockInternals=Z,e.navigatorLock=yi,e.postgresChangesFilter=ct,e.processLock=xi,e})({});</script>
 <script>
-const GAME_VERSION = 49;
+const GAME_VERSION = 50;
 'use strict';
 /* =====================================================================
    PIXEL OCTAGON — core utilities, audio, save data, game data
@@ -1322,44 +1322,21 @@ class Rig {
     const spine = this.spine = grp(hips, 0, 0.1, 0, 'YXZ');
     const chest = this.chest = grp(spine, 0, 0.22, 0, 'YXZ');
     this.paintRules = [];
-    if (SC && SC.hood) vox(chest, 0.3 * b, 0.13, 0.12, shade(SC.shirt, 0.85), 0, 0.33, -0.12); // bunched hood
     if (SC) this.buildShirt(SC, chest, spine, b);
-    if (opts.ref) vox(chest, 0.08, 0.04, 0.03, '#111', 0, 0.28, 0.125 * b, { outline: false }); // the referee's bow tie
-    // neck + head
+    // neck + head (the head is sculpted like the body once the skeleton's done: see WEAR)
     const neck = this.neck = grp(chest, 0, 0.32, 0.0, 'YXZ');
     const head = this.head = grp(neck, 0, 0.17, 0.02);
-    vox(head, 0.22, 0.26, 0.24, skin, 0, 0, 0);
-    this.buildFace(head, skin, skinD, hairC, L);
     // arms
     const shX = 0.255 * b, armW = 0.11 * b;
     for (const side of ['l', 'r']) {
       const s = side === 'l' ? 1 : -1;
       const sh = grp(chest, s * shX, 0.25, 0);
       const el = grp(sh, 0, -0.31, 0);
-      if (SC && SC.watch && side === 'l') { // watch on the lead wrist
-        vox(el, armW * 0.92 + 0.026, 0.05, armW * 0.95 + 0.026, shiny(SC.watch), 0, -0.235, 0, { shadow: false });
-        vox(el, 0.055, 0.042, 0.016, SC.watch.face || '#111', 0, -0.235, armW * 0.475 + 0.016, { outline: false, shadow: false });
-      }
       const hand = grp(el, 0, -0.28, 0);
-      const G = SC && SC.gloves;
-      if (G && G.kind === 'boxing') {
-        vox(hand, 0.105, 0.07, 0.11, '#f2f2f2', 0, 0.02, 0);
-        vox(hand, 0.15, 0.16, 0.17, shiny(G), 0, -0.08, 0.015);
-        vox(hand, 0.05, 0.08, 0.06, shade(G.c, 0.8), s * -0.07, -0.05, 0.05, { outline: false });
-      } else if (G && G.kind === 'mma') {
-        vox(hand, 0.112, 0.115, 0.125, shiny(G), 0, -0.05, 0.008);
-        vox(hand, 0.114, 0.028, 0.127, G.c2 || '#e9e6dc', 0, 0.0, 0.008, { outline: false });
-      } else if (G) vox(hand, 0.105, 0.11, 0.115, shiny(G), 0, -0.04, 0); // hand wraps
-      else if (opts.ref || SC) { /* bare fists are part of the body */ }
-      else if (st.gloves === 'boxing') {
-        vox(hand, 0.105, 0.07, 0.11, '#f2f2f2', 0, 0.02, 0);
-        vox(hand, 0.15, 0.16, 0.17, gloveC, 0, -0.08, 0.015);
-        vox(hand, 0.05, 0.08, 0.06, shade(gloveC, 0.8), s * -0.07, -0.05, 0.05, { outline: false });
-      } else {
-        vox(hand, 0.1, 0.06, 0.105, '#e9e6dc', 0, 0.02, 0, { outline: false }); // wrap
-        vox(hand, 0.115, 0.12, 0.125, gloveC, 0, -0.065, 0.008);
-        vox(hand, 0.118, 0.035, 0.13, shade(gloveC === '#111318' ? '#d7263d' : gloveC, 0.6), 0, -0.02, 0.008, { outline: false });
-      }
+      // gloves are sculpted to match the body (bare fists are part of it)
+      const G = SC && SC.gloves, gTrim = !SC && L.gloveTrim != null ? GEAR_COL[L.gloveTrim] : null, lift = (c, on) => (on ? '#' + new THREE.Color(c).lerp(new THREE.Color('#ffffff'), 0.18).getHexString() : c);
+      if (G) wearGlove(this, hand, G.kind === 'boxing' ? 'boxing' : G.kind === 'mma' ? 'mma' : 'wraps', s, lift(G.c, G.shine), G.c2, null, skin);
+      else if (!(opts.ref || SC)) wearGlove(this, hand, st.gloves === 'boxing' ? 'boxing' : 'mma', s, gloveC, shade(gloveC === '#111318' ? '#d7263d' : gloveC, 0.6), gTrim, skin);
       this[side + 'Sh'] = sh; this[side + 'El'] = el; this[side + 'Hand'] = hand;
     }
     this.upperLen = 0.31; this.foreLen = 0.28 + 0.07;
@@ -1369,27 +1346,14 @@ class Rig {
       const s = side === 'l' ? 1 : -1;
       const hip = grp(hips, s * 0.1, -0.04, 0);
       const longP = SC && SC.pantsKind !== 'shorts';
-      // loose shorts over the body (tight clothes are painted on, see below)
-      const thai = st.stance === 'muaythai', soft = (w) => ({ round: 0.035, taper: w * 0.96 });
-      if (SC && !longP) { vox(hip, legW + 0.04, 0.3, legW + 0.05, shortsC, 0, -0.13, 0, soft(legW + 0.04)); if (SC.stripe) vox(hip, 0.016, 0.26, 0.05, SC.stripe, s * (legW / 2 + 0.021), -0.13, 0, { outline: false }); } // street shorts
-      else if (!SC && !opts.ref) { const w = legW + (thai ? 0.07 : 0.05); vox(hip, w, thai ? 0.2 : 0.25, legW + (thai ? 0.08 : 0.06), shortsC, 0, thai ? -0.08 : -0.1, 0, soft(w)); } // loose enough that the thigh muscles stay inside
       const knee = grp(hip, 0, -0.46, 0);
       const ank = grp(knee, 0, -0.44, 0);
+      // shoes, sculpted: sneakers (low, high-top), boots, boxing boots, the referee's shoes
       const shoe = opts.ref || st.shoes || SC;
-      const shoeC = SC ? (SC.shoeShine ? toon(SC.shoes, shade(SC.shoes, 0.5)) : SC.shoes) : '#16181f';
-      if (shoe) vox(ank, SC ? 0.13 : 0.12, 0.07, 0.27, shoeC, 0, -0.035, 0.06);
-      const tall = SC && (SC.shoeKind === 'high' || SC.shoeKind === 'boot');
-      if (shoe) vox(ank, 0.14, tall ? 0.24 : 0.14, 0.15, shoeC, 0, tall ? 0.09 : 0.04, 0.0);
-      if (tall && SC.shoeTrim) vox(ank, 0.146, 0.04, 0.156, SC.shoeTrim, 0, 0.17, 0, { outline: false });
-      if (SC) vox(ank, 0.135, 0.025, 0.28, SC.sole || '#e9e6dc', 0, -0.06, 0.06, { outline: false, shadow: false }); // sole
-      if (SC && typeof SC.shoes === 'string') { // sneaker details: a darker toe cap, laces, a stripe down the side, a coloured midsole line
-        const tr = SC.shoeTrim || (SC.shoes === '#e9e6dc' || SC.shoes === '#f2f2f2' ? '#16181f' : '#f2f2f2'), so = { outline: false, shadow: false };
-        vox(ank, 0.134, 0.05, 0.07, shade(SC.shoes, 0.78), 0, -0.02, 0.165, so);
-        vox(ank, 0.07, 0.02, 0.11, '#f4f1e8', 0, tall ? 0.03 : 0.005, 0.11, so);
-        for (const sx of [1, -1]) vox(ank, 0.012, 0.035, 0.2, tr, sx * 0.072, -0.0, 0.05, { ...so, rot: [-0.32, 0, 0] });
-        vox(ank, 0.137, 0.012, 0.282, tr, 0, -0.045, 0.06, so);
+      if (shoe) {
+        const sc = SC ? SC.shoes : '#16181f', tr = SC ? SC.shoeTrim || (sc === '#e9e6dc' || sc === '#f2f2f2' ? '#16181f' : '#f2f2f2') : opts.ref ? null : '#f2f2f2';
+        wearShoe(this, ank, SC ? (SC.shoeKind === 'high' || SC.shoeKind === 'boot' ? SC.shoeKind : 'low') : opts.ref ? 'low' : 'box', SC && SC.shoeShine ? '#' + new THREE.Color(sc).lerp(new THREE.Color('#ffffff'), 0.15).getHexString() : sc, SC ? SC.sole || '#e9e6dc' : '#0d0e12', tr, SC && SC.shoeKind !== 'boot' ? '#f4f1e8' : null);
       }
-      if (st.wraps && !opts.ref && !SC) vox(ank, 0.145, 0.07, 0.155, '#222631', 0, 0.03, 0.0);
       // contact markers
       const toe = grp(ank, 0, -0.07, 0.19), heel = grp(ank, 0, -0.07, -0.07);
       this[side + 'Hip'] = hip; this[side + 'Knee'] = knee; this[side + 'Ank'] = ank; this[side + 'Toe'] = toe; this[side + 'Heel'] = heel;
@@ -1398,7 +1362,7 @@ class Rig {
     const bareArms = !opts.ref && (SC ? SC.sleeves === 'none' && !SC.hood : L.top !== 'rash'), bareChest = !opts.ref && !SC && L.top === 'none';
     const bareLegs = !opts.ref && (!SC || SC.pantsKind === 'shorts'), longP = !!SC && SC.pantsKind !== 'shorts';
     this.bare = { arms: bareArms, chest: bareChest };
-    bodyMake(this, b, { chest: bareChest, arms: bareArms, legs: bareLegs, feet: !(opts.ref || st.shoes || SC), hands: !!(opts.ref || (SC && !SC.gloves)) });
+    bodyMake(this, b, { chest: bareChest, arms: bareArms, legs: bareLegs, feet: !(opts.ref || st.shoes || SC), hands: !!(opts.ref || (SC && !SC.gloves)), lod: !!opts.lod });
     const waistC = opts.ref ? null : SC ? '#1b1b1f' : st.stance === 'boxing' ? '#f2f2f2' : shade(shortsC, 0.6), legC = opts.ref ? '#1a1c22' : longP ? shortsC : skin;
     const sportsC = !SC && L.top === 'sports' ? shade(shortsC, 0.6) : null;
     this.paintRules.unshift((bn, p) => {
@@ -1416,6 +1380,8 @@ class Rig {
     if (SC && SC.print) this.paintRules.push((bn, p) => (bn === 'chest' && p.z > 0.05 && Math.abs(p.x) < 0.07 && Math.abs(p.y - 0.18) < 0.05 ? SC.print : null));
     if (!opts.ref) this.buildExtras(L, skin, b, SC, shortsC, st, opts);
     bodyPaint(this);
+    headMake(this, L, skin, hairC, opts);
+    this.buildWear(L, SC, st, opts, b, skin, shortsC, waistC);
     // contact points (object, radius)
     this.contacts = [
       [this.lToe, 0], [this.lHeel, 0], [this.rToe, 0], [this.rHeel, 0],
@@ -1424,52 +1390,6 @@ class Rig {
     ];
     this.headMark = this.head; this.bodyMark = grp(this.chest, 0, 0.02, 0.08);
     this.root.traverse((o) => { if (o.isMesh) o.userData.rig = this; });
-  }
-  buildFace(head, skin, skinD, hairC, L) {
-    const dark = '#141018';
-    vox(head, 0.03, 0.065, 0.06, skin, 0.12, -0.0, 0.0, { outline: false }); // ears
-    vox(head, 0.03, 0.065, 0.06, skin, -0.12, -0.0, 0.0, { outline: false });
-    const wL = vox(head, 0.05, 0.035, 0.012, '#f4f4f4', 0.052, 0.025, 0.121, { outline: false, shadow: false });
-    const wR = vox(head, 0.05, 0.035, 0.012, '#f4f4f4', -0.052, 0.025, 0.121, { outline: false, shadow: false });
-    const eyeC = EYE_COL[L.eyeCol] || dark;
-    const pL = vox(head, 0.022, 0.032, 0.014, eyeC, 0.045, 0.023, 0.124, { outline: false, shadow: false });
-    const pR = vox(head, 0.022, 0.032, 0.014, eyeC, -0.045, 0.023, 0.124, { outline: false, shadow: false });
-    this.eyes = [[wL, pL], [wR, pR]]; // lead eye first (the swelling closes them, see Gore)
-    if (L.paint === 'eyeblack') for (const sx of [1, -1]) vox(head, 0.06, 0.018, 0.012, '#0b0b0f', sx * 0.055, -0.01, 0.123, { outline: false, shadow: false });
-    vox(head, 0.065, 0.018, 0.016, hairC, 0.055, 0.058, 0.122, { outline: false, shadow: false });
-    vox(head, 0.065, 0.018, 0.016, hairC, -0.055, 0.058, 0.122, { outline: false, shadow: false });
-    vox(head, 0.04, 0.06, 0.04, skinD, 0, -0.015, 0.13, { outline: false });
-    vox(head, 0.07, 0.014, 0.012, '#6b2a2a', 0, -0.07, 0.121, { outline: false, shadow: false });
-    // hair
-    const h = L.hair;
-    if (h === 'buzz') { vox(head, 0.228, 0.05, 0.248, hairC, 0, 0.11, 0, { ol: 0.01 }); vox(head, 0.226, 0.14, 0.03, hairC, 0, 0.05, -0.11, { outline: false }); }
-    if (h === 'short' || h === 'ponytail') {
-      vox(head, 0.235, 0.075, 0.255, hairC, 0, 0.125, -0.005);
-      vox(head, 0.235, 0.17, 0.04, hairC, 0, 0.05, -0.11, { outline: false });
-      vox(head, 0.236, 0.08, 0.1, hairC, 0, 0.07, -0.06, { outline: false });
-      vox(head, 0.2, 0.035, 0.03, hairC, 0, 0.1, 0.12, { outline: false });
-    }
-    if (h === 'ponytail') { vox(head, 0.07, 0.2, 0.07, hairC, 0, -0.02, -0.17, { rot: [0.35, 0, 0] }); }
-    if (h === 'fade') { vox(head, 0.2, 0.07, 0.22, hairC, 0, 0.135, 0.0); vox(head, 0.226, 0.06, 0.246, shade(hairC, 1.0), 0, 0.095, 0, { outline: false }); vox(head, 0.224, 0.08, 0.03, shade(skin, 0.82), 0, 0.03, -0.11, { outline: false }); }
-    if (h === 'spiky') { vox(head, 0.228, 0.05, 0.248, hairC, 0, 0.11, 0, { ol: 0.01 }); for (let i = -1; i <= 1; i++) for (const z of [-0.06, 0.05]) vox(head, 0.055, 0.08, 0.055, hairC, i * 0.07, 0.17, z, { rot: [z < 0 ? -0.3 : 0.25, 0, i * 0.3] }); }
-    if (h === 'cornrows') { vox(head, 0.226, 0.03, 0.246, shade(skin, 0.8), 0, 0.115, 0, { outline: false }); for (let i = -2; i <= 2; i++) vox(head, 0.03, 0.04, 0.27, hairC, i * 0.045, 0.13, -0.01, { outline: false }); vox(head, 0.226, 0.15, 0.03, hairC, 0, 0.05, -0.11, { outline: false }); }
-    if (h === 'dreads') { vox(head, 0.235, 0.075, 0.255, hairC, 0, 0.125, -0.005); for (let i = -2; i <= 2; i++) { vox(head, 0.04, 0.2, 0.04, hairC, i * 0.05, -0.0, -0.13, { rot: [0.15, 0, 0] }); } for (const sx of [1, -1]) vox(head, 0.04, 0.16, 0.04, hairC, sx * 0.13, 0.02, -0.04); }
-    if (h === 'long') { vox(head, 0.24, 0.08, 0.26, hairC, 0, 0.125, -0.005); vox(head, 0.25, 0.3, 0.06, hairC, 0, -0.03, -0.12); for (const sx of [1, -1]) vox(head, 0.03, 0.22, 0.16, hairC, sx * 0.125, 0.0, -0.05, { outline: false }); }
-    if (h === 'manbun') { vox(head, 0.232, 0.06, 0.252, hairC, 0, 0.12, -0.005); vox(head, 0.232, 0.15, 0.03, hairC, 0, 0.06, -0.11, { outline: false }); vox(head, 0.1, 0.1, 0.1, hairC, 0, 0.16, -0.1); }
-    if (h === 'mohawk') { vox(head, 0.06, 0.1, 0.27, hairC, 0, 0.17, -0.01); vox(head, 0.226, 0.03, 0.246, shade(skin, 0.85), 0, 0.12, 0, { outline: false }); }
-    if (h === 'afro') { vox(head, 0.32, 0.2, 0.31, hairC, 0, 0.14, -0.03); }
-    // beard
-    const bd = L.beard;
-    if (bd === 'stubble') vox(head, 0.224, 0.09, 0.2, shade(skin, 0.72), 0, -0.085, 0.025, { outline: false });
-    if (bd === 'mustache') vox(head, 0.1, 0.022, 0.02, hairC, 0, -0.045, 0.128, { outline: false });
-    if (bd === 'chinstrap') { vox(head, 0.232, 0.025, 0.2, hairC, 0, -0.12, 0.025, { outline: false }); for (const sx of [1, -1]) vox(head, 0.02, 0.1, 0.06, hairC, sx * 0.112, -0.06, 0.06, { outline: false }); }
-    if (bd === 'goatee') { vox(head, 0.08, 0.07, 0.03, hairC, 0, -0.1, 0.12, { outline: false }); vox(head, 0.09, 0.02, 0.02, hairC, 0, -0.05, 0.125, { outline: false }); }
-    if (bd === 'full') { vox(head, 0.235, 0.11, 0.22, hairC, 0, -0.09, 0.02); vox(head, 0.1, 0.025, 0.02, hairC, 0, -0.05, 0.128, { outline: false }); }
-    const SC = L.street;
-    if (SC && SC.cap) { vox(head, 0.245, 0.08, 0.265, SC.cap, 0, 0.14, -0.005); vox(head, 0.2, 0.025, 0.12, shade(SC.cap, 0.8), 0, 0.11, 0.16); }
-    if (SC && SC.beanie) vox(head, 0.25, 0.12, 0.27, SC.beanie, 0, 0.14, -0.01);
-    if (SC && SC.bandana) { vox(head, 0.248, 0.065, 0.268, SC.bandana, 0, 0.1, -0.005); vox(head, 0.07, 0.06, 0.05, shade(SC.bandana, 0.8), 0, 0.07, -0.15); }
-    if (SC && SC.shades) vox(head, 0.2, 0.04, 0.02, '#0b0b0f', 0, 0.025, 0.128, { outline: false, shadow: false });
   }
   // tattoos, shorts designs and glove trim from the fighter creator
   buildExtras(L, skin, b, SC, shortsC, st, opts) {
@@ -1489,20 +1409,7 @@ class Rig {
       }
       return null;
     });
-    // shorts design (fight shorts only)
-    if (!SC) {
-      const trim = GEAR_COL[L.shortsTrim ?? 3], D = L.shortsDes || 'plain', legW = 0.17 * Math.sqrt(b), thai = st.stance === 'muaythai';
-      const lw = legW + (thai ? 0.07 : 0.05), lh = thai ? 0.2 : 0.25, ly = thai ? -0.08 : -0.1;
-      for (const sd of ['l', 'r']) {
-        const hip = this[sd + 'Hip'], s = sd === 'l' ? 1 : -1;
-        if (D === 'stripe') { vox(hip, 0.03, lh + 0.004, lw * 0.75, trim, s * (lw / 2 + 0.008), ly, 0, o); vox(hip, lw * 0.3, lh + 0.004, 0.02, trim, s * (lw * 0.36), ly, lw / 2 + 0.006, o); }
-        if (D === 'trim') vox(hip, lw + 0.008, 0.035, lw + 0.018, trim, 0, ly - lh / 2 + 0.02, 0, o);
-        if (D === 'split' && sd === 'l') vox(hip, lw + 0.006, lh + 0.004, lw + 0.016, trim, 0, ly, 0, o);
-      }
-      if (D === 'stripe' || D === 'split') this.paintRules.push((bn, p) => { const y = bn === 'spine' ? p.y + 0.1 : p.y; if ((bn !== 'hips' && bn !== 'spine') || y > 0.066) return null; return (D === 'stripe' ? Math.abs(p.x) > 0.145 * b && Math.abs(p.z) < 0.08 * b : p.x > 0) ? trim : null; });
-      // glove cuffs
-      if (L.gloveTrim != null) for (const hd of [this.lHand, this.rHand]) vox(hd, 0.12, 0.05, 0.13, GEAR_COL[L.gloveTrim], 0, 0.01, 0.008, o);
-    }
+    // (shorts designs are painted on the fitted shorts, glove trim on the gloves: see WEAR)
   }
   // street shirt details: hoodie pocket, flannel stripes, open jacket, jersey trim, chains
   buildShirt(SC, chest, spine, b) {
@@ -1523,14 +1430,27 @@ class Rig {
       }
       return null;
     });
-    if (k === 'jacket') vox(chest, 0.36 * b, 0.06, 0.26 * b, shade(SC.shirt, 0.8), 0, 0.3, 0, { shadow: false });
-    const N = SC.neck;
-    if (N) {
-      const m = N.shine ? toon(N.c, shade(N.c, 0.5)) : toon(N.c), t = N.kind === 'cuban' ? 0.032 : 0.02;
-      vox(chest, 0.15, t, 0.02, m, 0, 0.245, 0.124 * b, { outline: false, shadow: false });
-      for (const sx of [-1, 1]) vox(chest, t, 0.09, 0.02, m, sx * 0.082, 0.285, 0.12 * b, { outline: false, shadow: false, rot: [0, 0, -sx * 0.55] });
-      if (N.kind === 'pendant') vox(chest, 0.05, 0.06, 0.022, N.c2 ? toon(N.c2, shade(N.c2, 0.4)) : m, 0, 0.205, 0.126 * b, { shadow: false });
+  }
+  // what goes on over the body once it's built: shorts, the hood, a collar, the watch, ankle wraps, a chain, the bow tie
+  buildWear(L, SC, st, opts, b, skin, shortsC, waistC) {
+    if (!this.body) return;
+    const thai = st.stance === 'muaythai';
+    if (!SC && !opts.ref) wearShorts(this, { hem: thai ? 0.2 : 0.25, flare: thai ? 0.055 : 0.034, color: shortsC, waist: waistC, design: L.shortsDes || 'plain', trim: GEAR_COL[L.shortsTrim ?? 3] });
+    if (SC && SC.pantsKind === 'shorts') wearShorts(this, { hem: 0.3, flare: 0.036, color: shortsC, waist: '#1b1b1f', stripe: SC.stripe });
+    if (SC && SC.hood) wearBand(this, 'hood', [{ bone: 'chest', box: [0, 0.32, -0.07, 0.17 * b, 0.06, 0.1] }], 0.035, shade(SC.shirt, 0.85));
+    if (SC && SC.shirtKind === 'jacket') wearBand(this, 'collar', [{ bone: 'chest', box: [0, 0.318, 0, 0.2 * b, 0.04, 0.16 * b] }], 0.018, shade(SC.shirt, 0.8));
+    if (SC && SC.watch) {
+      const W = SC.watch, wc = W.shine ? '#' + new THREE.Color(W.c).lerp(new THREE.Color('#ffffff'), 0.2).getHexString() : W.c;
+      wearBand(this, 'watch', [{ bone: 'lEl', box: [0, -0.235, 0, 0.07, 0.019, 0.07] }], 0.01, wc);
+      wearOnSkin(this, 'lEl', 0, -0.235, new THREE.Mesh(boxGeo(0.034, 0.03, 0.01), toon(W.face || '#111')), 0.2, 0.014);
     }
+    if (st.wraps && !opts.ref && !SC) wearBand(this, 'wraps', ['lKnee', 'rKnee'].map((bone) => ({ bone, box: [0, -0.405, 0.01, 0.08, 0.035, 0.09] })), 0.009, '#222631');
+    if (SC && SC.neck) { // a chain lying on the chest
+      const N = SC.neck, m = N.shine ? toon(N.c, shade(N.c, 0.5)) : toon(N.c), t = N.kind === 'cuban' ? 0.014 : 0.009;
+      for (let i = 0; i <= 12; i++) { const u = i / 12 * 2 - 1, x = u * 0.085, y = 0.215 + Math.abs(u) * 0.085; wearOnSkin(this, 'chest', x, y, new THREE.Mesh(MUSCLE_GEO(), m), 0.3, t * 0.6).scale.set(t, t, t * 0.7); }
+      if (N.kind === 'pendant') wearOnSkin(this, 'chest', 0, 0.19, new THREE.Mesh(boxGeo(0.04, 0.05, 0.012), N.c2 ? toon(N.c2, shade(N.c2, 0.4)) : m), 0.3, 0.01);
+    }
+    if (opts.ref) wearOnSkin(this, 'chest', 0, 0.28, new THREE.Mesh(boxGeo(0.07, 0.035, 0.02), toon('#111')), 0.3, 0.01); // the bow tie
   }
   // paint more onto the body (kits: socks, tights, sleeves, stripes): fn(bone, position in that bone's frame) → colour or null
   paint(fn) { this.paintRules.push(fn); bodyPaint(this); }
@@ -1656,7 +1576,7 @@ function solveArm(rig, side, x, y, z, px, py, pz, aimHead, aimBody, aim) {
    · Shapes are cached per build, so a new fighter only re-paints.
    ===================================================================== */
 const BODY_CELL = 0.0135, BODY_CELL_FINE = 0.012; // the grid the skin is pulled from (finer when there's bare muscle to show)
-const BODY_BONES = ['hips', 'spine', 'chest', 'neck', 'lSh', 'lEl', 'rSh', 'rEl', 'lHip', 'lKnee', 'lAnk', 'rHip', 'rKnee', 'rAnk', 'lHand', 'rHand'];
+const BODY_BONES = ['hips', 'spine', 'chest', 'neck', 'lSh', 'lEl', 'rSh', 'rEl', 'lHip', 'lKnee', 'lAnk', 'rHip', 'rKnee', 'rAnk', 'lHand', 'rHand', 'head'];
 const BODY_CACHE = new Map();
 // each body has its own material (same shader) so it can carry its own state: how wet the skin is (sweat catches the
 // light in a sharp toon highlight), how flushed, and the last hit: the flesh dents in where it landed and wobbles back
@@ -1677,11 +1597,11 @@ function bodyMaterial() {
   m.onBeforeCompile = bodyShader; return m;
 }
 // the outline: the same skin pushed out along its normals, drawn inside-out in black
-const BODY_OL_MAT = () => BODY_OL_MAT.m || (BODY_OL_MAT.m = (() => {
+const BODY_OL_MAT = (w = 0.016) => { const k = 'm' + w; return BODY_OL_MAT[k] || (BODY_OL_MAT[k] = (() => {
   const m = new THREE.MeshBasicMaterial({ color: 0x07080c, side: THREE.BackSide, skinning: true });
-  m.onBeforeCompile = (sh) => { sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', 'vec3 transformed = vec3(position) + normal * 0.016;'); };
-  return m;
-})());
+  m.onBeforeCompile = (sh) => { sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', `vec3 transformed = vec3(position) + normal * ${w.toFixed(4)};`); };
+  m.customProgramCacheKey = () => 'bol' + w; return m;
+})()); }; // (thinner on the face, so it doesn't show through the creases round the nose and mouth)
 
 // ---------- shape functions (each evaluated in its bone's own frame) ----------
 const hyp3 = (a, b, c) => Math.sqrt(a * a + b * b + c * c);
@@ -1783,36 +1703,10 @@ function bodyParts(b, F) {
   return P;
 }
 
-// pull the surface out of the blended shape: surface nets on a fine grid, normals from the shape's gradient
-function bodyBuildGeo(rest, b, F) {
-  const parts = bodyParts(b, F).sort((p, q) => (p.op === 'sub') - (q.op === 'sub')), c = F.chest || F.arms || F.legs ? BODY_CELL_FINE : BODY_CELL; // grooves go in after everything they cut
-  // each part's bounds in the rig's space (bind pose), so it's only evaluated near itself
-  const tr = (bn, x, y, z) => { const e = rest[bn].m.elements; return [e[0] * x + e[4] * y + e[8] * z + e[12], e[1] * x + e[5] * y + e[9] * z + e[13], e[2] * x + e[6] * y + e[10] * z + e[14]]; };
-  const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
-  for (const s of parts) {
-    const B = s.box, pad = s.k + 2.5 * c, wl = [1e9, 1e9, 1e9], wh = [-1e9, -1e9, -1e9];
-    for (let i = 0; i < 8; i++) { const p = tr(s.bone, i & 1 ? B[3] + pad : B[0] - pad, i & 2 ? B[4] + pad : B[1] - pad, i & 4 ? B[5] + pad : B[2] - pad); for (let a = 0; a < 3; a++) { wl[a] = Math.min(wl[a], p[a]); wh[a] = Math.max(wh[a], p[a]); } }
-    s.wl = wl; s.wh = wh; for (let a = 0; a < 3; a++) { lo[a] = Math.min(lo[a], wl[a]); hi[a] = Math.max(hi[a], wh[a]); }
-  }
-  const nx = Math.ceil((hi[0] - lo[0]) / c) + 1, ny = Math.ceil((hi[1] - lo[1]) / c) + 1, nz = Math.ceil((hi[2] - lo[2]) / c) + 1, N = nx * ny * nz;
-  const at = (i, j, k) => i + nx * (j + ny * k);
-  // one field per body part (torso, each arm, each leg), then the arms and legs are blended onto the torso
-  const PARTS = ['T', 'L', 'R', 'l', 'r'], fields = {};
-  for (const pk of PARTS) fields[pk] = new Float32Array(N).fill(1);
-  for (const s of parts) {
-    const Fd = fields[s.part], inv = rest[s.bone].inv.elements;
-    const i0 = Math.max(0, Math.floor((s.wl[0] - lo[0]) / c)), i1 = Math.min(nx - 1, Math.ceil((s.wh[0] - lo[0]) / c));
-    const j0 = Math.max(0, Math.floor((s.wl[1] - lo[1]) / c)), j1 = Math.min(ny - 1, Math.ceil((s.wh[1] - lo[1]) / c));
-    const k0 = Math.max(0, Math.floor((s.wl[2] - lo[2]) / c)), k1 = Math.min(nz - 1, Math.ceil((s.wh[2] - lo[2]) / c));
-    for (let k = k0; k <= k1; k++) for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
-      const x = lo[0] + i * c, y = lo[1] + j * c, z = lo[2] + k * c;
-      const lx = inv[0] * x + inv[4] * y + inv[8] * z + inv[12], ly = inv[1] * x + inv[5] * y + inv[9] * z + inv[13], lz = inv[2] * x + inv[6] * y + inv[10] * z + inv[14];
-      const id = at(i, j, k); Fd[id] = s.op === 'sub' ? -sminB(-Fd[id], s.f(lx, ly, lz), s.k) : sminB(Fd[id], s.f(lx, ly, lz), s.k);
-    }
-  }
-  const Fv = new Float32Array(N);
-  for (let n = 0; n < N; n++) { let v = sminB(fields.T[n], fields.L[n], 0.035); v = sminB(v, fields.R[n], 0.035); v = sminB(v, fields.l[n], 0.045); Fv[n] = sminB(v, fields.r[n], 0.045); }
-  // surface nets: one vertex per cell the surface passes through, at the average of its edge crossings
+// surface nets: one vertex per cell the surface passes through, at the average of its edge crossings; smooth normals
+// from the field's gradient, the crease shadow, and a quad across every grid edge the surface crosses, wound outward
+function surfaceNets(Fv, nx, ny, nz, lo, c) {
+  const at = (i, j, k) => i + nx * (j + ny * k), N = nx * ny * nz;
   const cellV = new Int32Array(N).fill(-1), pos = [];
   const E = [[0, 1], [2, 3], [4, 5], [6, 7], [0, 2], [1, 3], [4, 6], [5, 7], [0, 4], [1, 5], [2, 6], [3, 7]];
   const cv = new Float32Array(8);
@@ -1871,6 +1765,39 @@ function bodyBuildGeo(rest, b, F) {
     if (j < ny - 1 && s0 !== (Fv[at(i, j + 1, k)] < 0)) quad(C(i - 1, j, k - 1), C(i, j, k - 1), C(i, j, k), C(i - 1, j, k));
     if (k < nz - 1 && s0 !== (Fv[at(i, j, k + 1)] < 0)) quad(C(i - 1, j - 1, k), C(i, j - 1, k), C(i, j, k), C(i - 1, j, k));
   }
+  return { pos, nor, ao, idx, sample };
+}
+// pull the surface out of the blended shape: surface nets on a fine grid, normals from the shape's gradient
+function bodyBuildGeo(rest, b, F) {
+  const parts = bodyParts(b, F).sort((p, q) => (p.op === 'sub') - (q.op === 'sub')), c = F.lod ? 0.0165 : F.chest || F.arms || F.legs ? BODY_CELL_FINE : BODY_CELL; // grooves go in after everything they cut (lod: a lighter body for crowds of players)
+  // each part's bounds in the rig's space (bind pose), so it's only evaluated near itself
+  const tr = (bn, x, y, z) => { const e = rest[bn].m.elements; return [e[0] * x + e[4] * y + e[8] * z + e[12], e[1] * x + e[5] * y + e[9] * z + e[13], e[2] * x + e[6] * y + e[10] * z + e[14]]; };
+  const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+  for (const s of parts) {
+    const B = s.box, pad = s.k + 2.5 * c, wl = [1e9, 1e9, 1e9], wh = [-1e9, -1e9, -1e9];
+    for (let i = 0; i < 8; i++) { const p = tr(s.bone, i & 1 ? B[3] + pad : B[0] - pad, i & 2 ? B[4] + pad : B[1] - pad, i & 4 ? B[5] + pad : B[2] - pad); for (let a = 0; a < 3; a++) { wl[a] = Math.min(wl[a], p[a]); wh[a] = Math.max(wh[a], p[a]); } }
+    s.wl = wl; s.wh = wh; for (let a = 0; a < 3; a++) { lo[a] = Math.min(lo[a], wl[a]); hi[a] = Math.max(hi[a], wh[a]); }
+  }
+  const nx = Math.ceil((hi[0] - lo[0]) / c) + 1, ny = Math.ceil((hi[1] - lo[1]) / c) + 1, nz = Math.ceil((hi[2] - lo[2]) / c) + 1, N = nx * ny * nz;
+  const at = (i, j, k) => i + nx * (j + ny * k);
+  // one field per body part (torso, each arm, each leg), then the arms and legs are blended onto the torso
+  const PARTS = ['T', 'L', 'R', 'l', 'r'], fields = {};
+  for (const pk of PARTS) fields[pk] = new Float32Array(N).fill(1);
+  for (const s of parts) {
+    const Fd = fields[s.part], inv = rest[s.bone].inv.elements;
+    const i0 = Math.max(0, Math.floor((s.wl[0] - lo[0]) / c)), i1 = Math.min(nx - 1, Math.ceil((s.wh[0] - lo[0]) / c));
+    const j0 = Math.max(0, Math.floor((s.wl[1] - lo[1]) / c)), j1 = Math.min(ny - 1, Math.ceil((s.wh[1] - lo[1]) / c));
+    const k0 = Math.max(0, Math.floor((s.wl[2] - lo[2]) / c)), k1 = Math.min(nz - 1, Math.ceil((s.wh[2] - lo[2]) / c));
+    for (let k = k0; k <= k1; k++) for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+      const x = lo[0] + i * c, y = lo[1] + j * c, z = lo[2] + k * c;
+      const lx = inv[0] * x + inv[4] * y + inv[8] * z + inv[12], ly = inv[1] * x + inv[5] * y + inv[9] * z + inv[13], lz = inv[2] * x + inv[6] * y + inv[10] * z + inv[14];
+      const id = at(i, j, k); Fd[id] = s.op === 'sub' ? -sminB(-Fd[id], s.f(lx, ly, lz), s.k) : sminB(Fd[id], s.f(lx, ly, lz), s.k);
+    }
+  }
+  const Fv = new Float32Array(N);
+  for (let n = 0; n < N; n++) { let v = sminB(fields.T[n], fields.L[n], 0.035); v = sminB(v, fields.R[n], 0.035); v = sminB(v, fields.l[n], 0.045); Fv[n] = sminB(v, fields.r[n], 0.045); }
+  const { pos, nor, ao, idx, sample } = surfaceNets(Fv, nx, ny, nz, lo, c);
+  const nV = pos.length / 3;
   // skin weights: each vertex follows the bones whose shapes it sits on, blended where they meet (the joints)
   const nb = BODY_BONES.length, sI = new Uint16Array(nV * 4), sW = new Float32Array(nV * 4), dom = new Uint8Array(nV), loc = new Float32Array(nV * 3);
   const dB = new Float32Array(nb), SIG = 0.017;
@@ -1931,7 +1858,7 @@ function bodyMake(rig, b, F) {
   rig.root.updateMatrixWorld(true);
   const rootInv = new THREE.Matrix4().copy(rig.root.matrixWorld).invert(), rest = {};
   for (const n of BODY_BONES) { const m = new THREE.Matrix4().multiplyMatrices(rootInv, rig[n].matrixWorld); rest[n] = { m, inv: m.clone().invert() }; }
-  const key = [b.toFixed(3), F.chest, F.arms, F.legs, F.feet, F.hands].join('|');
+  const key = [b.toFixed(3), F.chest, F.arms, F.legs, F.feet, F.hands, F.lod ? 1 : 0].join('|');
   let S = BODY_CACHE.get(key); if (!S) { S = bodyBuildGeo(rest, b, F); BODY_CACHE.set(key, S); }
   const g = new THREE.BufferGeometry();
   for (const a of ['position', 'normal', 'skinIndex', 'skinWeight']) g.setAttribute(a, S.g.attributes[a]);
@@ -1943,15 +1870,15 @@ function bodyMake(rig, b, F) {
   rig.root.add(mesh); rig.root.add(ol); rig.root.updateMatrixWorld(true);
   const skel = new THREE.Skeleton(bones); mesh.bind(skel); ol.bind(skel, mesh.bindMatrix);
   for (const n in sp) rig[n].rotation.z = 0;
-  rig.body = mesh; rig.bodyOl = ol; rig.bodyShape = S; rig.bodyRest = rest; rig.bodyU = mesh.material.userData.U;
+  rig.body = mesh; rig.bodyOl = ol; rig.bodyShape = S; rig.bodyRest = rest; rig.bodyU = mesh.material.userData.U; rig.bodyKey = key;
   rig.bodyFX = { bruise: new Float32Array(S.nV), blood: new Float32Array(S.nV), dirty: false }; // what the fight leaves on the skin
+  rig.bodyL = { mesh, nV: S.nV, base: new Float32Array(S.nV * 3), isSkin: new Uint8Array(S.nV), fx: rig.bodyFX };
   return mesh;
 }
 // colour every vertex: rules get (bone name, position in that bone's frame) and return a colour or nothing; later rules win.
 // The result (with the crease shadow) is the body's clean colour; bruises and blood are mixed over it (bodyComposite)
 function bodyPaint(rig) {
-  const S = rig.bodyShape, col = new THREE.Color(), cache = new Map(), skinHex = rig.skinC;
-  const base = rig.bodyBase || (rig.bodyBase = new Float32Array(S.nV * 3)), isSkin = rig.bodyIsSkin || (rig.bodyIsSkin = new Uint8Array(S.nV));
+  const S = rig.bodyShape, col = new THREE.Color(), cache = new Map(), skinHex = rig.skinC, base = rig.bodyL.base, isSkin = rig.bodyL.isSkin;
   const rgb = (c) => { let v = cache.get(c); if (!v) { col.set(c); v = [col.r * 255, col.g * 255, col.b * 255]; cache.set(c, v); } return v; };
   const lp = { x: 0, y: 0, z: 0 };
   for (let v = 0; v < S.nV; v++) {
@@ -1959,17 +1886,18 @@ function bodyPaint(rig) {
     let c = null; for (const r of rig.paintRules) { const o = r(bn, lp); if (o) c = o; }
     const q = rgb(c || '#ff00ff'), d = 1 - 0.62 * S.ao[v]; base[v * 3] = q[0] * d; base[v * 3 + 1] = q[1] * d; base[v * 3 + 2] = q[2] * d; isSkin[v] = c === skinHex ? 1 : 0;
   }
-  bodyComposite(rig);
+  layerComposite(rig.bodyL);
 }
-// bruises go red then purple; blood is dark and wet (it shines like sweat does)
-function bodyComposite(rig) {
-  const S = rig.bodyShape, C = rig.body.geometry.attributes.color, K = rig.body.geometry.attributes.skinM, B = rig.bodyBase, X = rig.bodyFX;
-  for (let v = 0; v < S.nV; v++) {
+const bodyComposite = (rig) => { for (const L of [rig.bodyL, rig.headL]) if (L && L.fx.dirty) layerComposite(L); };
+// a painted skin (the body, the head): bruises go red then purple; blood is dark and wet (it shines like sweat does)
+function layerComposite(Ly) {
+  const C = Ly.mesh.geometry.attributes.color, K = Ly.mesh.geometry.attributes.skinM, B = Ly.base, X = Ly.fx, isSkin = Ly.isSkin;
+  for (let v = 0; v < Ly.nV; v++) {
     let r = B[v * 3], g = B[v * 3 + 1], b = B[v * 3 + 2];
     const br = X.bruise[v], bl = X.blood[v];
     if (br > 0.01) { const k = Math.min(1, br), red = Math.min(1, k * 2), pur = Math.max(0, k * 2 - 1); r *= 1 - 0.1 * red - 0.32 * pur; g *= 1 - 0.42 * red - 0.2 * pur; b *= 1 - 0.38 * red + 0.05 * pur; }
     if (bl > 0.01) { const k = Math.min(0.92, bl); r = lerp(r, 120, k); g = lerp(g, 6, k); b = lerp(b, 12, k); }
-    C.array[v * 3] = r; C.array[v * 3 + 1] = g; C.array[v * 3 + 2] = b; K.array[v] = Math.max(rig.bodyIsSkin[v], Math.min(1, bl * 1.3));
+    C.array[v * 3] = r; C.array[v * 3 + 1] = g; C.array[v * 3 + 2] = b; K.array[v] = Math.max(isSkin[v], Math.min(1, bl * 1.3));
   }
   C.needsUpdate = K.needsUpdate = true; X.dirty = false;
 }
@@ -1987,21 +1915,348 @@ function bodyNearest(rig, pt, bones) {
 function bodySplat(rig, v, layer, amt, rad, streak = 0) {
   const P = rig.body.geometry.attributes.position.array; bodySplatAt(rig, P[v * 3], P[v * 3 + 1], P[v * 3 + 2], layer, amt, rad, streak);
 }
-function bodySplatAt(rig, cx, cy, cz, layer, amt, rad, streak = 0) {
-  const P = rig.body.geometry.attributes.position.array, L = rig.bodyFX[layer], r2 = rad * rad;
+function bodySplatAt(rig, cx, cy, cz, layer, amt, rad, streak = 0) { layerSplatAt(rig.bodyL, cx, cy, cz, layer, amt, rad, streak); }
+function layerSplatAt(Ly, cx, cy, cz, layer, amt, rad, streak = 0) {
+  const P = Ly.mesh.geometry.attributes.position.array, L = Ly.fx[layer], r2 = rad * rad;
   for (let i = 0; i < L.length; i++) {
     const dx = P[i * 3] - cx, dz = P[i * 3 + 2] - cz; let dy = P[i * 3 + 1] - cy; if (streak && dy < 0) dy /= 1 + streak;
     const d = dx * dx + dy * dy + dz * dz; if (d > r2 * 4) continue;
     const w = Math.exp(-d / r2) * (0.75 + 0.5 * Math.sin(i * 12.9898) * Math.sin(i * 4.1414)); // a ragged edge
     if (w > 0.02) L[i] = Math.min(1.2, L[i] + amt * w);
   }
-  rig.bodyFX.dirty = true;
+  Ly.fx.dirty = true;
 }
 // the front of the torso at height y (bind space): where a drip of blood running down the chest is
 function bodyFrontZ(rig, x, y) {
   const S = rig.bodyShape; let pz = 0.32, pv = S.sample(x, y, pz);
   for (let z = 0.315; z > -0.02; z -= 0.005) { const v = S.sample(x, y, z); if (v < 0 && pv >= 0) return z + 0.005 * (v / (v - pv)); pz = z; pv = v; }
   return null;
+}
+/* =====================================================================
+   WEAR — everything that sits on the one-piece body, built the same way
+   · The head is sculpted like the body (skull, jaw, cheekbones, brow,
+     nose, lips, ears, eye sockets) with real eyeballs, and shares the
+     body's material: it sweats, flushes and flashes with it, and takes
+     bruises and blood painted into the skin.
+   · Hair, beards, caps, beanies, bandanas, shades and headbands are
+     shells grown off the head's own shape, so they sit on it exactly.
+   · Clothes (shorts, sleeves, pads, bands, the watch, wraps, the hood)
+     are shells grown off the body's shape and skinned to the same bones:
+     they hug it, flare where they should, and bend with it.
+   · Shoes and gloves are sculpted to match.
+   ===================================================================== */
+// ---------- shared bits ----------
+const VC_MAT = () => VC_MAT.m || (VC_MAT.m = (() => { const m = new THREE.MeshToonMaterial({ color: 0xffffff, vertexColors: true, gradientMap: toonGrad() }); m.onBeforeCompile = rimShader; return m; })());
+const VC_SKIN_MAT = () => VC_SKIN_MAT.m || (VC_SKIN_MAT.m = (() => { const m = new THREE.MeshToonMaterial({ color: 0xffffff, vertexColors: true, skinning: true, gradientMap: toonGrad() }); m.onBeforeCompile = rimShader; return m; })());
+// an outline for a rigid sculpted piece: the same surface pushed out along its normals, inside-out, in black
+const OL_PUSH_MAT = (w = 0.012) => { const k = 'm' + w; return OL_PUSH_MAT[k] || (OL_PUSH_MAT[k] = (() => { const m = new THREE.MeshBasicMaterial({ color: 0x07080c, side: THREE.BackSide }); m.onBeforeCompile = (sh) => { sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', `vec3 transformed = vec3(position) + normal * ${w.toFixed(4)};`); }; m.customProgramCacheKey = () => 'olp' + w; return m; })()); };
+const sdfBox = (x, y, z, cx, cy, cz, hx, hy, hz) => Math.max(Math.abs(x - cx) - hx, Math.abs(y - cy) - hy, Math.abs(z - cz) - hz);
+const WEAR_CACHE = new Map();
+// a field on a grid → a geometry (position, normal, and the crease shadow kept for painting)
+function sdfGeo(f, lo, hi, c) {
+  const nx = Math.ceil((hi[0] - lo[0]) / c) + 1, ny = Math.ceil((hi[1] - lo[1]) / c) + 1, nz = Math.ceil((hi[2] - lo[2]) / c) + 1, Fv = new Float32Array(nx * ny * nz);
+  for (let k = 0, n = 0; k < nz; k++) for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++, n++) Fv[n] = f(lo[0] + i * c, lo[1] + j * c, lo[2] + k * c);
+  // (a field that doesn't close at the edge of the grid would leave a hole: the grid is padded so it always does)
+  const R = surfaceNets(Fv, nx, ny, nz, lo, c), g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(R.pos, 3)); g.setAttribute('normal', new THREE.BufferAttribute(R.nor, 3));
+  g.setIndex(R.pos.length / 3 > 65535 ? new THREE.Uint32BufferAttribute(R.idx, 1) : new THREE.Uint16BufferAttribute(R.idx, 1)); g.computeBoundingSphere();
+  return { g, ao: R.ao, nV: R.pos.length / 3, sample: R.sample };
+}
+// colour a cached shape for one rig: (x, y, z) → colour, with the crease shadow; returns a geometry sharing everything else
+function wearColored(S, colorAt, aoK = 0.5) {
+  const g = new THREE.BufferGeometry(), P = S.g.attributes.position.array, C = new Uint8Array(S.nV * 3), col = new THREE.Color(), cache = new Map();
+  for (const a of ['position', 'normal', 'skinIndex', 'skinWeight']) if (S.g.attributes[a]) g.setAttribute(a, S.g.attributes[a]);
+  g.setIndex(S.g.index); g.boundingSphere = S.g.boundingSphere;
+  for (let v = 0; v < S.nV; v++) {
+    const c = colorAt(P[v * 3], P[v * 3 + 1], P[v * 3 + 2], v); let q = cache.get(c); if (!q) { col.set(c); q = [col.r * 255, col.g * 255, col.b * 255]; cache.set(c, q); }
+    const d = 1 - aoK * S.ao[v]; C[v * 3] = q[0] * d; C[v * 3 + 1] = q[1] * d; C[v * 3 + 2] = q[2] * d;
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(C, 3, true));
+  return g;
+}
+// a rigid sculpted piece on a bone (hair, shoes, gloves): the mesh and its outline
+function wearMesh(parent, g, ol = 0.012, mat = VC_MAT()) {
+  const m = new THREE.Mesh(g, mat); m.castShadow = false; parent.add(m); // (the body and head cast the shadow; the small pieces don't need to)
+  if (ol) { const o = new THREE.Mesh(g, OL_PUSH_MAT(ol)); o.castShadow = false; m.add(o); }
+  return m;
+}
+
+// ---------- the head ----------
+// head frame: origin in the middle of the skull, +z out of the face (the old block head spanned ±0.11 × ±0.13 × ±0.12)
+function headParts() {
+  const P = [], add = (k, s) => { s.k = k; P.push(s); }, cut = (k, s) => { s.k = k; s.op = 'sub'; P.push(s); };
+  add(0, bodyEll(0, 0.03, -0.012, 0.106, 0.118, 0.118)); // the skull
+  add(0.05, bodyBox(0, -0.036, 0.03, 0.088, 0.075, 0.088, 0.05, 0.78, 0.92)); // the face, narrowing to the jaw
+  for (const s of [1, -1]) {
+    add(0.02, bodyEll(s * 0.062, 0.0, 0.072, 0.034, 0.026, 0.034)); // cheekbones
+    add(0.03, bodyEll(s * 0.068, -0.066, 0.0, 0.03, 0.04, 0.05)); // the angle of the jaw
+    add(0.01, bodyEll(s * 0.108, 0.002, -0.008, 0.014, 0.034, 0.025)); // ears
+    add(0.008, bodyEll(s * 0.015, -0.03, 0.117, 0.012, 0.01, 0.012)); // nostril wings
+    cut(0.004, bodyEll(s * 0.118, 0.004, -0.004, 0.007, 0.02, 0.012)); // inside the ear
+    cut(0.012, bodyEll(s * 0.045, 0.02, 0.118, 0.027, 0.017, 0.02)); // eye sockets
+  }
+  add(0.02, bodyEll(0, -0.1, 0.086, 0.032, 0.024, 0.026)); // chin
+  add(0.02, bodyCone(-0.068, 0.049, 0.098, 0.068, 0.049, 0.098, 0.017, 0.017)); // the brow
+  add(0.012, bodyCone(0, 0.034, 0.112, 0, -0.018, 0.13, 0.011, 0.016)); // the nose
+  add(0.01, bodyEll(0, -0.022, 0.128, 0.018, 0.016, 0.016)); // the tip of it
+  add(0.006, bodyEll(0, -0.061, 0.113, 0.03, 0.009, 0.012)); // upper lip
+  add(0.006, bodyEll(0, -0.077, 0.11, 0.027, 0.01, 0.012)); // lower lip
+  cut(0.003, bodyCone(-0.026, -0.069, 0.123, 0.026, -0.069, 0.123, 0.0035, 0.0035)); // where the lips meet
+  add(0.03, bodyCone(0, -0.09, -0.02, 0, -0.17, -0.03, 0.054, 0.056)); // the top of the neck, inside the body's
+  return P.sort((p, q) => (p.op === 'sub') - (q.op === 'sub'));
+}
+function headField(x, y, z) {
+  const P = HEAD_PARTS || (HEAD_PARTS = headParts()); let d = 1;
+  for (const s of P) { const v = s.f(x, y, z); d = s.op === 'sub' ? -sminB(-d, v, s.k) : sminB(d, v, s.k); }
+  return d;
+}
+let HEAD_PARTS = null;
+const HEAD_LO = [-0.2, -0.22, -0.22], HEAD_HI = [0.2, 0.27, 0.22];
+// the head's shape on a fine grid (once): the head mesh comes from it, and every hairstyle and hat is grown off it
+function headShape(lod) {
+  const k = lod ? 'headLod' : 'head'; let S = WEAR_CACHE.get(k); if (S) return S;
+  S = sdfGeo((x, y, z) => (y < -0.16 ? Math.max(headField(x, y, z), -0.16 - y) : headField(x, y, z)), HEAD_LO, HEAD_HI, lod ? 0.0095 : 0.0065);
+  WEAR_CACHE.set(k, S); return S;
+}
+// where the skin of the face is along +z at (x, y): for placing eyes, swelling and sweat on it
+function headFrontZ(x, y, from = 0.2) {
+  let pz = from, pv = headField(x, y, pz);
+  for (let z = from - 0.003; z > -0.05; z -= 0.003) { const v = headField(x, y, z); if (v < 0 && pv >= 0) return z + 0.003 * (v / (v - pv)); pz = z; pv = v; }
+  return 0.1;
+}
+// a shell grown off the head: thickness t(x, y, z), kept inside region(x, y, z) ≤ 0, plus extra shapes
+function headShell(key, t, region, extra, c = 0.0085) {
+  let S = WEAR_CACHE.get(key); if (S) return S;
+  const H = headShape();
+  S = sdfGeo((x, y, z) => { let d = Math.max(H.sample(x, y, z) - t(x, y, z), region(x, y, z)); if (extra) d = Math.min(d, extra(x, y, z)); return d; }, HEAD_LO, HEAD_HI, c);
+  WEAR_CACHE.set(key, S); return S;
+}
+// the hairline: low at the back, over the ears at the sides, up at the forehead
+const hairline = (x, y, z) => clamp(lerp(-0.06, 0.074, (z + 0.06) / 0.135), -0.06, 0.074) - y + (Math.abs(x) > 0.085 && z > -0.03 ? 0.025 : 0);
+const scalp = (x, y, z) => hairline(x, y, z) + 0.004;
+
+// build the head for a rig: the sculpted skin (skinned to the head bone, sharing the body's material), eyes, hair
+function headMake(rig, L, skin, hairC, opts) {
+  const S = headShape(opts.lod), R = rig.bodyRest && rig.bodyRest.head; if (!R || !rig.body) return;
+  const hi = BODY_BONES.indexOf('head'), T = R.m.elements; // the head's place in the body's bind space
+  const key = 'headBind|' + (opts.lod ? 'l' : '') + T[12].toFixed(4) + ',' + T[13].toFixed(4) + ',' + T[14].toFixed(4);
+  let B = WEAR_CACHE.get(key);
+  if (!B) {
+    const P = S.g.attributes.position.array, Q = new Float32Array(P.length);
+    for (let i = 0; i < P.length; i += 3) { Q[i] = P[i] + T[12]; Q[i + 1] = P[i + 1] + T[13]; Q[i + 2] = P[i + 2] + T[14]; }
+    const sI = new Uint16Array(S.nV * 4), sW = new Float32Array(S.nV * 4); for (let v = 0; v < S.nV; v++) { sI[v * 4] = hi; sW[v * 4] = 1; }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(Q, 3)); g.setAttribute('normal', S.g.attributes.normal);
+    g.setAttribute('skinIndex', new THREE.BufferAttribute(sI, 4)); g.setAttribute('skinWeight', new THREE.BufferAttribute(sW, 4)); g.setIndex(S.g.index); g.computeBoundingSphere();
+    B = { g, nV: S.nV, ao: S.ao, T: [T[12], T[13], T[14]] }; WEAR_CACHE.set(key, B);
+  }
+  const g = new THREE.BufferGeometry(); for (const a of ['position', 'normal', 'skinIndex', 'skinWeight']) g.setAttribute(a, B.g.attributes[a]);
+  g.setIndex(B.g.index); g.boundingSphere = B.g.boundingSphere;
+  g.setAttribute('color', new THREE.BufferAttribute(new Uint8Array(B.nV * 3), 3, true)); g.setAttribute('skinM', new THREE.BufferAttribute(new Float32Array(B.nV), 1));
+  const mesh = new THREE.SkinnedMesh(g, rig.body.material), ol = new THREE.SkinnedMesh(g, BODY_OL_MAT(0.007));
+  mesh.castShadow = true; mesh.frustumCulled = ol.frustumCulled = false;
+  rig.root.add(mesh); rig.root.add(ol); mesh.bind(rig.body.skeleton, rig.body.bindMatrix); ol.bind(rig.body.skeleton, rig.body.bindMatrix);
+  rig.headMesh = mesh; rig.headOl = ol;
+  // paint: skin, lips, brows, and whatever the hair and beard paint onto the skin (a buzz cut, a fade, stubble, eye black)
+  const lipC = '#' + new THREE.Color(skin).lerp(new THREE.Color('#9a3a44'), 0.35).getHexString();
+  const hairOn = (c, k) => '#' + new THREE.Color(skin).lerp(new THREE.Color(c), k).getHexString();
+  const h = L.hair, bd = L.beard, SC = L.street;
+  const paint = (x, y, z) => {
+    const lips = z > 0.095 && Math.abs(x) < 0.03 && y < -0.054 && y > -0.088 && (y > -0.069 ? (x * x) / 0.0009 + ((y + 0.061) ** 2) / 0.0001 < 1.4 : (x * x) / 0.00073 + ((y + 0.077) ** 2) / 0.00012 < 1.4);
+    if (lips) return lipC;
+    if (z > 0.085 && y > 0.05 && y < 0.071 - Math.abs(x) * 0.05 && Math.abs(x) > 0.016 && Math.abs(x) < 0.088) return hairC; // brows
+    if (L.paint === 'eyeblack' && z > 0.07 && y < 0.0 && y > -0.02 && Math.abs(x) > 0.025 && Math.abs(x) < 0.088) return '#0b0b0f';
+    if (bd === 'stubble' && y < -0.03 && z > -0.03 && !(Math.abs(x) < 0.03 && y > -0.085 && z > 0.1)) return hairOn('#000000', 0.28);
+    const top = scalp(x, y, z) < 0;
+    if (top && (h === 'buzz' || h === 'cornrows')) return hairOn(hairC, h === 'buzz' ? 0.82 : 0.6);
+    if (top && (h === 'fade' || h === 'mohawk')) return hairOn(hairC, h === 'fade' ? 0.55 : 0.3); // the shaved sides
+    return skin;
+  };
+  const lp = rig.headPaintRules = [paint];
+  const base = new Float32Array(B.nV * 3), isSkin = new Uint8Array(B.nV), col = new THREE.Color(), P = S.g.attributes.position.array;
+  for (let v = 0; v < B.nV; v++) { let c = null; for (const r of lp) { const o = r(P[v * 3], P[v * 3 + 1], P[v * 3 + 2]); if (o) c = o; } col.set(c); const d = 1 - 0.45 * B.ao[v]; base[v * 3] = col.r * 255 * d; base[v * 3 + 1] = col.g * 255 * d; base[v * 3 + 2] = col.b * 255 * d; isSkin[v] = c === skin ? 1 : 0; }
+  rig.headL = { mesh, nV: B.nV, base, isSkin, fx: { bruise: new Float32Array(B.nV), blood: new Float32Array(B.nV) }, dirty: false, T: B.T };
+  layerComposite(rig.headL);
+  // eyes: whites and irises in the sockets (the swelling squeezes them shut, see Gore)
+  const eyeC = EYE_COL[L.eyeCol] || '#141018', head = rig.head; rig.eyes = [];
+  for (const sx of [1, -1]) {
+    const zf = headFrontZ(sx * 0.045, 0.02), w = new THREE.Mesh(MUSCLE_GEO(), toon('#f4f4f4')); w.scale.set(0.019, 0.013, 0.012); w.position.set(sx * 0.045, 0.02, zf - 0.006); head.add(w);
+    const p = new THREE.Mesh(MUSCLE_GEO(), toon(eyeC)); p.scale.set(0.0085, 0.0095, 0.006); p.position.set(sx * 0.043, 0.02, zf + 0.0035); head.add(p);
+    rig.eyes.push([w, p]);
+  }
+  rig.headSurf = headFrontZ;
+  wearHair(rig, L, hairC, skin, opts);
+}
+// hair, beards and headgear: shells off the head's shape
+function wearHair(rig, L, hairC, skin, opts) {
+  const head = rig.head, h = L.hair, bd = L.beard, SC = L.street || {};
+  const hairT = (top, base) => (x, y, z) => base + Math.max(0, y - 0.04) * top;
+  const mk = (key, t, region, extra, c, color, ol = 0.01) => { const S = headShell(key, t, region, extra); const g = wearColored(S, typeof color === 'function' ? color : () => color, 0.35); return wearMesh(head, g, ol); };
+  // a hat or a bandana covers the hair: the hair stops under it, and the hat sits over what's left
+  const capLine = SC.cap ? 0.055 : SC.beanie ? 0.035 : SC.bandana ? 0.06 : null, under = (r) => (capLine === null ? r : (x, y, z) => Math.max(r(x, y, z), y - capLine));
+  let hairTf = () => 0; const gearT = (base) => (x, y, z) => base + hairTf(x, y, z);
+  if (h === 'short' || h === 'spiky' || h === 'manbun' || h === 'ponytail' || h === 'dreads' || h === 'long') {
+    const longB = h === 'long'; hairTf = hairT(0.14, 0.008);
+    mk('hair:' + h + (capLine ?? ''), hairTf, under((x, y, z) => Math.min(hairline(x, y, z), longB && z < 0.01 ? Math.max(-0.2 - y, z - 0.01) : 1)),
+      capLine !== null ? null : h === 'spiky' ? (x, y, z) => { let d = 1; for (let i = -1; i <= 1; i++) for (const zz of [-0.05, 0.035]) d = Math.min(d, bodyCone(i * 0.06, 0.09, zz, i * 0.095, 0.205, zz + (zz < 0 ? -0.05 : 0.04), 0.036, 0.005).f(x, y, z)); return d; }
+      : h === 'manbun' ? (x, y, z) => bodyEll(0, 0.135, -0.1, 0.045, 0.04, 0.045).f(x, y, z)
+      : h === 'ponytail' ? (x, y, z) => Math.min(bodyCone(0, 0.06, -0.12, 0, -0.16, -0.17, 0.026, 0.016).f(x, y, z), bodyEll(0, 0.06, -0.122, 0.03, 0.022, 0.03).f(x, y, z))
+      : h === 'dreads' ? (x, y, z) => { let d = 1; for (let i = -2; i <= 2; i++) d = Math.min(d, bodyCone(i * 0.045, 0.02, -0.12, i * 0.05, -0.17, -0.14, 0.017, 0.014).f(x, y, z)); for (const s of [1, -1]) d = Math.min(d, bodyCone(s * 0.12, 0.05, -0.03, s * 0.125, -0.12, -0.05, 0.017, 0.014).f(x, y, z)); return d; }
+      : longB ? (x, y, z) => Math.min(bodyBox(0, -0.09, -0.118, 0.11, 0.12, 0.02, 0.018).f(x, y, z), bodyBox(0.118, -0.03, -0.04, 0.012, 0.09, 0.07, 0.01).f(x, y, z), bodyBox(-0.118, -0.03, -0.04, 0.012, 0.09, 0.07, 0.01).f(x, y, z)) : null,
+      0, hairC);
+  }
+  if (h === 'fade') { hairTf = hairT(0.2, 0.01); mk('hair:fade' + (capLine ?? ''), hairTf, under((x, y, z) => Math.max(0.058 - y, -0.075 - z)), null, 0, hairC); }
+  if (h === 'mohawk') mk('hair:mohawk', () => 0.006, (x, y, z) => Math.max(Math.abs(x) - 0.03, 0.04 - y), (x, y, z) => Math.max(bodyEll(0, 0.13, -0.01, 0.022, 0.075, 0.125).f(x, y, z), 0.06 - y), 0, hairC);
+  if (h === 'cornrows') mk('hair:cornrows', () => 0.004, (x, y, z) => Math.max(scalp(x, y, z), Math.abs(((x + 0.1125) % 0.045) - 0.0225) - 0.009), null, 0, hairC);
+  if (h === 'afro') mk('hair:afro', () => 0.004, () => 1, (x, y, z) => Math.max(bodyEll(0, 0.075, -0.03, 0.162, 0.142, 0.156).f(x, y, z), Math.min(0.078 - y, z - 0.05), -0.05 - y), 0, hairC); // (cut away in front of the face)
+  // beards (boxes in the head's frame, with the mouth kept clear)
+  const mouthB = (x, y, z) => sdfBox(x, y, z, 0, -0.07, 0.11, 0.03, 0.015, 0.04), keepMouth = (r) => (x, y, z) => Math.max(r(x, y, z), -mouthB(x, y, z));
+  const stache = (x, y, z) => sdfBox(x, y, z, 0, -0.05, 0.11, 0.037, 0.008, 0.04), chin = (x, y, z) => sdfBox(x, y, z, 0, -0.106, 0.09, 0.034, 0.026, 0.05);
+  if (bd === 'mustache') mk('beard:mustache', () => 0.007, stache, null, 0, hairC);
+  if (bd === 'goatee') mk('beard:goatee', () => 0.01, keepMouth((x, y, z) => Math.min(stache(x, y, z), chin(x, y, z))), null, 0, hairC);
+  if (bd === 'chinstrap') mk('beard:chinstrap', () => 0.007, (x, y, z) => Math.max(sdfBox(x, y, z, 0, -0.1, 0.01, 0.13, 0.042, 0.13), -sdfBox(x, y, z, 0, -0.07, 0.09, 0.052, 0.04, 0.06)), null, 0, hairC);
+  if (bd === 'full') mk('beard:full', (x, y, z) => 0.008 + Math.max(0, -0.06 - y) * 0.2, keepMouth((x, y, z) => Math.min(sdfBox(x, y, z, 0, -0.086, 0.03, 0.125, 0.056, 0.11), stache(x, y, z))), null, 0, hairC);
+  // headgear and the referee's nothing
+  if (SC.cap) { mk('gear:cap' + h, gearT(0.016), (x, y, z) => 0.05 - y, null, 0, SC.cap); mk('gear:brim', () => 0, () => 1, (x, y, z) => Math.max(bodyEll(0, 0.072, 0.15, 0.09, 0.008, 0.075).f(x, y, z), 0.085 - z), 0, shade(SC.cap, 0.8)); }
+  if (SC.beanie) mk('gear:beanie' + h, (x, y, z) => (y < 0.06 ? 0.028 : 0.022) + hairTf(x, y, z), (x, y, z) => 0.03 - y, null, 0, (x, y) => (y < 0.065 ? shade(SC.beanie, 0.82) : SC.beanie));
+  if (SC.bandana) mk('gear:bandana' + h, gearT(0.01), (x, y, z) => 0.062 - y + (z < -0.05 ? 0.012 : 0), (x, y, z) => bodyEll(0, 0.07, -0.135, 0.03, 0.03, 0.025).f(x, y, z), 0, SC.bandana);
+  if (SC.shades) mk('gear:shades', () => 0.012, (x, y, z) => Math.max(Math.abs(y - 0.022) - 0.019, 0.05 - z), null, 0, '#0b0b0f', 0.006);
+}
+// a headband (hoops kits)
+function wearHeadband(rig, color) { if (!rig.headMesh) return null; const S = headShell('gear:headband', () => 0.011, (x, y, z) => Math.abs(y - 0.072) - 0.018); return wearMesh(rig.head, wearColored(S, () => color, 0.3), 0.008); }
+
+// ---------- clothes on the body ----------
+// the body's vertices on a coarse spatial hash (bind space), to give each clothes vertex the weights of the skin under it
+function bodyHash(S, P) {
+  if (S.hash) return S.hash;
+  const H = new Map(), q = 0.03; for (let v = 0; v < S.nV; v++) { const k = Math.floor(P[v * 3] / q) + ',' + Math.floor(P[v * 3 + 1] / q) + ',' + Math.floor(P[v * 3 + 2] / q); let a = H.get(k); if (!a) H.set(k, (a = [])); a.push(v); }
+  return (S.hash = { H, q });
+}
+function bodyNearestBind(S, P, x, y, z) {
+  const { H, q } = bodyHash(S, P), ix = Math.floor(x / q), iy = Math.floor(y / q), iz = Math.floor(z / q); let best = -1, bd = 1e9;
+  for (let r = 1; r <= 3 && best < 0; r++) for (let a = -r; a <= r; a++) for (let b = -r; b <= r; b++) for (let c = -r; c <= r; c++) {
+    const L = H.get((ix + a) + ',' + (iy + b) + ',' + (iz + c)); if (!L) continue;
+    for (const v of L) { const d = (P[v * 3] - x) ** 2 + (P[v * 3 + 1] - y) ** 2 + (P[v * 3 + 2] - z) ** 2; if (d < bd) { bd = d; best = v; } }
+  }
+  return best;
+}
+// a garment: a shell grown off the body inside zones given in bones' own frames ({bone, box: [cx, cy, cz, hx, hy, hz]}),
+// thickness t(bone, lx, ly, lz), coloured by paint(bone, lx, ly, lz); skinned like the skin under it
+function garment(rig, key, zones, t, paint, cutF) {
+  const S = rig.bodyShape, Rr = rig.bodyRest, BP = rig.body.geometry.attributes.position.array;
+  const ck = key + '|' + rig.bodyKey; let G = WEAR_CACHE.get(ck);
+  if (!G) {
+    const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9], Z = zones.map((z) => ({ ...z, inv: Rr[z.bone].inv.elements, m: Rr[z.bone].m.elements }));
+    for (const z of Z) { const [cx, cy, cz, hx, hy, hz] = z.box; for (let i = 0; i < 8; i++) { const lx = cx + (i & 1 ? hx : -hx), ly = cy + (i & 2 ? hy : -hy), lz = cz + (i & 4 ? hz : -hz), e = z.m; const p = [e[0] * lx + e[4] * ly + e[8] * lz + e[12], e[1] * lx + e[5] * ly + e[9] * lz + e[13], e[2] * lx + e[6] * ly + e[10] * lz + e[14]]; for (let a = 0; a < 3; a++) { lo[a] = Math.min(lo[a], p[a] - 0.07); hi[a] = Math.max(hi[a], p[a] + 0.07); } } }
+    const loc = (z, x, y, w) => { const e = z.inv; return [e[0] * x + e[4] * y + e[8] * w + e[12], e[1] * x + e[5] * y + e[9] * w + e[13], e[2] * x + e[6] * y + e[10] * w + e[14]]; };
+    const field = (x, y, w) => {
+      let best = 1e9, bz = null, bl = null;
+      for (const z of Z) { const l = loc(z, x, y, w), [cx, cy, cz, hx, hy, hz] = z.box, d = sdfBox(l[0], l[1], l[2], cx, cy, cz, hx, hy, hz); if (d < best) { best = d; bz = z; bl = l; } }
+      const d = Math.max(S.sample(x, y, w) - t(bz.bone, bl[0], bl[1], bl[2]), best);
+      return cutF ? Math.max(d, -cutF(x, y, w)) : d;
+    };
+    const R = sdfGeo(field, lo, hi, rig.bodyKey.endsWith('|1') ? 0.017 : 0.013), P = R.g.attributes.position.array, sI = new Uint16Array(R.nV * 4), sW = new Float32Array(R.nV * 4), dom = new Uint8Array(R.nV), L = new Float32Array(R.nV * 3);
+    const bsI = rig.body.geometry.attributes.skinIndex.array, bsW = rig.body.geometry.attributes.skinWeight.array;
+    for (let v = 0; v < R.nV; v++) {
+      const n = bodyNearestBind(S, BP, P[v * 3], P[v * 3 + 1], P[v * 3 + 2]); if (n < 0) { sW[v * 4] = 1; continue; }
+      for (let q = 0; q < 4; q++) { sI[v * 4 + q] = bsI[n * 4 + q]; sW[v * 4 + q] = bsW[n * 4 + q]; }
+      dom[v] = S.dom[n]; const e = Rr[BODY_BONES[dom[v]]].inv.elements, x = P[v * 3], y = P[v * 3 + 1], w = P[v * 3 + 2];
+      L[v * 3] = e[0] * x + e[4] * y + e[8] * w + e[12]; L[v * 3 + 1] = e[1] * x + e[5] * y + e[9] * w + e[13]; L[v * 3 + 2] = e[2] * x + e[6] * y + e[10] * w + e[14];
+    }
+    R.g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(sI, 4)); R.g.setAttribute('skinWeight', new THREE.BufferAttribute(sW, 4));
+    G = { ...R, dom, loc: L }; WEAR_CACHE.set(ck, G);
+  }
+  const g = wearColored(G, (x, y, z, v) => paint(BODY_BONES[G.dom[v]], G.loc[v * 3], G.loc[v * 3 + 1], G.loc[v * 3 + 2]), 0.55);
+  const m = new THREE.SkinnedMesh(g, VC_SKIN_MAT()), ol = new THREE.SkinnedMesh(g, BODY_OL_MAT());
+  m.castShadow = false; m.frustumCulled = ol.frustumCulled = false; rig.root.add(m); rig.root.add(ol);
+  m.bind(rig.body.skeleton, rig.body.bindMatrix); ol.bind(rig.body.skeleton, rig.body.bindMatrix);
+  const w = { m, ol, remove() { for (const o of [m, ol]) if (o.parent) o.parent.remove(o); } };
+  (rig.garments || (rig.garments = {}))[key.split(':')[0]] = w;
+  return w;
+}
+const LEGS = ['lHip', 'rHip'];
+// shorts: the pelvis and each thigh down to the hem, looser toward the hem. o: { hem, flare, color, waist, trim, design, stripe, hemTrim }
+function wearShorts(rig, o) {
+  if (rig.garments && rig.garments.shorts) rig.garments.shorts.remove();
+  const b = rig.bw || 1, hem = o.hem, zones = [{ bone: 'hips', box: [0, 0.0, 0, 0.21 * b, 0.112, 0.17 * b] }, ...LEGS.map((bone) => ({ bone, box: [0, 0.05 - (hem + 0.05) / 2, 0, 0.13, (hem + 0.05) / 2, 0.14] }))];
+  const hy = rig.bodyRest.hips.m.elements[13], inseam = (x, y) => Math.max(Math.abs(x) - 0.011, y - (hy - 0.095)); // a slit up between the legs, so each leg is its own tube
+  const t = (bone, x, y) => (bone === 'hips' ? 0.013 : 0.013 + (o.flare || 0.03) * clamp(-y / hem, 0, 1) ** 1.3);
+  const paint = (bn, x, y, z) => {
+    const leg = bn === 'lHip' || bn === 'rHip', hy = bn === 'spine' ? y + 0.1 : y, s = bn[0] === 'r' ? -1 : 1;
+    if (!leg && o.waist && hy > 0.066) return o.waist;
+    if (leg && o.hemTrim && y < -hem + 0.035) return o.hemTrim;
+    if (o.design === 'trim' && leg && y < -hem + 0.03) return o.trim;
+    if ((o.design === 'stripe' || o.stripe) && (leg ? x * s > 0.07 && Math.abs(z) < 0.035 : Math.abs(x) > 0.15 * b && Math.abs(z) < 0.07)) return o.stripe || o.trim;
+    if (o.design === 'split' && (leg ? bn === 'lHip' : x > 0)) return o.trim;
+    return o.color;
+  };
+  return garment(rig, 'shorts:' + hem + ',' + (o.flare || 0.03), zones, t, paint, inseam);
+}
+// a band round a limb (a wristband, the watch strap, a knee pad, ankle wraps, a sleeve)
+function wearBand(rig, key, zones, thick, color) { return garment(rig, key, zones, () => thick, typeof color === 'function' ? color : () => color); }
+// a small rigid piece sat on the skin of a bone at (x, y), pushed out along its normal (watch faces, pendants, chains)
+function wearOnSkin(rig, bone, x, y, mesh, zOut = 0.25, off = 0.004, back = false) {
+  const h = bodySurf(rig, bone, x, y, back ? -zOut : zOut, back ? zOut * 0.2 : -zOut * 0.2); const G = rig[bone];
+  if (h) { const n = h.n.normalize(); mesh.position.copy(h.p).addScaledVector(n, off); mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, back ? -1 : 1), n); }
+  else mesh.position.set(x, y, back ? -0.12 : 0.12);
+  G.add(mesh); return mesh;
+}
+
+// ---------- shoes and gloves ----------
+function shoeShape(kind) {
+  return WEAR_CACHE.get('shoe:' + kind) || (() => {
+    const tall = kind === 'high' ? 0.15 : kind === 'boot' ? 0.17 : kind === 'box' ? 0.2 : 0.055, wide = kind === 'boot' ? 1.08 : 1;
+    const f = (x, y, z) => {
+      let d = bodyBox(0, -0.058, 0.062, 0.064 * wide, 0.012, 0.142, 0.012).f(x, y, z); // sole
+      d = sminB(d, bodyBox(0, -0.03, 0.06, 0.06 * wide, 0.032, 0.132, 0.03, 0.98, 1).f(x, y, z), 0.01); // the upper
+      d = sminB(d, bodyEll(0, -0.034, 0.15, 0.056 * wide, 0.03, 0.05).f(x, y, z), 0.02); // the toe box
+      d = sminB(d, bodyCone(0, -0.02, -0.01, 0, tall, -0.012, 0.064 * wide, kind === 'box' ? 0.056 : 0.06).f(x, y, z), 0.025); // round the ankle
+      return Math.max(d, -0.072 - y);
+    };
+    const S = sdfGeo(f, [-0.1, -0.09, -0.12], [0.1, tall + 0.08, 0.25], 0.0085); WEAR_CACHE.set('shoe:' + kind, S); return S;
+  })();
+}
+function wearShoe(rig, ank, kind, c, sole, trim, laces) {
+  const S = shoeShape(kind), tall = kind === 'high' ? 0.15 : kind === 'boot' ? 0.17 : kind === 'box' ? 0.2 : 0.055;
+  const g = wearColored(S, (x, y, z) => {
+    if (y < -0.05) return sole;
+    if (trim && Math.abs(y + 0.046) < 0.005) return trim; // midsole line
+    if (trim && tall > 0.1 && y > tall - 0.028) return trim; // top band
+    if (laces && Math.abs(x) < 0.022 && z > 0.02 && z < 0.15 && y > -0.012 && Math.abs(((z + 1) % 0.024) - 0.012) < 0.005) return laces;
+    if (trim && kind !== 'box' && kind !== 'boot' && Math.abs(Math.abs(x) - 0.06) < 0.012 && y > -0.045 && y < 0.0 && Math.abs(z - 0.06 + y * 1.2) < 0.012) return trim; // the stripe down the side
+    if (kind !== 'box' && z > 0.16 && y > -0.05) return shade(c, 0.8); // toe cap
+    return c;
+  }, 0.4);
+  return wearMesh(ank, g, 0.01);
+}
+function gloveShape(kind, s) {
+  const k = 'glove:' + kind + s; let S = WEAR_CACHE.get(k); if (S) return S;
+  const f = kind === 'boxing' ? (x, y, z) => {
+    let d = bodyEll(0, -0.088, 0.022, 0.075, 0.088, 0.086).f(x, y, z);
+    d = sminB(d, bodyCone(-s * 0.058, -0.05, 0.055, -s * 0.045, -0.105, 0.078, 0.026, 0.022).f(x, y, z), 0.02); // the thumb
+    d = sminB(d, bodyCone(0, 0.045, 0, 0, -0.02, 0.006, 0.058, 0.062).f(x, y, z), 0.025); // the cuff
+    return Math.max(d, y - 0.05);
+  } : kind === 'mma' ? (x, y, z) => {
+    let d = bodyBox(0, -0.062, 0.012, 0.056, 0.05, 0.058, 0.032).f(x, y, z);
+    d = sminB(d, bodyEll(0, -0.098, 0.024, 0.056, 0.024, 0.05).f(x, y, z), 0.02); // the knuckle pad
+    for (let i = 0; i < 4; i++) d = Math.min(d, bodyCone(-0.033 + i * 0.022, -0.105, 0.05, -0.033 + i * 0.022, -0.128, 0.03, 0.011, 0.01).f(x, y, z)); // fingers out the end
+    d = sminB(d, bodyCone(-s * 0.05, -0.04, 0.05, -s * 0.04, -0.085, 0.072, 0.017, 0.015).f(x, y, z), 0.015); // thumb
+    d = sminB(d, bodyCone(0, 0.03, 0, 0, -0.025, 0.005, 0.054, 0.057).f(x, y, z), 0.02); // the strap
+    return Math.max(d, y - 0.04);
+  } : (x, y, z) => { // wraps: a wrapped fist
+    let d = bodyBox(0, -0.05, 0.008, 0.05, 0.056, 0.055, 0.026).f(x, y, z);
+    d = sminB(d, bodyCone(0, 0.03, 0, 0, -0.02, 0.004, 0.047, 0.05).f(x, y, z), 0.02);
+    return Math.max(d, y - 0.035);
+  };
+  S = sdfGeo(f, [-0.12, -0.2, -0.11], [0.12, 0.09, 0.15], 0.008); WEAR_CACHE.set(k, S); return S;
+}
+function wearGlove(rig, hand, kind, s, c, c2, trim, skin) {
+  const S = gloveShape(kind, s);
+  const g = wearColored(S, (x, y, z) => {
+    if (kind === 'boxing') { if (y > 0.0) return trim || '#f2f2f2'; if (z > 0.06 && Math.abs(x) < 0.03 && Math.abs(y + 0.09) < 0.03) return shade(c, 0.82); return c; }
+    if (kind === 'mma') { if (y < -0.11) return skin; if (y > -0.005) return trim || c2 || '#e9e6dc'; if (Math.abs(y + 0.02) < 0.012) return c2 || '#e9e6dc'; return c; }
+    return Math.abs(((y + 1) % 0.03) - 0.015) < 0.003 ? shade(c, 0.85) : c; // wraps: the turns of the wrap
+  }, 0.4);
+  return wearMesh(hand, g, 0.01);
 }
 /* =====================================================================
    ANIMATION LIBRARY — stances + keyframed techniques
@@ -2569,6 +2824,15 @@ const WAVE_B = { spine: [-0.05, 0, 0], lH: [0.55, 1.75, 0.25], lP: [1, 0, -0.5],
 def('refWave', 1.6, [[0.15, WAVE_B, 'out'], [0.35, WAVE_A, 'io'], [0.55, WAVE_B, 'io'], [0.75, WAVE_A, 'io'], [0.95, WAVE_B, 'io'], [1.15, WAVE_A, 'io'], [1.6, WAVE_B, 'io']], { hold: true });
 
 /* ---------- compile & sample ---------- */
+// keep every pose inside what a real body does, now that it's one skin (a twist the old blocks hid would wring the neck
+// or tear the hip): a head turned past ~50° hands the rest of the turn to the chest and upper back, and a leg swung out
+// past ~80° stops there while the body leans away from it instead, the way a real kicker counterbalances
+const COMFORT = { neck: 0.85, hipAbd: 1.4 };
+function comfortPose(P) {
+  const ny = P[CH.ny]; if (Math.abs(ny) > COMFORT.neck) { const ex = ny - Math.sign(ny) * COMFORT.neck; P[CH.ny] -= ex; P[CH.cy] += ex * 0.6; P[CH.sy] += ex * 0.4; }
+  for (const h of ['lhz', 'rhz']) { const v = P[CH[h]]; if (Math.abs(v) > COMFORT.hipAbd) { const ex = v - Math.sign(v) * COMFORT.hipAbd; P[CH[h]] -= ex; P[CH.sz] += ex * 0.55; } }
+  return P;
+}
 const ANIM_CACHE = new Map();
 const ROT_CH = [CH.tx, CH.ty, CH.tz, CH.hx, CH.hy, CH.hz, CH.sx, CH.sy, CH.sz, CH.cx, CH.cy, CH.cz, CH.nx, CH.ny, CH.nz];
 function getAnim(name, stance) {
@@ -2580,7 +2844,7 @@ function getAnim(name, stance) {
   const base = STANCE_POSE[baseName] || STANCE_POSE.neutral;
   let lastFwd = 0;
   const keys = d.keys.map(([t, spec, e]) => {
-    const P = makePose(base, spec);
+    const P = comfortPose(makePose(base, spec));
     if (spec.fwd === undefined) P[CH.fwd] = lastFwd; else lastFwd = spec.fwd;
     return { t, P, e: EASE[e] || EASE.io };
   });
@@ -3688,6 +3952,8 @@ class Fighter {
   startMove(M, slot, combo, guaranteed) {
     const rate = this.D.rate * (0.72 + 0.28 * this.stamF) * (this.powered ? 1.06 : 1) * (M.finisher && M.kind === 'strike' ? 1.45 : 1); // a finisher comes fast, like a real shot
     this.state = 'attack'; this.parryT = 0; this.blockW = 0;
+    // throwing at someone off to the side or behind (a street fight): pivot to them first instead of punching behind your own back
+    if (this.opp && !M.ground) { const d = this.dirTo(), diff = angWrap(Math.atan2(d.x, d.y) - this.yaw); if (Math.abs(diff) > 0.5) { this.turnT = 0.14; if (Math.abs(diff) > 1.4) this.yaw += diff * 0.65; } }
     this.playAnim(M.anim, { rate, move: M, slot, combo, guaranteed });
     this.regenDelay = 0.45;
     this.stats_.thrown++;
@@ -3891,8 +4157,8 @@ class Fighter {
     if (!this.opp) return;
     const d = pt ? pt.clone().sub(this.pos).normalize() : this.dirTo();
     const want = Math.atan2(d.x, d.y);
-    const diff = angWrap(want - this.yaw);
-    this.yaw += clamp(diff, -rate * dt, rate * dt);
+    const diff = angWrap(want - this.yaw), r = rate * (Math.abs(diff) > 1.2 ? 2.2 : 1); // well off to the side: turn quicker
+    this.yaw += clamp(diff, -r * dt, r * dt);
   }
   updateControl(dt) {
     const I = this.intent, D = this.D;
@@ -3939,7 +4205,8 @@ class Fighter {
     A.t += dt * A.rate;
     const firstHit = M.kind === 'grapple' ? M.grab : M.hits[0];
     // tracking during startup only
-    if (A.t < firstHit) this.facing(dt, M.ground ? 9 : M.kind === 'grapple' ? 5 : 3.5, M.ground ? this.groundPoint() : null);
+    if (A.t < firstHit) this.facing(dt, M.ground ? 9 : M.kind === 'grapple' ? 5 : this.turnT > 0 ? 26 : 3.5, M.ground ? this.groundPoint() : null); // (a quick pivot first if they were off to the side)
+    if (this.turnT > 0) this.turnT -= dt;
     // magnet: step into (or out to) the ideal range during startup
     if (!this.grapple && A.t < firstHit + 0.02 && this.opp) {
       const gp = M.ground ? this.standPoint() : null;
@@ -5860,11 +6127,13 @@ const Turf = {
   refresh() { if (UI.screen === 'turf' && Game.mode !== 'fight' && !UI.el.hidden) { const sc = UI.el.querySelector('.scroll'); const top = sc ? sc.scrollTop : 0; UI.show(SCREENS.turf()); const s2 = UI.el.querySelector('.scroll'); if (s2) s2.scrollTop = top; } },
 };
 
-/* ---------- WEEKLY CROWN: whoever holds the most blocks when the week ends gets $5,000 ----------
+/* ---------- WEEKLY CROWN: whoever holds the most blocks when the week ends gets $5,000 and 5,000 XP,
+   plus $500 and 500 XP for every block they're ahead of second place: 8 blocks to 7 pays 5,500 of each,
+   8 to 2 pays 8,000, owning the city outright pays a fortune. ----------
    Weeks end Monday 00:00 UTC (Sunday evening in the Americas). No server job needed: every block
    remembers its last few owners and when they took it, so any copy of the game can work out who
    held what at the moment the week ended, and pays its own fighter if they won. Ties all get paid. */
-const CROWN_PRIZE = 5000, WEEK_MS = 7 * 864e5, WEEK_EPOCH = Date.UTC(1970, 0, 5); // that was a Monday
+const CROWN_PRIZE = 5000, CROWN_PER_BLOCK = 500, WEEK_MS = 7 * 864e5, WEEK_EPOCH = Date.UTC(1970, 0, 5); // that was a Monday
 const Crown = {
   week(t = Date.now()) { return Math.floor((t - WEEK_EPOCH) / WEEK_MS); },
   endOf(w) { return WEEK_EPOCH + (w + 1) * WEEK_MS; },
@@ -5880,17 +6149,23 @@ const Crown = {
     return Object.values(c).sort((a, b) => b.n - a.n);
   },
   winners(rows, w) { const s = this.standings(rows, this.endOf(w)); return s.length ? s.filter((x) => x.n === s[0].n) : []; },
+  // how much the crown pays: the base, plus a cut for every block of lead over whoever came second
+  prize(st) {
+    if (!st.length) return { lead: 0, cash: CROWN_PRIZE, xp: CROWN_PRIZE };
+    const top = st[0].n, second = (st.find((x) => x.n < top) || { n: 0 }).n, tie = st.filter((x) => x.n === top).length > 1, lead = tie ? 0 : top - second;
+    return { lead, cash: CROWN_PRIZE + CROWN_PER_BLOCK * lead, xp: CROWN_PRIZE + CROWN_PER_BLOCK * lead };
+  },
   // pay any of my fighters who won one of the last two weeks and hasn't been paid yet
   check() {
     const rows = Turf.rows; if (!rows || !Object.keys(rows).length) return;
     const now = this.week(); this.last = this.winners(rows, now - 1);
     for (const w of [now - 2, now - 1]) {
-      const win = this.winners(rows, w);
+      const win = this.winners(rows, w), pz = this.prize(this.standings(rows, this.endOf(w)));
       for (const f of SAVE.fighters) {
         if (!win.some((x) => x.id === f.id) || (f.crownWeek || -1) >= w) continue;
-        Shop.ensure(f); f.cash += CROWN_PRIZE; f.crownWeek = w; f.crowns = (f.crowns || 0) + 1;
-        Turf.crownWon = { name: f.name, n: win[0].n, tie: win.length > 1 };
-        UI.toast('👑 ' + f.name + ' won the weekly Turf crown! +$' + CROWN_PRIZE.toLocaleString()); Sound.levelUp();
+        Shop.ensure(f); f.cash += pz.cash; grantXP(f, pz.xp); f.crownWeek = w; f.crowns = (f.crowns || 0) + 1;
+        Turf.crownWon = { name: f.name, n: win[0].n, tie: win.length > 1, cash: pz.cash, xp: pz.xp, lead: pz.lead };
+        UI.toast('👑 ' + f.name + ' won the weekly Turf crown! +$' + pz.cash.toLocaleString() + ' and +' + pz.xp.toLocaleString() + ' XP'); Sound.levelUp();
         persist();
       }
     }
@@ -6768,17 +7043,18 @@ Object.assign(SCREENS, {
     const st = Crown.standings(R), top = st.length ? st[0].n : 0;
     const board = st.slice(0, 6).map((c, i) => `<div class="lbrow ${c.id === p.id ? 'me' : ''}"><b>${c.n === top ? '👑' : i + 1}</b><span>${esc(c.name)}</span><em>${c.n} block${c.n === 1 ? '' : 's'}</em></div>`).join('') || '<p class="small muted">Nobody holds any blocks yet.</p>';
     const last = Crown.last && Crown.last.length ? `<p class="small muted">Last week: ${Crown.last.map((x) => esc(x.name)).join(' & ')} won with ${Crown.last[0].n} block${Crown.last[0].n === 1 ? '' : 's'}.</p>` : '';
-    const crownCard = `<div class="card crown"><div class="row" style="justify-content:space-between"><h3>👑 Weekly crown</h3><b style="color:var(--green);font-family:var(--f-display);font-size:14px">$${CROWN_PRIZE.toLocaleString()}</b></div>
-      <p class="small">Hold the most blocks when the week ends (<b>${esc(Crown.endsLabel())}</b>, in <b>${Crown.timeLeft()}</b>) and you get $${CROWN_PRIZE.toLocaleString()}. Ties all get paid.</p>
+    const pz = Crown.prize(st);
+    const crownCard = `<div class="card crown"><div class="row" style="justify-content:space-between"><h3>👑 Weekly crown</h3><b style="color:var(--green);font-family:var(--f-display);font-size:14px">$${pz.cash.toLocaleString()} + ${pz.xp.toLocaleString()} XP</b></div>
+      <p class="small">Hold the most blocks when the week ends (<b>${esc(Crown.endsLabel())}</b>, in <b>${Crown.timeLeft()}</b>): <b>$${CROWN_PRIZE.toLocaleString()} and ${CROWN_PRIZE.toLocaleString()} XP</b>, plus <b>$${CROWN_PER_BLOCK} and ${CROWN_PER_BLOCK} XP for every block you're ahead of second place</b>. The more you dominate, the more it pays${pz.lead ? ` (right now the leader is ${pz.lead} ahead)` : ''}. Ties all get the base.</p>
       <p class="small">${st.length ? (st[0].id === p.id && st.filter((x) => x.n === top).length === 1 ? '<b style="color:var(--gold)">You\'re winning.</b> Hold on to your blocks.' : `Leading: <b style="color:var(--gold)">${st.filter((x) => x.n === top).map((x) => esc(x.name)).join(' & ')}</b> with ${top}.${st.some((x) => x.id === p.id) ? '' : ' Take a block to get in the race.'}`) : 'Nobody holds any blocks yet. Take one and you\'re leading.'}</p>${last}</div>`;
     const mineN = Turf.owned().length, trib = Turf.tribute();
     const status = Turf.mode === 'shared' ? `<p class="small" style="color:var(--green)">● Shared city: everyone playing this game fights over the same map.</p>`
       : Turf.mode === 'loading' ? `<p class="small muted">○ Refreshing…</p>`
         : `<p class="small" style="color:var(--gold)">○ Offline city: just you and CPU rival crews on this device.</p>`;
-    const crownLine = `<p class="small crownline">👑 <b>$${CROWN_PRIZE.toLocaleString()}</b> to whoever holds the most blocks when the week ends · <b>${Crown.timeLeft()}</b> left${st.length ? ` · Leading: <b style="color:var(--gold)">${esc(st[0].name)}</b> (${top})` : ''}</p>`;
+    const crownLine = `<p class="small crownline">👑 <b>$${pz.cash.toLocaleString()} + ${pz.xp.toLocaleString()} XP</b> to whoever holds the most blocks when the week ends · <b>${Crown.timeLeft()}</b> left${st.length ? ` · Leading: <b style="color:var(--gold)">${esc(st[0].name)}</b> (${top})` : ''}</p>`;
 
     return `<div class="panel wide"><div class="row" style="justify-content:space-between"><h2>Turf Wars</h2><span class="small">You are <b style="color:var(--gold)">${esc(p.turfName)}</b> <button class="linkbtn" data-act="turfRename">change</button></span></div>${status}${crownLine}
-      ${Turf.crownWon ? `<div class="card sel crown"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><h3>👑 ${esc(Turf.crownWon.name)} won last week's crown!</h3><button class="linkbtn" data-act="crownOk" aria-label="Dismiss">✕</button></div><p>${Turf.crownWon.tie ? 'Tied for' : 'Held'} the most blocks (${Turf.crownWon.n}) when the week ended. <b style="color:var(--green)">+$${CROWN_PRIZE.toLocaleString()}</b> added.</p></div>` : ''}
+      ${Turf.crownWon ? `<div class="card sel crown"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><h3>👑 ${esc(Turf.crownWon.name)} won last week's crown!</h3><button class="linkbtn" data-act="crownOk" aria-label="Dismiss">✕</button></div><p>${Turf.crownWon.tie ? 'Tied for' : 'Held'} the most blocks (${Turf.crownWon.n}) when the week ended${Turf.crownWon.lead ? `, ${Turf.crownWon.lead} block${Turf.crownWon.lead === 1 ? '' : 's'} clear` : ''}. <b style="color:var(--green)">+$${(Turf.crownWon.cash || CROWN_PRIZE).toLocaleString()} and +${(Turf.crownWon.xp || CROWN_PRIZE).toLocaleString()} XP</b> added.</p></div>` : ''}
       ${Turf.note ? `<div class="confirm"><p>${esc(Turf.note)}</p></div>` : ''}
       <div class="scroll"><div class="turfwrap"><div class="mapbox">${tiles}<div class="small muted maplegend"><span>Each player's land is painted in their colour with their name on it.</span><span><i class="hz"></i>Faded = local crews</span><span style="color:var(--gold)">★</span> = difficulty</div></div><div class="card turfside">${side}</div></div>
         <div class="grid2" style="margin-top:12px">${crownCard}<div class="card"><h3>Top crews</h3>${board}</div>
@@ -7112,6 +7388,7 @@ const Gore = {
       }
     } else {
       vic._hitFx = { t: 0, amp: 0, p: null, flash: Math.min(0.22, 0.04 + dmg * 0.01) };
+      if (R.headL) { const q = R.head.worldToLocal(P3.clone()), T = R.headL.T, n = q.length() || 1; q.multiplyScalar(Math.min(1, 0.12 / n)); layerSplatAt(R.headL, q.x + T[0], q.y + T[1], q.z + T[2], 'bruise', Math.min(0.35, dmg / 30), 0.035); } // the face bruises where it's hit
       if (on && blood > 0.25) { // blood flicked off the face lands on the chest and shoulders
         const cy = R.bodyRest.chest.m.elements[13];
         for (let i = 0, n = 1 + Math.floor(blood * 3); i < n; i++) { const x = rand(-0.14, 0.14) * (R.bw || 1), y = cy + rand(0.1, 0.3), z = bodyFrontZ(R, x, y); if (z !== null) bodySplatAt(R, x, y, z, 'blood', rand(0.4, 0.9), rand(0.012, 0.022), 1.2); }
@@ -7157,7 +7434,12 @@ const Gore = {
     const R = f.rig, h = R.head, o = { outline: false, shadow: false }, b = R.bw || 1;
     const red = (c) => new THREE.MeshBasicMaterial({ color: c });
     const g = f.gore = { stages: [[], [], [], []], glint: new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0, depthWrite: false }), beads: [] };
-    const add = (stage, parent, w, hh, d, c, x, y, z) => { const m = vox(parent, w, hh, d, c, x, y, z, o); m.visible = false; g.stages[stage].push(m); return m; };
+    // on the sculpted head the cuts are painted into the skin as they open (stage, x, y, size, streak); the old block head got decals
+    const cutsOnSkin = !!R.headL; g.cuts = cutsOnSkin ? [[], [], [], []] : null;
+    const add = (stage, parent, w, hh, d, c, x, y, z) => {
+      if (cutsOnSkin) { if (parent === h) g.cuts[stage].push([x, y, Math.max(w, hh) * 0.55, hh > w * 1.6 ? 2.5 : 0.6]); return null; }
+      const m = vox(parent, w, hh, d, c, x, y, z, o); m.visible = false; g.stages[stage].push(m); return m;
+    };
     // stage 1: a cut over the lead eye, a trickle down the temple
     add(0, h, 0.05, 0.02, 0.012, red('#9e1218'), 0.058, 0.075, 0.125); add(0, h, 0.013, 0.085, 0.012, red('#8a0f14'), 0.083, 0.03, 0.124);
     // stage 2: busted nose and lip, a second cut on the cheekbone
@@ -7175,23 +7457,25 @@ const Gore = {
     if (R.body) g.drips = []; // (the one-piece body has its blood painted into the skin instead: see onSkin and the trails in tick)
     else try { this.drips(f, g); } catch (e) { g.drips = []; }
     // sweat: a sheen where the light catches (forehead, cheekbones, shoulders, chest) and beads at the hairline
-    const gl = (parent, w, hh, d, x, y, z) => { const m = new THREE.Mesh(boxGeo(w, hh, d), g.glint); m.position.set(x, y, z); m.renderOrder = 3; parent.add(m); };
+    const gl = (parent, w, hh, d, x, y, z) => { if (R.body) return; const m = new THREE.Mesh(boxGeo(w, hh, d), g.glint); m.position.set(x, y, z); m.renderOrder = 3; parent.add(m); }; // (the one-piece body shines by itself)
     gl(h, 0.13, 0.022, 0.006, 0, 0.095, 0.1225); for (const sx of [1, -1]) gl(h, 0.03, 0.018, 0.006, sx * 0.075, 0.0, 0.1225);
     const bare = R.bare || {};
     if (bare.arms) for (const sh of [R.lSh, R.rSh]) gl(sh, 0.09 * b, 0.008, 0.07 * b, 0, 0.069, 0.01);
     if (bare.chest) for (const sx of [1, -1]) gl(R.chest, 0.07 * b, 0.016, 0.006, sx * 0.12 * b, 0.245, 0.12 * b + 0.022);
     const beadM = new THREE.MeshBasicMaterial({ color: '#dff2ff' });
-    for (const [x, y] of [[0.05, 0.1], [-0.04, 0.105], [0.09, 0.05], [-0.09, 0.06], [0.0, 0.09]]) { const bd = new THREE.Mesh(boxGeo(0.014, 0.016, 0.01), beadM); bd.position.set(x, y, 0.126); bd.visible = false; h.add(bd); g.beads.push(bd); }
+    for (const [x, y] of [[0.05, 0.1], [-0.04, 0.105], [0.09, 0.05], [-0.09, 0.06], [0.0, 0.09]]) { const bd = new THREE.Mesh(R.headL ? MUSCLE_GEO() : boxGeo(0.014, 0.016, 0.01), beadM); if (R.headL) { bd.scale.set(0.006, 0.007, 0.004); bd.position.set(x, y - 0.01, headFrontZ(x, y - 0.01) + 0.002); } else bd.position.set(x, y, 0.126); bd.visible = false; h.add(bd); g.beads.push(bd); }
   },
   // puffy lids and bags round each eye, a bruised cheekbone and a fat lip: smooth blobs that grow as the face takes punches
   swell(f, g) {
     const R = f.rig, h = R.head, base = new THREE.Color(R.skinC || '#c68a5e');
     const mix = (c, k) => '#' + base.clone().lerp(new THREE.Color(c), k).getHexString();
     const puff = toon(mix('#6e2c3a', 0.3)), puffD = toon(mix('#4a2238', 0.42)), bruise = toon(mix('#3a2238', 0.4)), lip = toon(mix('#8a2a30', 0.42));
-    const blob = (mat, rx, ry, rz, x, y, z) => { const m = new THREE.Mesh(MUSCLE_GEO(), mat); m.userData.r = [rx, ry, rz]; m.position.set(x, y, z); m.visible = false; m.castShadow = false; h.add(m); return m; };
+    const onFace = !!R.headL; // sculpted head: the blobs sit on its real surface
+    const blob = (mat, rx, ry, rz, x, y, z) => { if (onFace) { rx *= 0.78; ry *= 0.8; rz *= 0.8; } const m = new THREE.Mesh(MUSCLE_GEO(), mat); m.userData.r = [rx, ry, rz]; m.position.set(x, y, onFace ? headFrontZ(x, y) - 0.008 : z); m.visible = false; m.castShadow = false; h.add(m); return m; };
     // the upper lid comes down and the bag comes up until they meet: the eye's a slit between two puffy mounds
     g.swell = [1, -1].map((sx) => [blob(puff, 0.04, 0.02, 0.011, sx * 0.053, 0.042, 0.121), blob(puffD, 0.038, 0.019, 0.011, sx * 0.054, 0.004, 0.121), blob(puffD, 0.022, 0.03, 0.009, sx * 0.088, 0.022, 0.119)]);
     g.bruise = [blob(bruise, 0.03, 0.02, 0.008, 0.075, -0.025, 0.121), blob(bruise, 0.026, 0.018, 0.008, -0.074, -0.03, 0.121)];
+    if (onFace) for (const m of g.bruise) m.userData.paint = true; // painted into the skin instead (see tick)
     g.lip = blob(lip, 0.026, 0.013, 0.012, 0.012, -0.072, 0.121);
   },
   // red splats on the knuckles (and the front) of whatever's on the hands, coming in as they hit a bleeder
@@ -7274,10 +7558,11 @@ const Gore = {
           if (z !== null && (t.ly === undefined || t.ly - t.y > 0.008)) { t.ly = t.y; bodySplatAt(R, x, t.y, z, 'blood', 0.55, 0.011, 1.4); }
         }
       }
-      if (R.bodyFX.dirty && (Game.time || 0) - (G.compT || -9) > 0.08) { G.compT = Game.time || 0; bodyComposite(R); }
+      if ((R.bodyFX.dirty || (R.headL && R.headL.fx.dirty)) && (Game.time || 0) - (G.compT || -9) > 0.08) { G.compT = Game.time || 0; bodyComposite(R); }
     }
     const vis = [bl > 0.001, bl > 0.35, bl > 0.65, bl > 0.8];
     G.stages.forEach((list, k) => { if (list.vis !== vis[k]) { list.vis = vis[k]; for (const m of list) m.visible = vis[k]; } });
+    if (G.cuts && R.headL) G.cuts.forEach((list, k) => { if (vis[k] && !list.done) { list.done = true; const T = R.headL.T; for (const [x, y, r, st] of list) layerSplatAt(R.headL, x + T[0], y + T[1], (Math.abs(x) > 0.1 ? 0.0 : headFrontZ(x, y)) + T[2], 'blood', 0.95, r, st); } });
     // swelling: from the punches to the face (and a bit from how hurt they are), the lead eye goes first
     const sw = clamp(Math.max((f.faceDmg || 0) / 85, (0.7 - hpK) / 0.7 * 0.55), 0, 1);
     const swKey = sw + (f.faceDmgS ? f.faceDmgS[0] * 1e-3 + f.faceDmgS[1] * 1e-6 : 0);
@@ -7290,7 +7575,9 @@ const Gore = {
         for (const m of blobs) { m.visible = e > 0.04; const r = m.userData.r; m.scale.set(r[0] * k, r[1] * k, r[2] * (0.4 + 1.1 * e)); }
         for (const m of (f.rig.eyes || [])[i] || []) m.scale.y = 1 - 0.82 * e; // the eye narrows to a slit
       });
-      G.bruise.forEach((m, i) => { const e = clamp((sw - 0.2 - i * 0.25) * 2, 0, 1); m.visible = e > 0.04; const r = m.userData.r; m.scale.set(r[0] * (0.5 + 0.5 * e), r[1] * (0.5 + 0.5 * e), r[2] * (0.4 + 0.9 * e)); });
+      G.bruise.forEach((m, i) => { const e = clamp((sw - 0.2 - i * 0.25) * 2, 0, 1);
+        if (m.userData.paint) { m.visible = false; const lv = Math.floor(e * 4); if (lv > (m.userData.lv || 0) && R.headL) { m.userData.lv = lv; const T = R.headL.T; layerSplatAt(R.headL, m.position.x + T[0], m.position.y + T[1], m.position.z + T[2], 'bruise', 0.3, 0.03); } return; }
+        m.visible = e > 0.04; const r = m.userData.r; m.scale.set(r[0] * (0.5 + 0.5 * e), r[1] * (0.5 + 0.5 * e), r[2] * (0.4 + 0.9 * e)); });
       { const e = clamp((sw - 0.45) * 2, 0, 1), m = G.lip, r = m.userData.r; m.visible = e > 0.04; m.scale.set(r[0] * (0.6 + 0.4 * e), r[1] * (0.6 + 0.6 * e), r[2] * (0.5 + 0.9 * e)); }
     }
     const gb = on ? f.gloveBlood || 0 : 0;
@@ -9234,9 +9521,9 @@ function bbDress(p) {
   const K = p.kit = { ...BB_KIT_DEF, ...(p.o.kit || bbAutoKit(p.name, p.slot)) }, col = (c) => (c === 'team' ? T.c2 : c);
   const num = p.num = p.o.num ?? (K.num ?? BB_NUMS[0]);
   const back = new THREE.Mesh(new THREE.PlaneGeometry(0.21, 0.21), new THREE.MeshBasicMaterial({ map: bbNumTex(num, T.c2, shade(T.c, 0.5)), transparent: true, depthWrite: false }));
-  back.position.set(0, 0.15, -0.122 * b - 0.003); back.rotation.y = Math.PI; R.chest.add(back);
+  back.rotation.y = Math.PI; wearOnSkin(R, 'chest', 0, 0.15, back, 0.3, 0.006, true); back.rotation.set(0, Math.PI, 0); // numbers sit on the jersey's real surface
   const front = new THREE.Mesh(new THREE.PlaneGeometry(0.11, 0.11), new THREE.MeshBasicMaterial({ map: bbNumTex(num, shade(T.c, 0.7), null), transparent: true, depthWrite: false }));
-  front.position.set(0, 0.15, 0.121 * b + 0.013); R.chest.add(front);
+  wearOnSkin(R, 'chest', 0, 0.15, front, 0.3, 0.008); front.rotation.set(0, 0, 0);
   // jersey cut
   // the kit is painted onto the body: jersey cut, tights, socks and the shooting sleeve
   const legBone = (bn) => bn === 'lHip' || bn === 'rHip' || bn === 'lKnee' || bn === 'rKnee';
@@ -9252,13 +9539,13 @@ function bbDress(p) {
     if (sleeveSd && (bn === sleeveSd + 'Sh' ? p.y < -0.025 : bn === sleeveSd + 'El' && p.y > -0.2)) return col(K.sleeve);
     return null;
   });
-  if (K.jersey === 'sleeved') for (const sh of [R.lSh, R.rSh]) { vox(sh, 0.17 * b, 0.17, 0.18 * b, T.c, 0, -0.04, 0, o); vox(sh, 0.172 * b, 0.025, 0.182 * b, T.c2, 0, -0.12, 0, o); }
-  // shorts: long and baggy to the knee
-  if (K.shorts === 'long') for (const hp of [R.lHip, R.rHip]) { vox(hp, 0.21, 0.13, 0.22, T.c, 0, -0.33, 0, o); vox(hp, 0.212, 0.025, 0.222, T.c2, 0, -0.385, 0, o); }
+  // fitted pieces grown off the body (see WEAR): short sleeves, long baggy shorts, pads and bands
+  if (K.jersey === 'sleeved') wearBand(R, 'sleeves', ['lSh', 'rSh'].map((bone) => ({ bone, box: [0, -0.05, 0, 0.11, 0.1, 0.11] })), 0.016, (bn, x, y) => (y < -0.13 ? T.c2 : T.c));
+  if (K.shorts === 'long') wearShorts(R, { hem: 0.4, flare: 0.055, color: T.c, waist: '#1b1b1f', hemTrim: T.c2 });
   const armW = 0.11 * b;
-  if (K.headband) vox(R.head, 0.236, 0.05, 0.256, col(K.headband), 0, 0.065, 0, o);
-  if (K.wrist) for (const el of [R.lEl, R.rEl]) vox(el, armW * 0.74 + 0.026, 0.065, armW * 0.76 + 0.026, col(K.wrist), 0, -0.22, 0, { ...o, round: 0.02 });
-  if (K.knee) vox(R.rKnee, 0.15, 0.16, 0.16, col(K.knee), 0, -0.06, 0, o);
+  if (K.headband) wearHeadband(R, col(K.headband));
+  if (K.wrist) wearBand(R, 'wristbands', ['lEl', 'rEl'].map((bone) => ({ bone, box: [0, -0.22, 0, 0.07, 0.032, 0.07] })), 0.011, col(K.wrist));
+  if (K.knee) wearBand(R, 'kneepad', [{ bone: 'rKnee', box: [0, -0.05, 0, 0.09, 0.075, 0.09] }], 0.017, col(K.knee));
 }
 let BBP_ID = 0;
 class BBPlayer {
@@ -9268,7 +9555,7 @@ class BBPlayer {
     this.human = !!o.human; this.remote = o.remote || null; this.cpu = !this.human && !this.remote;
     this.diff = BB_DIFFS[o.diff ?? 1];
     this.rt = o.rating || { spd: 1, sht: 1, jump: 1 };
-    this.rig = new Rig({ ...(o.look || defaultLook('boxing')), street: bbKit(o.team, o.kit || bbAutoKit(o.name, o.slot || 0)) }, 'boxing');
+    this.rig = new Rig({ ...(o.look || defaultLook('boxing')), street: bbKit(o.team, o.kit || bbAutoKit(o.name, o.slot || 0)) }, 'boxing', { lod: true }); // (a lighter body: there are up to six of them, seen from further back)
     Game.scene.add(this.rig.root); bbDress(this);
     this.pos = V2(); this.vel = V2(); this.y = 0; this.vy = 0; this.yaw = Math.PI;
     this.P = Float32Array.from(STANCE_POSE.bbn); this.T = new Float32Array(NCH); this.anim = null;
