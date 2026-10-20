@@ -311,6 +311,8 @@ begin
   select * into t from turf where id = p_block;
   if not found then raise exception 'no such block'; end if;
   if extract(isodow from now() at time zone 'America/New_York') >= 6 then raise exception 'Turf Wars is closed for the weekend'; end if;
+  -- blocks only change hands 7:45 AM to 2:15 PM, New York time (a fight started in time still counts when it ends)
+  if (now() at time zone 'America/New_York')::time < time '07:45' or (now() at time zone 'America/New_York')::time >= time '14:15' then raise exception 'Blocks can only be taken from 7:45 AM to 2:15 PM (New York time)'; end if;
   -- last week's claims count as unclaimed
   if t.owner_id is not null and t.claimed_at >= px_turf_week() then live_owner := t.owner_id; live_uid := t.owner_uid; end if;
   if live_owner is not null and coalesce(t.defenses, 0) >= 3 then raise exception 'That block is locked for the week'; end if;
