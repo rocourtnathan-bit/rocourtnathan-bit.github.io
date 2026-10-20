@@ -251,3 +251,133 @@ revoke all on function public.px_auth(text, text, text), public.px_settle(public
 grant execute on function public.px_hello(text, text, text, int, int, text, bigint, boolean), public.px_say(text, text, text, text, text, jsonb),
   public.px_queue(text, text, text, text, int, int), public.px_unqueue(text, text), public.px_match_start(text, text, text, text, text),
   public.px_match_end(text, text, text, boolean, real), public.px_top(text, text) to anon, authenticated;
+
+-- ---------- Turf Wars (only if the turf table is set up) ----------
+-- 30 blocks (was 20), and two rules the server enforces so nobody can get round them:
+-- a block that held off 3 attacks this week can't change hands until Monday, and nothing changes hands on the weekend.
+create or replace function public.px_turf_guard()
+returns trigger language plpgsql as $$
+declare wk timestamptz := date_trunc('week', now() at time zone 'America/New_York') at time zone 'America/New_York';
+begin
+  if new.owner_id is distinct from old.owner_id then
+    if extract(isodow from now() at time zone 'America/New_York') >= 6 then raise exception 'Turf Wars is closed for the weekend'; end if;
+    if old.owner_id is not null and coalesce(old.defenses, 0) >= 3 and old.claimed_at >= wk then raise exception 'That block is locked for the week'; end if;
+  end if;
+  return new;
+end $$;
+do $$ begin
+  if to_regclass('public.turf') is not null then
+    insert into public.turf (id) select 'd' || g from generate_series(0, 29) g on conflict do nothing;
+    drop trigger if exists px_turf_guard on public.turf;
+    create trigger px_turf_guard before update on public.turf for each row execute function public.px_turf_guard();
+  end if;
+end $$;
+
+-- ---------- Turf Wars, no shortcuts ----------
+-- Every change to the map goes through these functions (the table itself becomes read-only): you get a ticket when
+-- a fight for a block starts, and only that ticket, used once, after a real fight's worth of time, can take the
+-- block or count a defence. Nobody can claim without fighting, claim twice, lock their own block, or farm a lock
+-- with their own second fighter.
+create table if not exists public.px_turf_tickets (
+  id bigserial primary key,
+  uid text not null,
+  fid text not null,
+  block text not null,
+  owner_was text,
+  started timestamptz not null default now(),
+  used boolean not null default false
+);
+create index if not exists px_turf_tickets_uid on public.px_turf_tickets (uid, started desc);
+alter table public.px_turf_tickets enable row level security;
+revoke all on public.px_turf_tickets from anon, authenticated;
+do $$ begin
+  if to_regclass('public.turf') is not null then
+    alter table public.turf add column if not exists owner_uid text;
+    drop policy if exists "turf write" on public.turf;
+    revoke update, insert, delete on public.turf from anon, authenticated;
+  end if;
+end $$;
+
+create or replace function public.px_turf_week() returns timestamptz language sql stable as $$
+  select date_trunc('week', now() at time zone 'America/New_York') at time zone 'America/New_York' $$;
+
+-- an attack starts: checks it's allowed and hands out the ticket
+create or replace function public.px_turf_start(p_uid text, p_key text, p_fid text, p_block text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare t record; nid bigint; live_owner text; live_uid text;
+begin
+  perform px_auth(p_uid, p_key);
+  if p_fid is null or length(p_fid) > 40 then raise exception 'bad fighter'; end if;
+  select * into t from turf where id = p_block;
+  if not found then raise exception 'no such block'; end if;
+  if extract(isodow from now() at time zone 'America/New_York') >= 6 then raise exception 'Turf Wars is closed for the weekend'; end if;
+  -- last week's claims count as unclaimed
+  if t.owner_id is not null and t.claimed_at >= px_turf_week() then live_owner := t.owner_id; live_uid := t.owner_uid; end if;
+  if live_owner is not null and coalesce(t.defenses, 0) >= 3 then raise exception 'That block is locked for the week'; end if;
+  if live_owner = p_fid or (live_uid is not null and live_uid = p_uid) then raise exception 'That block is already yours'; end if;
+  if (select count(*) from px_turf_tickets where uid = p_uid and started > now() - interval '1 minute') >= 6 then raise exception 'Slow down'; end if;
+  update px_turf_tickets set used = true where uid = p_uid and not used; -- one fight at a time
+  insert into px_turf_tickets (uid, fid, block, owner_was) values (p_uid, p_fid, p_block, live_owner) returning id into nid;
+  if random() < 0.05 then delete from px_turf_tickets where started < now() - interval '1 day'; end if;
+  return jsonb_build_object('ticket', nid, 'owner', live_owner);
+end $$;
+
+-- I won: the block is mine (if nobody else got there first and it didn't lock meanwhile)
+create or replace function public.px_turf_win(p_uid text, p_key text, p_ticket bigint, p_name text, p_fighter jsonb, p_dna jsonb, p_event text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare k px_turf_tickets; t record; live_owner text; hist jsonb; secs real;
+begin
+  perform px_auth(p_uid, p_key);
+  select * into k from px_turf_tickets where id = p_ticket and uid = p_uid for update;
+  if not found or k.used then raise exception 'That fight was already counted'; end if;
+  secs := extract(epoch from now() - k.started);
+  if secs < (case when k.owner_was is null then 15 else 6 end) then raise exception 'That was too quick to be a real fight'; end if;
+  if secs > 1800 then raise exception 'That fight took too long to count'; end if;
+  update px_turf_tickets set used = true where id = k.id;
+  if length(coalesce(p_fighter::text, '')) > 30000 or length(coalesce(p_dna::text, '')) > 30000 then raise exception 'too big'; end if;
+  select * into t from turf where id = k.block for update;
+  if t.owner_id is not null and t.claimed_at >= px_turf_week() then live_owner := t.owner_id; end if;
+  if live_owner is distinct from k.owner_was then raise exception 'Someone else took that block first'; end if;
+  -- who held it before (and when), newest first, eight deep: the weekly crown is worked out from this
+  hist := jsonb_build_array(jsonb_build_object('o', t.owner_id, 'n', t.owner_name, 'at', coalesce((extract(epoch from t.claimed_at) * 1000)::bigint, 0)))
+    || coalesce((select jsonb_agg(h) from (select h from jsonb_array_elements(coalesce(t.fighter -> 'hist', '[]'::jsonb)) h limit 7) q), '[]'::jsonb);
+  update turf set owner_id = k.fid, owner_uid = p_uid, owner_name = left(coalesce(p_name, 'Player'), 24),
+    fighter = coalesce(p_fighter, '{}'::jsonb) - 'hist' || jsonb_build_object('hist', hist), dna = p_dna,
+    claimed_at = now(), defenses = 0, last_event = left(p_event, 120) where id = k.block;
+  return (select to_jsonb(x) from turf x where id = k.block);
+end $$;
+
+-- I lost: the owner's clone held it (counts toward the weekly lock)
+create or replace function public.px_turf_lost(p_uid text, p_key text, p_ticket bigint, p_challenger text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare k px_turf_tickets; t record; n int;
+begin
+  perform px_auth(p_uid, p_key);
+  select * into k from px_turf_tickets where id = p_ticket and uid = p_uid for update;
+  if not found or k.used then raise exception 'That fight was already counted'; end if;
+  if extract(epoch from now() - k.started) < 6 or extract(epoch from now() - k.started) > 1800 then raise exception 'Not a real fight'; end if;
+  update px_turf_tickets set used = true where id = k.id;
+  if k.owner_was is null then return null; end if; -- (lost to a street crew: nothing to count)
+  select * into t from turf where id = k.block for update;
+  if t.owner_id is distinct from k.owner_was or t.claimed_at < px_turf_week() then return null; end if;
+  n := coalesce(t.defenses, 0) + 1;
+  update turf set defenses = n, last_event = left(coalesce(t.owner_name, 'Their') || '''s clone beat ' || coalesce(p_challenger, 'someone') || (case when n = 3 then ' and locked it for the week' else '' end), 120) where id = k.block;
+  return (select to_jsonb(x) from turf x where id = k.block);
+end $$;
+
+-- keep my clones up to date (only on blocks this copy of the game really took)
+create or replace function public.px_turf_sync(p_uid text, p_key text, p_fid text, p_name text, p_fighter jsonb, p_dna jsonb)
+returns int language plpgsql security definer set search_path = public as $$
+declare n int;
+begin
+  perform px_auth(p_uid, p_key);
+  if length(coalesce(p_fighter::text, '')) > 30000 or length(coalesce(p_dna::text, '')) > 30000 then raise exception 'too big'; end if;
+  update turf set owner_name = left(coalesce(p_name, owner_name), 24), dna = p_dna,
+    fighter = coalesce(p_fighter, '{}'::jsonb) - 'hist' || jsonb_build_object('hist', coalesce(fighter -> 'hist', '[]'::jsonb))
+    where owner_id = p_fid and owner_uid = p_uid;
+  get diagnostics n = row_count;
+  return n;
+end $$;
+
+grant execute on function public.px_turf_start(text, text, text, text), public.px_turf_win(text, text, bigint, text, jsonb, jsonb, text),
+  public.px_turf_lost(text, text, bigint, text), public.px_turf_sync(text, text, text, text, jsonb, jsonb) to anon, authenticated;
