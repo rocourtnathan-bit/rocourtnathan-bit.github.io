@@ -57,6 +57,32 @@ create table if not exists public.px_matches (
 );
 create index if not exists px_matches_open on public.px_matches (done, ended_at);
 
+-- moderation: bans and mutes, announcements, a log of what the mods did, and the mod panel's password check
+alter table public.px_players add column if not exists info jsonb not null default '{}';
+create table if not exists public.px_bans (
+  uid text not null,
+  kind text not null default 'ban' check (kind in ('ban', 'mute')),
+  name text,
+  reason text not null default '',
+  at timestamptz not null default now(),
+  until timestamptz,            -- null = for good
+  primary key (uid, kind)
+);
+create table if not exists public.px_announce (id bigserial primary key, at timestamptz not null default now(), x text not null, until timestamptz not null);
+create table if not exists public.px_mod_log (id bigserial primary key, at timestamptz not null default now(), act text not null, target text, note text);
+create table if not exists public.px_mod_cfg (
+  id int primary key default 1 check (id = 1),
+  salt text, pwhash text,
+  fails int not null default 0, strikes int not null default 0, locked_until timestamptz
+);
+alter table public.px_bans enable row level security;
+alter table public.px_announce enable row level security;
+alter table public.px_mod_log enable row level security;
+alter table public.px_mod_cfg enable row level security;
+revoke all on public.px_bans, public.px_announce, public.px_mod_log, public.px_mod_cfg from anon, authenticated;
+create or replace function public.px_is_banned(p_uid text, p_kind text default 'ban') returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from px_bans where uid = p_uid and kind = p_kind and (until is null or until > now())) $$;
+
 alter table public.px_players enable row level security;
 alter table public.px_msgs enable row level security;
 alter table public.px_queue enable row level security;
@@ -118,12 +144,24 @@ begin
 end $$;
 
 -- every few seconds from each open game: I'm here (and what I'm doing), anything new for me?
-create or replace function public.px_hello(p_uid text, p_key text, p_name text, p_lv int, p_rb int, p_st text, p_since bigint, p_people boolean)
+-- (p_info: a few totals about this player for the mods: version, wins, play time...)
+drop function if exists public.px_hello(text, text, text, int, int, text, bigint, boolean);
+create or replace function public.px_hello(p_uid text, p_key text, p_name text, p_lv int, p_rb int, p_st text, p_since bigint, p_people boolean, p_info jsonb default null)
 returns jsonb language plpgsql security definer set search_path = public as $$
-declare r px_players; msgs jsonb; ppl jsonb := null; mx bigint; onl int;
+declare r px_players; msgs jsonb; ppl jsonb := null; mx bigint; onl int; bn px_bans; mu px_bans; ann jsonb;
 begin
   r := px_auth(p_uid, p_key, p_name);
-  update px_players set name = coalesce(left(p_name, 16), name), lv = coalesce(p_lv, lv), rb = coalesce(p_rb, rb), st = coalesce(left(p_st, 40), st), seen = now() where uid = p_uid returning * into r;
+  update px_players set name = coalesce(left(p_name, 16), name), lv = coalesce(p_lv, lv), rb = coalesce(p_rb, rb), st = coalesce(left(p_st, 40), st), seen = now(),
+    info = case when p_info is not null and jsonb_typeof(p_info) = 'object' and length(p_info::text) < 500 then p_info else info end where uid = p_uid returning * into r;
+  select count(*) into onl from px_players where seen > now() - interval '40 seconds';
+  select * into bn from px_bans where uid = p_uid and kind = 'ban' and (until is null or until > now());
+  select * into mu from px_bans where uid = p_uid and kind = 'mute' and (until is null or until > now());
+  select jsonb_build_object('id', id, 'x', x) into ann from px_announce where until > now() order by id desc limit 1;
+  if bn.uid is not null then -- banned: no chat, no people, just the news that they are
+    return jsonb_build_object('last', 0, 'msgs', '[]'::jsonb, 'people', null, 'online', onl, 'ann', ann,
+      'ban', jsonb_build_object('until', case when bn.until is null then null else (extract(epoch from bn.until) * 1000)::bigint end, 'why', bn.reason),
+      'me', jsonb_build_object('ef', r.elo_f, 'gf', r.gf, 'wf', r.wf, 'eh', r.elo_h, 'gh', r.gh, 'wh', r.wh));
+  end if;
   select coalesce(max(id), 0) into mx from px_msgs;
   if coalesce(p_since, -1) < 0 then -- first call: the last few lines as history
     select coalesce(jsonb_agg(jsonb_build_object('id', id, 'uid', uid, 'n', n, 'k', kind, 'x', x, 'ts', (extract(epoch from at) * 1000)::bigint) order by id), '[]') into msgs
@@ -132,13 +170,13 @@ begin
     select coalesce(jsonb_agg(jsonb_build_object('id', id, 'uid', uid, 'n', n, 'k', kind, 'x', x, 'd', data, 'ts', (extract(epoch from at) * 1000)::bigint) order by id), '[]') into msgs
       from (select * from px_msgs where id > p_since and (kind = 'm' or to_uid = p_uid) and uid <> p_uid order by id limit 60) q;
   end if;
-  select count(*) into onl from px_players where seen > now() - interval '40 seconds';
   if p_people then
     select coalesce(jsonb_agg(jsonb_build_object('uid', uid, 'n', name, 'lv', lv, 'rb', rb, 'st', st, 'ef', elo_f, 'eh', elo_h)), '[]') into ppl
-      from (select * from px_players where seen > now() - interval '40 seconds' and uid <> p_uid order by seen desc limit 80) q;
+      from (select * from px_players where seen > now() - interval '40 seconds' and uid <> p_uid and not px_is_banned(uid) order by seen desc limit 80) q;
   end if;
   if random() < 0.2 then perform px_sweep(p_uid); end if;
-  return jsonb_build_object('last', mx, 'msgs', msgs, 'people', ppl, 'online', onl,
+  return jsonb_build_object('last', mx, 'msgs', msgs, 'people', ppl, 'online', onl, 'ann', ann,
+    'mute', case when mu.uid is null then null else jsonb_build_object('until', case when mu.until is null then null else (extract(epoch from mu.until) * 1000)::bigint end, 'why', mu.reason) end,
     'me', jsonb_build_object('ef', r.elo_f, 'gf', r.gf, 'wf', r.wf, 'eh', r.elo_h, 'gh', r.gh, 'wh', r.wh));
 end $$;
 
@@ -148,13 +186,15 @@ returns bigint language plpgsql security definer set search_path = public as $$
 declare r px_players; nid bigint; recent int;
 begin
   r := px_auth(p_uid, p_key);
+  if px_is_banned(p_uid) then raise exception 'banned'; end if;
+  if p_kind = 'm' and px_is_banned(p_uid, 'mute') then raise exception 'muted'; end if;
   if p_kind not in ('m', 'inv', 'invno', 'invok') then raise exception 'bad kind'; end if;
   if p_kind = 'm' and (p_x is null or length(btrim(p_x)) = 0) then raise exception 'empty'; end if;
   if p_kind <> 'm' and p_to is null then raise exception 'no target'; end if;
   select count(*) into recent from px_msgs where uid = p_uid and at > now() - interval '8 seconds';
   if recent >= 6 then raise exception 'slow down'; end if;
   insert into px_msgs (uid, n, kind, to_uid, x, data) values (p_uid, r.name, p_kind, case when p_kind = 'm' then null else p_to end, left(coalesce(p_x, ''), 160), case when p_data is null then null when length(p_data::text) > 400 then null else p_data end) returning id into nid;
-  if random() < 0.05 then delete from px_msgs where at < now() - interval '20 minutes'; end if;
+  if random() < 0.05 then delete from px_msgs where (kind <> 'm' and at < now() - interval '20 minutes') or at < now() - interval '3 days'; end if; -- (chat lines stay 3 days so the mods can look back)
   return nid;
 end $$;
 
@@ -164,6 +204,7 @@ returns jsonb language plpgsql security definer set search_path = public as $$
 declare me px_queue; o px_queue;
 begin
   perform px_auth(p_uid, p_key);
+  if px_is_banned(p_uid) then delete from px_queue where uid = p_uid; return jsonb_build_object('ban', true); end if;
   select * into me from px_queue where uid = p_uid;
   if found and me.paired_with is not null then
     delete from px_queue where uid = p_uid;
@@ -192,6 +233,7 @@ returns jsonb language plpgsql security definer set search_path = public as $$
 declare m px_matches; lo text; hi text;
 begin
   perform px_auth(p_uid, p_key);
+  if px_is_banned(p_uid) or px_is_banned(p_opp) then return jsonb_build_object('ok', false); end if;
   if p_game not in ('f', 'h') or p_opp is null or p_opp = p_uid or length(p_match) > 48 then raise exception 'bad match'; end if;
   if not exists (select 1 from px_players where uid = p_opp) then raise exception 'unknown opponent'; end if;
   lo := least(p_uid, p_opp); hi := greatest(p_uid, p_opp);
@@ -231,12 +273,12 @@ declare top jsonb; me px_players; rk int; tot int;
 begin
   if p_game = 'h' then
     select coalesce(jsonb_agg(jsonb_build_object('uid', uid, 'n', name, 'e', elo_h, 'g', gh, 'w', wh, 'lv', lv, 'on', seen > now() - interval '40 seconds')), '[]') into top
-      from (select * from px_players where gh > 0 order by elo_h desc, gh desc limit 50) q;
-    select count(*) into tot from px_players where gh > 0;
+      from (select * from px_players where gh > 0 and not px_is_banned(uid) order by elo_h desc, gh desc limit 50) q;
+    select count(*) into tot from px_players where gh > 0 and not px_is_banned(uid);
   else
     select coalesce(jsonb_agg(jsonb_build_object('uid', uid, 'n', name, 'e', elo_f, 'g', gf, 'w', wf, 'lv', lv, 'on', seen > now() - interval '40 seconds')), '[]') into top
-      from (select * from px_players where gf > 0 order by elo_f desc, gf desc limit 50) q;
-    select count(*) into tot from px_players where gf > 0;
+      from (select * from px_players where gf > 0 and not px_is_banned(uid) order by elo_f desc, gf desc limit 50) q;
+    select count(*) into tot from px_players where gf > 0 and not px_is_banned(uid);
   end if;
   select * into me from px_players where uid = p_uid;
   if found then
@@ -248,7 +290,7 @@ begin
 end $$;
 
 revoke all on function public.px_auth(text, text, text), public.px_settle(public.px_matches), public.px_sweep(text) from public, anon, authenticated;
-grant execute on function public.px_hello(text, text, text, int, int, text, bigint, boolean), public.px_say(text, text, text, text, text, jsonb),
+grant execute on function public.px_hello(text, text, text, int, int, text, bigint, boolean, jsonb), public.px_say(text, text, text, text, text, jsonb),
   public.px_queue(text, text, text, text, int, int), public.px_unqueue(text, text), public.px_match_start(text, text, text, text, text),
   public.px_match_end(text, text, text, boolean, real), public.px_top(text, text) to anon, authenticated;
 
@@ -259,6 +301,7 @@ create or replace function public.px_turf_guard()
 returns trigger language plpgsql as $$
 declare wk timestamptz := date_trunc('week', now() at time zone 'America/New_York') at time zone 'America/New_York';
 begin
+  if current_setting('px.mod', true) = '1' then return new; end if; -- (a mod releasing blocks)
   if new.owner_id is distinct from old.owner_id then
     if extract(isodow from now() at time zone 'America/New_York') >= 6 then raise exception 'Turf Wars is closed for the weekend'; end if;
     if old.owner_id is not null and coalesce(old.defenses, 0) >= 3 and old.claimed_at >= wk then raise exception 'That block is locked for the week'; end if;
@@ -307,6 +350,7 @@ returns jsonb language plpgsql security definer set search_path = public as $$
 declare t record; nid bigint; live_owner text; live_uid text;
 begin
   perform px_auth(p_uid, p_key);
+  if px_is_banned(p_uid) then raise exception 'You are banned from online play'; end if;
   if p_fid is null or length(p_fid) > 40 then raise exception 'bad fighter'; end if;
   select * into t from turf where id = p_block;
   if not found then raise exception 'no such block'; end if;
@@ -330,6 +374,7 @@ returns jsonb language plpgsql security definer set search_path = public as $$
 declare k px_turf_tickets; t record; live_owner text; hist jsonb; secs real;
 begin
   perform px_auth(p_uid, p_key);
+  if px_is_banned(p_uid) then raise exception 'You are banned from online play'; end if;
   select * into k from px_turf_tickets where id = p_ticket and uid = p_uid for update;
   if not found or k.used then raise exception 'That fight was already counted'; end if;
   secs := extract(epoch from now() - k.started);
@@ -383,3 +428,253 @@ end $$;
 
 grant execute on function public.px_turf_start(text, text, text, text), public.px_turf_win(text, text, bigint, text, jsonb, jsonb, text),
   public.px_turf_lost(text, text, bigint, text), public.px_turf_sync(text, text, text, text, jsonb, jsonb) to anon, authenticated;
+
+-- ---------- The mod panel ----------
+-- Everything below checks the mod password on the server, every call. The password itself is NOT in this file: you set it
+-- once, privately, in the SQL Editor (see the line at the very end). Five wrong tries lock the panel for 15 minutes, then
+-- 30, 60... (up to a day), so it can't be guessed by hammering it.
+create or replace function public.px_mod_set_password(p_pw text) returns void language plpgsql security definer set search_path = public as $$
+declare s text := replace(gen_random_uuid()::text, '-', '');
+begin
+  if p_pw is null or length(p_pw) < 4 or length(p_pw) > 64 then raise exception 'password: 4 to 64 characters'; end if;
+  insert into px_mod_cfg (id, salt, pwhash) values (1, s, encode(sha256(convert_to(s || p_pw, 'utf8')), 'hex'))
+    on conflict (id) do update set salt = excluded.salt, pwhash = excluded.pwhash, fails = 0, strikes = 0, locked_until = null;
+end $$;
+
+-- 'ok' | 'wrong' | 'locked' | 'setup' (it returns instead of raising so a wrong guess is still counted)
+create or replace function public.px_mod_check(p_pw text) returns text language plpgsql security definer set search_path = public as $$
+declare c px_mod_cfg;
+begin
+  select * into c from px_mod_cfg where id = 1 for update;
+  if not found or c.pwhash is null then return 'setup'; end if;
+  if c.locked_until is not null and c.locked_until > now() then return 'locked'; end if;
+  if p_pw is not null and length(p_pw) <= 64 and encode(sha256(convert_to(c.salt || p_pw, 'utf8')), 'hex') = c.pwhash then
+    if c.fails > 0 or c.strikes > 0 then update px_mod_cfg set fails = 0, strikes = 0 where id = 1; end if;
+    return 'ok';
+  end if;
+  if c.fails + 1 >= 5 then
+    update px_mod_cfg set fails = 0, strikes = c.strikes + 1, locked_until = now() + make_interval(mins => least(1440, (15 * power(2, c.strikes))::int)) where id = 1;
+    insert into px_mod_log (act, note) values ('lockout', 'five wrong passwords in a row');
+  else
+    update px_mod_cfg set fails = c.fails + 1 where id = 1;
+  end if;
+  return 'wrong';
+end $$;
+
+create or replace function public.px_mod_blocks(p_uid text) returns int language plpgsql security definer set search_path = public as $$
+declare n int := 0;
+begin
+  if to_regclass('public.turf') is null then return 0; end if;
+  begin execute 'select count(*) from public.turf where owner_uid = $1 and owner_id is not null and claimed_at >= px_turf_week()' into n using p_uid; exception when others then n := 0; end;
+  return coalesce(n, 0);
+end $$;
+
+create or replace function public.px_ms(t timestamptz) returns bigint language sql immutable as $$ select case when t is null then null else (extract(epoch from t) * 1000)::bigint end $$;
+
+-- the numbers on the front page
+create or replace function public.px_mod_overview(p_pw text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw); o jsonb; vers jsonb; blocks int := 0; owners int := 0; ann jsonb;
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  select coalesce(jsonb_object_agg(ver, n), '{}') into vers from (select coalesce(info ->> 'ver', '?') as ver, count(*) n from px_players group by 1 order by 2 desc limit 8) q;
+  if to_regclass('public.turf') is not null then
+    begin execute 'select count(*), count(distinct owner_uid) from public.turf where owner_id is not null and claimed_at >= px_turf_week()' into blocks, owners; exception when others then blocks := 0; end;
+  end if;
+  select jsonb_build_object('id', id, 'x', x, 'until', px_ms(until)) into ann from px_announce where until > now() order by id desc limit 1;
+  select jsonb_build_object(
+    'players', count(*), 'online', count(*) filter (where seen > now() - interval '40 seconds'),
+    'day', count(*) filter (where seen > now() - interval '1 day'), 'week', count(*) filter (where seen > now() - interval '7 days'),
+    'new_day', count(*) filter (where created > now() - interval '1 day'), 'new_week', count(*) filter (where created > now() - interval '7 days'),
+    'rebirthed', count(*) filter (where rb > 0), 'avg_lv', round(coalesce(avg(lv), 0)::numeric, 1),
+    'ranked_f', count(*) filter (where gf > 0), 'ranked_h', count(*) filter (where gh > 0),
+    'top_f', coalesce(max(elo_f) filter (where gf > 0), 0), 'top_h', coalesce(max(elo_h) filter (where gh > 0), 0),
+    'hours', round((coalesce(sum((info ->> 'play')::numeric), 0) / 3600.0), 1)) into o from px_players;
+  return o || jsonb_build_object('bans', (select count(*) from px_bans where kind = 'ban' and (until is null or until > now())),
+    'mutes', (select count(*) from px_bans where kind = 'mute' and (until is null or until > now())),
+    'matches', (select count(*) from px_matches where done), 'matches_day', (select count(*) from px_matches where done and at > now() - interval '1 day'),
+    'chat_hour', (select count(*) from px_msgs where kind = 'm' and at > now() - interval '1 hour'),
+    'blocks', blocks, 'owners', owners, 'vers', vers, 'ann', ann);
+end $$;
+
+-- everyone who has ever opened the game: search, sort, filter
+create or replace function public.px_mod_players(p_pw text, p_q text, p_sort text, p_filter text, p_limit int, p_offset int) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw); ord text; wh text := 'true'; q text := nullif(btrim(coalesce(p_q, '')), ''); tot int; rows jsonb;
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  ord := case p_sort when 'name' then 'lower(name) asc' when 'lv' then 'rb desc, lv desc' when 'elo_f' then 'elo_f desc' when 'elo_h' then 'elo_h desc' when 'new' then 'created desc'
+    when 'games' then '(gf + gh) desc' when 'play' then 'coalesce((info ->> ''play'')::numeric, 0) desc' else 'seen desc' end;
+  if p_filter = 'online' then wh := 'seen > now() - interval ''40 seconds''';
+  elsif p_filter = 'day' then wh := 'seen > now() - interval ''1 day''';
+  elsif p_filter = 'banned' then wh := 'px_is_banned(uid) or px_is_banned(uid, ''mute'')';
+  elsif p_filter = 'ranked' then wh := '(gf + gh) > 0'; end if;
+  if q is not null then wh := wh || ' and (name ilike ' || quote_literal('%' || replace(replace(q, '%', ''), '_', '') || '%') || ' or uid like ' || quote_literal(replace(replace(q, '%', ''), '_', '') || '%') || ')'; end if;
+  execute 'select count(*) from px_players where ' || wh into tot;
+  execute 'select coalesce(jsonb_agg(x), ''[]'') from (select jsonb_build_object(''uid'', uid, ''n'', name, ''lv'', lv, ''rb'', rb, ''st'', st, ''seen'', px_ms(seen), ''created'', px_ms(created),
+      ''on'', seen > now() - interval ''40 seconds'', ''ef'', elo_f, ''gf'', gf, ''wf'', wf, ''eh'', elo_h, ''gh'', gh, ''wh'', wh, ''info'', info,
+      ''ban'', (select jsonb_build_object(''until'', px_ms(b.until), ''why'', b.reason) from px_bans b where b.uid = px_players.uid and b.kind = ''ban'' and (b.until is null or b.until > now())),
+      ''mute'', (select jsonb_build_object(''until'', px_ms(b.until), ''why'', b.reason) from px_bans b where b.uid = px_players.uid and b.kind = ''mute'' and (b.until is null or b.until > now())),
+      ''blocks'', px_mod_blocks(uid)) as x from px_players where ' || wh || ' order by ' || ord || ' limit ' || least(greatest(coalesce(p_limit, 25), 1), 100) || ' offset ' || greatest(coalesce(p_offset, 0), 0) || ') q' into rows;
+  return jsonb_build_object('total', tot, 'rows', rows);
+end $$;
+
+-- one player in full: stats, last ranked matches, last chat lines, blocks
+create or replace function public.px_mod_player(p_pw text, p_uid text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw); pl px_players; ms jsonb; ch jsonb; bl jsonb := '[]'; bans jsonb;
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  select * into pl from px_players where uid = p_uid;
+  if not found then return jsonb_build_object('err', 'nobody'); end if;
+  select coalesce(jsonb_agg(jsonb_build_object('g', game, 'at', px_ms(at), 'opp', coalesce((select name from px_players o where o.uid = case when m.a = p_uid then m.b else m.a end), '?'),
+      'won', case when not done then null when (m.a = p_uid) = (m.ra = 'W') then true else false end, 'd', case when m.a = p_uid then da else db end, 'done', done) order by at desc), '[]') into ms
+    from (select * from px_matches m where a = p_uid or b = p_uid order by at desc limit 12) m;
+  select coalesce(jsonb_agg(jsonb_build_object('id', id, 'x', x, 'ts', px_ms(at)) order by id desc), '[]') into ch from (select * from px_msgs where uid = p_uid and kind = 'm' order by id desc limit 15) q;
+  if to_regclass('public.turf') is not null then
+    begin execute 'select coalesce(jsonb_agg(jsonb_build_object(''id'', id, ''defenses'', defenses, ''at'', px_ms(claimed_at))), ''[]'') from public.turf where owner_uid = $1 and owner_id is not null and claimed_at >= px_turf_week()' into bl using p_uid; exception when others then bl := '[]'; end;
+  end if;
+  select coalesce(jsonb_agg(jsonb_build_object('k', kind, 'why', reason, 'at', px_ms(at), 'until', px_ms(until), 'active', (until is null or until > now()))), '[]') into bans from px_bans where uid = p_uid;
+  return jsonb_build_object('uid', pl.uid, 'n', pl.name, 'lv', pl.lv, 'rb', pl.rb, 'st', pl.st, 'seen', px_ms(pl.seen), 'created', px_ms(pl.created), 'on', pl.seen > now() - interval '40 seconds',
+    'ef', pl.elo_f, 'gf', pl.gf, 'wf', pl.wf, 'eh', pl.elo_h, 'gh', pl.gh, 'wh', pl.wh, 'info', pl.info, 'matches', ms, 'chat', ch, 'blocks', bl, 'bans', bans);
+end $$;
+
+create or replace function public.px_mod_chat(p_pw text, p_limit int, p_before bigint) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw); rows jsonb;
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  select coalesce(jsonb_agg(jsonb_build_object('id', id, 'uid', uid, 'n', n, 'x', x, 'ts', px_ms(at), 'ban', px_is_banned(uid), 'mute', px_is_banned(uid, 'mute')) order by id desc), '[]') into rows
+    from (select * from px_msgs where kind = 'm' and (p_before is null or id < p_before) order by id desc limit least(greatest(coalesce(p_limit, 40), 1), 150)) q;
+  return jsonb_build_object('rows', rows);
+end $$;
+
+create or replace function public.px_mod_delmsg(p_pw text, p_id bigint, p_uid text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw); n int;
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  if p_id is not null then delete from px_msgs where id = p_id; get diagnostics n = row_count;
+  elsif p_uid is not null then delete from px_msgs where uid = p_uid and kind = 'm'; get diagnostics n = row_count; end if;
+  insert into px_mod_log (act, target, note) values ('delete chat', coalesce(p_uid, p_id::text), n || ' line(s)');
+  return jsonb_build_object('ok', true, 'n', n);
+end $$;
+
+-- ban (can't play online: chat, Quick Match, ranked, Turf Wars, and the game shuts its online screens) or mute (can't chat)
+create or replace function public.px_mod_ban(p_pw text, p_uid text, p_kind text, p_hours numeric, p_reason text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw); nm text;
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  if p_kind not in ('ban', 'mute') then return jsonb_build_object('err', 'bad kind'); end if;
+  select name into nm from px_players where uid = p_uid;
+  if nm is null then return jsonb_build_object('err', 'nobody'); end if;
+  insert into px_bans (uid, kind, name, reason, at, until) values (p_uid, p_kind, nm, left(coalesce(p_reason, ''), 120), now(), case when p_hours is null or p_hours <= 0 then null else now() + make_interval(secs => (p_hours * 3600)::int) end)
+    on conflict (uid, kind) do update set name = excluded.name, reason = excluded.reason, at = now(), until = excluded.until;
+  if p_kind = 'ban' then delete from px_queue where uid = p_uid; end if;
+  insert into px_mod_log (act, target, note) values (p_kind, p_uid || ' (' || nm || ')', coalesce(case when p_hours is null or p_hours <= 0 then 'for good' else p_hours || ' h' end, '') || ' · ' || left(coalesce(p_reason, ''), 120));
+  return jsonb_build_object('ok', true);
+end $$;
+
+create or replace function public.px_mod_unban(p_pw text, p_uid text, p_kind text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw);
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  delete from px_bans where uid = p_uid and (p_kind is null or kind = p_kind);
+  insert into px_mod_log (act, target, note) values ('lift ' || coalesce(p_kind, 'ban+mute'), p_uid, '');
+  return jsonb_build_object('ok', true);
+end $$;
+
+create or replace function public.px_mod_bans(p_pw text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw); rows jsonb;
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  select coalesce(jsonb_agg(jsonb_build_object('uid', uid, 'n', coalesce((select name from px_players p where p.uid = b.uid), b.name), 'k', kind, 'why', reason, 'at', px_ms(at), 'until', px_ms(until)) order by at desc), '[]') into rows
+    from px_bans b where until is null or until > now();
+  return jsonb_build_object('rows', rows);
+end $$;
+
+-- fix a rating (reset to 1000 and 0 games, or set it by hand), or an unfit name
+create or replace function public.px_mod_elo(p_pw text, p_uid text, p_game text, p_elo int, p_reset boolean) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw);
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  if p_game = 'h' then
+    if p_reset then update px_players set elo_h = 1000, gh = 0, wh = 0 where uid = p_uid; else update px_players set elo_h = least(4000, greatest(100, p_elo)) where uid = p_uid; end if;
+  else
+    if p_reset then update px_players set elo_f = 1000, gf = 0, wf = 0 where uid = p_uid; else update px_players set elo_f = least(4000, greatest(100, p_elo)) where uid = p_uid; end if;
+  end if;
+  insert into px_mod_log (act, target, note) values (case when p_reset then 'reset elo' else 'set elo' end, p_uid, p_game || coalesce(' ' || p_elo, ''));
+  return jsonb_build_object('ok', true);
+end $$;
+
+create or replace function public.px_mod_rename(p_pw text, p_uid text, p_name text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw); old text;
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  select name into old from px_players where uid = p_uid;
+  update px_players set name = left(coalesce(nullif(btrim(p_name), ''), 'Player'), 16) where uid = p_uid;
+  insert into px_mod_log (act, target, note) values ('rename', p_uid, coalesce(old, '?') || ' → ' || left(coalesce(p_name, 'Player'), 16));
+  return jsonb_build_object('ok', true);
+end $$;
+
+create or replace function public.px_mod_matches(p_pw text, p_limit int) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw); rows jsonb;
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  select coalesce(jsonb_agg(jsonb_build_object('id', id, 'g', game, 'at', px_ms(at), 'a', coalesce((select name from px_players p where p.uid = m.a), '?'), 'b', coalesce((select name from px_players p where p.uid = m.b), '?'),
+    'au', a, 'bu', b, 'ra', ra, 'rb', rb, 'da', da, 'db', db, 'done', done) order by at desc), '[]') into rows
+    from (select * from px_matches order by at desc limit least(greatest(coalesce(p_limit, 30), 1), 100)) m;
+  return jsonb_build_object('rows', rows);
+end $$;
+
+-- Turf Wars: who holds what this week, release a block / a player's blocks / the whole map
+create or replace function public.px_mod_turf(p_pw text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw); rows jsonb := '[]';
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  if to_regclass('public.turf') is null then return jsonb_build_object('rows', '[]'::jsonb, 'none', true); end if;
+  execute 'select coalesce(jsonb_agg(jsonb_build_object(''id'', id, ''own'', owner_name, ''uid'', owner_uid, ''def'', defenses, ''at'', px_ms(claimed_at), ''live'', owner_id is not null and claimed_at >= px_turf_week(), ''ev'', last_event) order by length(id), id), ''[]'') from public.turf' into rows;
+  return jsonb_build_object('rows', rows);
+end $$;
+
+create or replace function public.px_mod_turf_release(p_pw text, p_mode text, p_arg text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw); n int := 0;
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  if to_regclass('public.turf') is null then return jsonb_build_object('err', 'no turf table'); end if;
+  perform set_config('px.mod', '1', true);
+  if p_mode = 'block' then execute 'update public.turf set owner_id = null, owner_uid = null, owner_name = null, fighter = null, dna = null, defenses = 0, claimed_at = now() - interval ''30 days'', last_event = ''Released by a mod'' where id = $1' using p_arg;
+  elsif p_mode = 'player' then execute 'update public.turf set owner_id = null, owner_uid = null, owner_name = null, fighter = null, dna = null, defenses = 0, claimed_at = now() - interval ''30 days'', last_event = ''Released by a mod'' where owner_uid = $1' using p_arg;
+  elsif p_mode = 'all' then execute 'update public.turf set owner_id = null, owner_uid = null, owner_name = null, fighter = null, dna = null, defenses = 0, claimed_at = now() - interval ''30 days'', last_event = ''Map reset by a mod'' where owner_id is not null';
+  else return jsonb_build_object('err', 'bad mode'); end if;
+  get diagnostics n = row_count;
+  insert into px_mod_log (act, target, note) values ('turf release', p_mode || ' ' || coalesce(p_arg, ''), n || ' block(s)');
+  return jsonb_build_object('ok', true, 'n', n);
+end $$;
+
+-- a message every player sees once, the next time their game checks in
+create or replace function public.px_mod_announce(p_pw text, p_text text, p_hours numeric) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw);
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  update px_announce set until = now() where until > now();
+  if p_text is not null and length(btrim(p_text)) > 0 then
+    insert into px_announce (x, until) values (left(btrim(p_text), 200), now() + make_interval(secs => (least(greatest(coalesce(p_hours, 6), 0.1), 720) * 3600)::int));
+    insert into px_mod_log (act, note) values ('announce', left(btrim(p_text), 120));
+  else insert into px_mod_log (act, note) values ('announcement cleared', ''); end if;
+  return jsonb_build_object('ok', true);
+end $$;
+
+create or replace function public.px_mod_log(p_pw text, p_limit int) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw); rows jsonb;
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  select coalesce(jsonb_agg(jsonb_build_object('at', px_ms(at), 'act', act, 'target', target, 'note', note) order by id desc), '[]') into rows
+    from (select * from px_mod_log order by id desc limit least(greatest(coalesce(p_limit, 60), 1), 200)) q;
+  return jsonb_build_object('rows', rows);
+end $$;
+
+-- only the panel's own functions are open to the game; the password check and setup stay inside the database
+revoke all on function public.px_mod_set_password(text), public.px_mod_check(text), public.px_mod_blocks(text), public.px_is_banned(text, text) from public, anon, authenticated;
+grant execute on function public.px_mod_overview(text), public.px_mod_players(text, text, text, text, int, int), public.px_mod_player(text, text), public.px_mod_chat(text, int, bigint),
+  public.px_mod_delmsg(text, bigint, text), public.px_mod_ban(text, text, text, numeric, text), public.px_mod_unban(text, text, text), public.px_mod_bans(text),
+  public.px_mod_elo(text, text, text, int, boolean), public.px_mod_rename(text, text, text), public.px_mod_matches(text, int), public.px_mod_turf(text),
+  public.px_mod_turf_release(text, text, text), public.px_mod_announce(text, text, numeric), public.px_mod_log(text, int) to anon, authenticated;
+
+-- ONE-TIME, PRIVATE: set the mod password by running this single line yourself in the SQL Editor (don't save it into this file):
+--   select px_mod_set_password('your password here');
