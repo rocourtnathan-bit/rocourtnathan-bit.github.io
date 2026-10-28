@@ -75,10 +75,19 @@ create table if not exists public.px_mod_log (id bigserial primary key, at times
 -- changes a mod made to a player's fighter (rebirth, level, stats): waiting for that player's game to pick them up
 -- the helper account (a weaker mod), who did what in the log, and the people a helper can never touch
 alter table public.px_mod_log add column if not exists who text not null default 'owner';
+alter table public.px_bans add column if not exists "by" text not null default 'owner';   -- who set it: owner or helper (a helper can lift only their own bans)
 alter table public.px_bans add column if not exists "full" boolean not null default false;   -- true: banned from the whole game, not just online play
 create table if not exists public.px_staff (uid text primary key, role text not null check (role in ('owner', 'helper')), name text, at timestamptz not null default now());
+-- each helper gets their own name and password, so the log shows who did what and each has their own 30 levels a day
+create table if not exists public.px_helpers (name text primary key, salt text not null, hash text not null, added timestamptz not null default now(), last_login timestamptz);
+alter table public.px_helpers enable row level security; revoke all on public.px_helpers from anon, authenticated;
+alter table public.px_mod_log add column if not exists by_name text;
+alter table public.px_mod_log add column if not exists by_email text;
+alter table public.px_bans add column if not exists by_name text;
+alter table public.px_staff add column if not exists hname text;
 create table if not exists public.px_dels (id bigserial primary key, at timestamptz not null default now(), mid bigint, uid text);   -- chat lines a mod deleted: every game drops them
 create table if not exists public.px_levels (id bigserial primary key, at timestamptz not null default now(), uid text, n int not null, who text not null);
+alter table public.px_levels add column if not exists hname text;
 alter table public.px_staff enable row level security; alter table public.px_dels enable row level security; alter table public.px_levels enable row level security;
 revoke all on public.px_staff, public.px_dels, public.px_levels from anon, authenticated;
 create table if not exists public.px_edits (id bigserial primary key, uid text not null, at timestamptz not null default now(), edit jsonb not null, applied boolean not null default false);
@@ -167,14 +176,15 @@ returns jsonb language plpgsql security definer set search_path = public as $$
 declare r px_players; msgs jsonb; ppl jsonb := null; mx bigint; onl int; bn px_bans; mu px_bans; ann jsonb; eds jsonb; ds bigint; dels jsonb := null; dcur bigint;
 begin
   r := px_auth(p_uid, p_key, p_name);
+  perform px_google_touch(p_uid);   -- (signed in with Google? remember whose account this device is)
   update px_players set name = coalesce(left(p_name, 16), name), lv = coalesce(p_lv, lv), rb = coalesce(p_rb, rb), st = coalesce(left(p_st, 40), st), seen = now(),
-    info = case when p_info is not null and jsonb_typeof(p_info) = 'object' and length(p_info::text) < 900 then p_info else info end where uid = p_uid returning * into r;
+    info = case when p_info is not null and jsonb_typeof(p_info) = 'object' and length(p_info::text) < 1800 then p_info else info end where uid = p_uid returning * into r;
   select count(*) into onl from px_players where seen > now() - interval '40 seconds';
   select * into bn from px_bans where uid = p_uid and kind = 'ban' and (until is null or until > now());
   select * into mu from px_bans where uid = p_uid and kind = 'mute' and (until is null or until > now());
   select jsonb_build_object('id', id, 'x', x) into ann from px_announce where until > now() order by id desc limit 1;
   if bn.uid is not null then -- banned: no chat, no people, just the news that they are
-    return jsonb_build_object('last', 0, 'msgs', '[]'::jsonb, 'people', null, 'online', onl, 'ann', ann,
+    return jsonb_build_object('last', 0, 'msgs', '[]'::jsonb, 'people', null, 'online', onl, 'ann', ann, 'cfg', px_pub_cfg(),
       'ban', jsonb_build_object('until', case when bn.until is null then null else (extract(epoch from bn.until) * 1000)::bigint end, 'why', bn.reason, 'full', bn."full"),
       'me', jsonb_build_object('ef', r.elo_f, 'gf', r.gf, 'wf', r.wf, 'eh', r.elo_h, 'gh', r.gh, 'wh', r.wh, 'grade', r.grade));
   end if;
@@ -200,7 +210,7 @@ begin
       select coalesce(jsonb_agg(jsonb_build_object('m', mid, 'u', uid) order by id), '[]'), coalesce(max(id), ds) into dels, dcur from (select * from px_dels where id > ds order by id limit 200) q;
     end if;
   end if;
-  return jsonb_build_object('last', mx, 'msgs', msgs, 'people', ppl, 'online', onl, 'ann', ann, 'edits', eds, 'dels', dels, 'dmax', dcur,
+  return jsonb_build_object('last', mx, 'msgs', msgs, 'people', ppl, 'online', onl, 'ann', ann, 'cfg', px_pub_cfg(), 'edits', eds, 'dels', dels, 'dmax', dcur,
     'mute', case when mu.uid is null then null else jsonb_build_object('until', case when mu.until is null then null else (extract(epoch from mu.until) * 1000)::bigint end, 'why', mu.reason) end,
     'me', jsonb_build_object('ef', r.elo_f, 'gf', r.gf, 'wf', r.wf, 'eh', r.elo_h, 'gh', r.gh, 'wh', r.wh, 'grade', r.grade));
 end $$;
@@ -414,6 +424,8 @@ begin
   -- who held it before (and when), newest first, eight deep: the weekly crown is worked out from this
   hist := jsonb_build_array(jsonb_build_object('o', t.owner_id, 'n', t.owner_name, 'at', coalesce((extract(epoch from t.claimed_at) * 1000)::bigint, 0)))
     || coalesce((select jsonb_agg(h) from (select h from jsonb_array_elements(coalesce(t.fighter -> 'hist', '[]'::jsonb)) h limit 7) q), '[]'::jsonb);
+  insert into px_turf_log (uid, name, block, secs, owner_was, owner_name, won) values (p_uid, left(coalesce(p_name, 'Player'), 24), k.block, secs, k.owner_was, t.owner_name, true);  -- (how long each win took: the mods look for ones that were too quick)
+  if random() < 0.05 then delete from px_turf_log where at < now() - interval '30 days'; end if;
   update turf set owner_id = k.fid, owner_uid = p_uid, owner_name = left(coalesce(p_name, 'Player'), 24),
     fighter = coalesce(p_fighter, '{}'::jsonb) - 'hist' || jsonb_build_object('hist', hist), dna = p_dna,
     claimed_at = now(), defenses = 0, last_event = left(p_event, 120) where id = k.block;
@@ -430,6 +442,7 @@ begin
   if not found or k.used then raise exception 'That fight was already counted'; end if;
   if extract(epoch from now() - k.started) < 6 or extract(epoch from now() - k.started) > 1800 then raise exception 'Not a real fight'; end if;
   update px_turf_tickets set used = true where id = k.id;
+  insert into px_turf_log (uid, name, block, secs, owner_was, owner_name, won) values (p_uid, (select name from px_players where uid = p_uid), k.block, extract(epoch from now() - k.started), k.owner_was, null, false);
   if k.owner_was is null then return null; end if; -- (lost to a street crew: nothing to count)
   select * into t from turf where id = k.block for update;
   if t.owner_id is distinct from k.owner_was or t.claimed_at < px_turf_week() then return null; end if;
@@ -469,9 +482,9 @@ end $$;
 
 -- 'ok' (the owner) | 'helper' (the weaker account) | 'wrong' | 'locked' | 'setup' (it returns instead of raising so a wrong guess is still counted)
 create or replace function public.px_mod_check(p_pw text) returns text language plpgsql security definer set search_path = public as $$
-declare c px_mod_cfg;
+declare c px_mod_cfg; h px_helpers;
 begin
-  perform set_config('px.who', '', true);
+  perform set_config('px.who', '', true); perform set_config('px.hname', '', true);
   select * into c from px_mod_cfg where id = 1 for update;
   if not found or c.pwhash is null then return 'setup'; end if;
   if c.locked_until is not null and c.locked_until > now() then return 'locked'; end if;
@@ -482,9 +495,16 @@ begin
       return 'ok';
     elsif c.hhash is not null and encode(sha256(convert_to(c.hsalt || p_pw, 'utf8')), 'hex') = c.hhash then
       if c.fails > 0 then update px_mod_cfg set fails = 0 where id = 1; end if;
-      perform set_config('px.who', 'helper', true);
+      perform set_config('px.who', 'helper', true); perform set_config('px.hname', 'Helper', true);
       return 'helper';
     end if;
+    for h in select * from px_helpers loop   -- the named helpers
+      if encode(sha256(convert_to(h.salt || p_pw, 'utf8')), 'hex') = h.hash then
+        if c.fails > 0 then update px_mod_cfg set fails = 0 where id = 1; end if;
+        perform set_config('px.who', 'helper', true); perform set_config('px.hname', h.name, true);
+        return 'helper';
+      end if;
+    end loop;
   end if;
   if c.fails + 1 >= 5 then
     update px_mod_cfg set fails = 0, strikes = c.strikes + 1, locked_until = now() + make_interval(mins => least(1440, (15 * power(2, c.strikes))::int)) where id = 1;
@@ -503,13 +523,15 @@ create or replace function public.px_is_helper() returns boolean language sql st
 create or replace function public.px_is_staff(p_uid text) returns boolean language sql stable security definer set search_path = public as $$ select exists (select 1 from px_staff where uid = p_uid) $$;
 -- the log remembers who did each thing
 create or replace function public.px_mod_log_who() returns trigger language plpgsql as $$
-begin new.who := case when coalesce(current_setting('px.who', true), '') = 'helper' then 'helper' else 'owner' end; return new; end $$;
+begin new.who := case when coalesce(current_setting('px.who', true), '') = 'helper' then 'helper' else 'owner' end;
+  new.by_name := case when new.who = 'helper' then coalesce(nullif(current_setting('px.hname', true), ''), 'Helper') end;
+  new.by_email := px_google_email(); return new; end $$;
 drop trigger if exists px_mod_log_who on public.px_mod_log;
 create trigger px_mod_log_who before insert on public.px_mod_log for each row execute function public.px_mod_log_who();
 
 -- a helper can give at most 30 levels in any 24 hours
 create or replace function public.px_levels_left() returns int language sql stable security definer set search_path = public as $$
-  select greatest(0, 30 - coalesce((select sum(n) from px_levels where who = 'helper' and at > now() - interval '24 hours'), 0))::int $$;
+  select greatest(0, 30 - coalesce((select sum(n) from px_levels where who = 'helper' and coalesce(hname, 'Helper') = coalesce(nullif(current_setting('px.hname', true), ''), 'Helper') and at > now() - interval '24 hours'), 0))::int $$;  -- (each helper has their own 30)
 
 -- the helper's own password, set once by the owner in the SQL Editor (see the end of this file); it has to differ from the owner's
 create or replace function public.px_mod_set_helper_password(p_pw text) returns void language plpgsql security definer set search_path = public as $$
@@ -528,13 +550,17 @@ create or replace function public.px_mod_login(p_pw text, p_uid text) returns js
 declare v text := px_mod_check(p_pw); nm text;
 begin
   if v not in ('ok', 'helper') then return jsonb_build_object('err', v); end if;
+  if v = 'helper' and (select coalesce(req_helper, false) from px_mod_cfg where id = 1) and px_google_email() is null then return jsonb_build_object('err', 'google'); end if;   -- (helpers have to be signed in with Google when the owner says so)
   if p_uid is not null and length(p_uid) between 8 and 32 then
     select name into nm from px_players where uid = p_uid;
-    insert into px_staff (uid, role, name) values (p_uid, case when v = 'ok' then 'owner' else 'helper' end, nm)
-      on conflict (uid) do update set role = case when px_staff.role = 'owner' or excluded.role = 'owner' then 'owner' else 'helper' end, name = coalesce(excluded.name, px_staff.name);
+    insert into px_staff (uid, role, name, hname) values (p_uid, case when v = 'ok' then 'owner' else 'helper' end, nm, case when v = 'helper' then coalesce(nullif(current_setting('px.hname', true), ''), 'Helper') end)
+      on conflict (uid) do update set role = case when px_staff.role = 'owner' or excluded.role = 'owner' then 'owner' else 'helper' end, name = coalesce(excluded.name, px_staff.name), hname = case when px_staff.role = 'owner' or excluded.role = 'owner' then null else excluded.hname end;
   end if;
-  if v = 'helper' then insert into px_mod_log (act, target, note) values ('helper login', coalesce(p_uid, '?'), coalesce(nm, '')); end if;
-  return jsonb_build_object('role', case when v = 'ok' then 'owner' else 'helper' end, 'lv_left', px_levels_left());
+  if v = 'helper' then
+    update px_helpers set last_login = now() where name = nullif(current_setting('px.hname', true), '');
+    insert into px_mod_log (act, target, note) values ('helper login', coalesce(p_uid, '?'), coalesce(nm, ''));
+  end if;
+  return jsonb_build_object('role', case when v = 'ok' then 'owner' else 'helper' end, 'lv_left', px_levels_left(), 'name', case when v = 'helper' then coalesce(nullif(current_setting('px.hname', true), ''), 'Helper') end, 'email', px_google_email());
 end $$;
 
 create or replace function public.px_mod_blocks(p_uid text) returns int language plpgsql security definer set search_path = public as $$
@@ -604,7 +630,7 @@ end $$;
 
 -- one player in full: stats, last ranked matches, last chat lines, blocks
 create or replace function public.px_mod_player(p_pw text, p_uid text) returns jsonb language plpgsql security definer set search_path = public as $$
-declare v text := px_mod_check_h(p_pw); pl px_players; ms jsonb; ch jsonb; bl jsonb := '[]'; bans jsonb;
+declare v text := px_mod_check_h(p_pw); pl px_players; ms jsonb; ch jsonb; bl jsonb := '[]'; bans jsonb; lk jsonb; lg jsonb; tf jsonb;
 begin
   if v <> 'ok' then return jsonb_build_object('err', v); end if;
   select * into pl from px_players where uid = p_uid;
@@ -616,9 +642,24 @@ begin
   if to_regclass('public.turf') is not null then
     begin execute 'select coalesce(jsonb_agg(jsonb_build_object(''id'', id, ''defenses'', defenses, ''at'', px_ms(claimed_at))), ''[]'') from public.turf where owner_uid = $1 and owner_id is not null and claimed_at >= px_turf_week()' into bl using p_uid; exception when others then bl := '[]'; end;
   end if;
-  select coalesce(jsonb_agg(jsonb_build_object('k', kind, 'full', "full", 'why', reason, 'at', px_ms(at), 'until', px_ms(until), 'active', (until is null or until > now()))), '[]') into bans from px_bans where uid = p_uid;
-  return jsonb_build_object('uid', pl.uid, 'n', pl.name, 'grade', pl.grade, 'lv', pl.lv, 'rb', pl.rb, 'st', pl.st, 'seen', px_ms(pl.seen), 'created', px_ms(pl.created), 'on', pl.seen > now() - interval '40 seconds',
-    'ef', pl.elo_f, 'gf', pl.gf, 'wf', pl.wf, 'eh', pl.elo_h, 'gh', pl.gh, 'wh', pl.wh, 'info', pl.info, 'matches', ms, 'chat', ch, 'blocks', bl, 'bans', bans, 'staff', (select role from px_staff where uid = p_uid), 'lv_left', px_levels_left(), 'helper', px_is_helper());
+  select coalesce(jsonb_agg(jsonb_build_object('k', kind, 'full', "full", 'why', reason, 'by', "by", 'at', px_ms(at), 'until', px_ms(until), 'active', (until is null or until > now()))), '[]') into bans from px_bans where uid = p_uid;
+  -- other accounts that look like the same device (same browser, system, screen, graphics card, time zone, language)
+  if coalesce(pl.info -> 'dev' ->> 'id', '') <> '' then
+    select coalesce(jsonb_agg(jsonb_build_object('uid', q.uid, 'n', q.name, 'seen', px_ms(q.seen), 'created', px_ms(q.created), 'lv', q.lv, 'staff', exists (select 1 from px_staff s where s.uid = q.uid),
+      'ban', exists (select 1 from px_bans b where b.uid = q.uid and b.kind = 'ban' and (b.until is null or b.until > now()))) order by q.seen desc), '[]') into lk
+      from (select * from px_players o where o.uid <> p_uid and o.info -> 'dev' ->> 'id' = pl.info -> 'dev' ->> 'id' order by o.seen desc limit 12) q;
+  else lk := '[]'; end if;
+  -- other devices signed in with the same Google account
+  select coalesce(jsonb_agg(jsonb_build_object('uid', q.uid, 'n', q.name, 'seen', px_ms(q.seen), 'created', px_ms(q.created), 'lv', q.lv, 'staff', exists (select 1 from px_staff s where s.uid = q.uid), 'g', true,
+      'ban', exists (select 1 from px_bans b where b.uid = q.uid and b.kind = 'ban' and (b.until is null or b.until > now()))) order by q.seen desc), '[]') into lg
+    from (select o.* from px_players o join px_google g on g.uid = o.uid where o.uid <> p_uid and g.sub = (select sub from px_google where uid = p_uid) order by o.seen desc limit 12) q;
+  lk := coalesce(lk, '[]'::jsonb) || (select coalesce(jsonb_agg(x), '[]'::jsonb) from jsonb_array_elements(lg) x where not exists (select 1 from jsonb_array_elements(coalesce(lk, '[]'::jsonb)) y where y ->> 'uid' = x ->> 'uid'));
+  -- how this player's Turf fights went, and how long the wins took
+  select jsonb_build_object('w', count(*) filter (where won), 'l', count(*) filter (where not won), 'fast', count(*) filter (where won and secs < 12), 'min', min(secs) filter (where won), 'avg', avg(secs) filter (where won),
+    'recent', coalesce((select jsonb_agg(jsonb_build_object('b', block, 's', round(secs::numeric, 1), 'won', won, 'from', owner_name, 'at', px_ms(at)) order by id desc) from (select * from px_turf_log where uid = p_uid order by id desc limit 8) r), '[]')) into tf
+    from px_turf_log where uid = p_uid and at > now() - interval '14 days';
+  return jsonb_build_object('linked', lk, 'turf', tf, 'uid', pl.uid, 'n', pl.name, 'grade', pl.grade, 'lv', pl.lv, 'rb', pl.rb, 'st', pl.st, 'seen', px_ms(pl.seen), 'created', px_ms(pl.created), 'on', pl.seen > now() - interval '40 seconds',
+    'ef', pl.elo_f, 'gf', pl.gf, 'wf', pl.wf, 'eh', pl.elo_h, 'gh', pl.gh, 'wh', pl.wh, 'info', pl.info, 'matches', ms, 'chat', ch, 'blocks', bl, 'bans', bans, 'google', (select g.email from px_google g where g.uid = p_uid), 'cloud', (select px_ms(cl.at) from px_cloud cl join px_google g2 on g2.sub = cl.sub where g2.uid = p_uid), 'staff', (select role from px_staff where uid = p_uid), 'sname', (select hname from px_staff where uid = p_uid), 'lv_left', px_levels_left(), 'helper', px_is_helper());
 end $$;
 
 create or replace function public.px_mod_chat(p_pw text, p_limit int, p_before bigint) returns jsonb language plpgsql security definer set search_path = public as $$
@@ -660,29 +701,28 @@ begin
   if v <> 'ok' then return jsonb_build_object('err', v); end if;
   if p_kind not in ('ban', 'mute') then return jsonb_build_object('err', 'bad kind'); end if;
   if px_is_helper() then
-    if p_kind <> 'mute' then return jsonb_build_object('err', 'owner only'); end if;       -- a helper can mute, never ban
-    if px_is_staff(p_uid) then return jsonb_build_object('err', 'staff'); end if;
-    if hrs is null or hrs <= 0 or hrs > 24 then hrs := 24; end if;                          -- and for up to a day
+    if px_is_staff(p_uid) then return jsonb_build_object('err', 'staff'); end if;          -- a helper can ban and mute anyone but the staff
   elsif p_kind = 'ban' and exists (select 1 from px_staff where uid = p_uid and role = 'owner') then return jsonb_build_object('err', 'that is an owner device'); end if;
   select name into nm from px_players where uid = p_uid;
   if nm is null then return jsonb_build_object('err', 'nobody'); end if;
-  insert into px_bans (uid, kind, name, reason, at, until, "full") values (p_uid, p_kind, nm, left(coalesce(p_reason, ''), 120), now(), case when hrs is null or hrs <= 0 then null else now() + make_interval(secs => (hrs * 3600)::int) end, false)
-    on conflict (uid, kind) do update set name = excluded.name, reason = excluded.reason, at = now(), until = excluded.until, "full" = false;
+  insert into px_bans (uid, kind, name, reason, at, until, "full", "by", by_name) values (p_uid, p_kind, nm, left(coalesce(p_reason, ''), 120), now(), case when hrs is null or hrs <= 0 then null else now() + make_interval(secs => (hrs * 3600)::int) end, false, case when px_is_helper() then 'helper' else 'owner' end, case when px_is_helper() then coalesce(nullif(current_setting('px.hname', true), ''), 'Helper') end)
+    on conflict (uid, kind) do update set name = excluded.name, reason = excluded.reason, at = now(), until = excluded.until, "full" = false, "by" = excluded."by", by_name = excluded.by_name;
   if p_kind = 'ban' then delete from px_queue where uid = p_uid; end if;
   insert into px_mod_log (act, target, note) values (p_kind, p_uid || ' (' || nm || ')', coalesce(case when hrs is null or hrs <= 0 then 'for good' else hrs || ' h' end, '') || ' · ' || left(coalesce(p_reason, ''), 120));
   return jsonb_build_object('ok', true);
 end $$;
 
--- ban from the WHOLE game (the owner only): the game itself shuts, online or not
+-- ban from the WHOLE game: the game itself shuts, online or not
 create or replace function public.px_mod_ban_game(p_pw text, p_uid text, p_hours numeric, p_reason text) returns jsonb language plpgsql security definer set search_path = public as $$
-declare v text := px_mod_check(p_pw); nm text;
+declare v text := px_mod_check_h(p_pw); nm text;
 begin
   if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  if px_is_helper() and px_is_staff(p_uid) then return jsonb_build_object('err', 'staff'); end if;
   if exists (select 1 from px_staff where uid = p_uid and role = 'owner') then return jsonb_build_object('err', 'that is an owner device'); end if;
   select name into nm from px_players where uid = p_uid;
   if nm is null then return jsonb_build_object('err', 'nobody'); end if;
-  insert into px_bans (uid, kind, name, reason, at, until, "full") values (p_uid, 'ban', nm, left(coalesce(p_reason, ''), 120), now(), case when p_hours is null or p_hours <= 0 then null else now() + make_interval(secs => (p_hours * 3600)::int) end, true)
-    on conflict (uid, kind) do update set name = excluded.name, reason = excluded.reason, at = now(), until = excluded.until, "full" = true;
+  insert into px_bans (uid, kind, name, reason, at, until, "full", "by", by_name) values (p_uid, 'ban', nm, left(coalesce(p_reason, ''), 120), now(), case when p_hours is null or p_hours <= 0 then null else now() + make_interval(secs => (p_hours * 3600)::int) end, true, case when px_is_helper() then 'helper' else 'owner' end, case when px_is_helper() then coalesce(nullif(current_setting('px.hname', true), ''), 'Helper') end)
+    on conflict (uid, kind) do update set name = excluded.name, reason = excluded.reason, at = now(), until = excluded.until, "full" = true, "by" = excluded."by", by_name = excluded.by_name;
   delete from px_queue where uid = p_uid;
   insert into px_mod_log (act, target, note) values ('ban from game', p_uid || ' (' || nm || ')', coalesce(case when p_hours is null or p_hours <= 0 then 'for good' else p_hours || ' h' end, '') || ' · ' || left(coalesce(p_reason, ''), 120));
   return jsonb_build_object('ok', true);
@@ -693,8 +733,12 @@ declare v text := px_mod_check_h(p_pw);
 begin
   if v <> 'ok' then return jsonb_build_object('err', v); end if;
   if px_is_helper() then
-    if p_kind is distinct from 'mute' then return jsonb_build_object('err', 'owner only'); end if;   -- a helper can only lift mutes
     if px_is_staff(p_uid) then return jsonb_build_object('err', 'staff'); end if;
+    -- a helper can lift any mute and any ban they set themselves, but not a ban the owner set
+    if exists (select 1 from px_bans where uid = p_uid and kind = 'ban' and "by" <> 'helper' and (until is null or until > now()) and (p_kind is null or p_kind = 'ban')) then
+      if p_kind is null then delete from px_bans where uid = p_uid and kind = 'mute'; insert into px_mod_log (act, target, note) values ('lift mute', p_uid, ''); end if;
+      return jsonb_build_object('err', 'owner only');
+    end if;
   end if;
   delete from px_bans where uid = p_uid and (p_kind is null or kind = p_kind);
   insert into px_mod_log (act, target, note) values ('lift ' || coalesce(p_kind, 'ban+mute'), p_uid, '');
@@ -705,7 +749,7 @@ create or replace function public.px_mod_bans(p_pw text) returns jsonb language 
 declare v text := px_mod_check_h(p_pw); rows jsonb;
 begin
   if v <> 'ok' then return jsonb_build_object('err', v); end if;
-  select coalesce(jsonb_agg(jsonb_build_object('uid', uid, 'n', coalesce((select name from px_players p where p.uid = b.uid), b.name), 'k', kind, 'full', "full", 'why', reason, 'at', px_ms(at), 'until', px_ms(until)) order by at desc), '[]') into rows
+  select coalesce(jsonb_agg(jsonb_build_object('uid', uid, 'n', coalesce((select name from px_players p where p.uid = b.uid), b.name), 'k', kind, 'full', "full", 'why', reason, 'by', "by", 'bn', by_name, 'at', px_ms(at), 'until', px_ms(until)) order by at desc), '[]') into rows
     from px_bans b where until is null or until > now();
   return jsonb_build_object('rows', rows);
 end $$;
@@ -751,7 +795,7 @@ begin
   if v <> 'ok' then return jsonb_build_object('err', v); end if;
   if to_regclass('public.turf') is null then return jsonb_build_object('rows', '[]'::jsonb, 'none', true); end if;
   execute 'select coalesce(jsonb_agg(jsonb_build_object(''id'', id, ''own'', owner_name, ''uid'', owner_uid, ''def'', defenses, ''at'', px_ms(claimed_at), ''live'', owner_id is not null and claimed_at >= px_turf_week(), ''ev'', last_event) order by length(id), id), ''[]'') from public.turf' into rows;
-  return jsonb_build_object('rows', rows);
+  return jsonb_build_object('rows', rows, 'log', coalesce((select jsonb_agg(jsonb_build_object('uid', uid, 'n', name, 'b', block, 's', round(secs::numeric, 1), 'from', owner_name, 'at', px_ms(at)) order by id desc) from (select * from px_turf_log where won order by id desc limit 30) q), '[]'));
 end $$;
 
 create or replace function public.px_mod_turf_release(p_pw text, p_mode text, p_arg text) returns jsonb language plpgsql security definer set search_path = public as $$
@@ -786,7 +830,7 @@ create or replace function public.px_mod_log(p_pw text, p_limit int) returns jso
 declare v text := px_mod_check(p_pw); rows jsonb;
 begin
   if v <> 'ok' then return jsonb_build_object('err', v); end if;
-  select coalesce(jsonb_agg(jsonb_build_object('at', px_ms(at), 'act', act, 'target', target, 'note', note, 'who', who) order by id desc), '[]') into rows
+  select coalesce(jsonb_agg(jsonb_build_object('at', px_ms(at), 'act', act, 'target', target, 'note', note, 'who', who, 'by', by_name, 'em', by_email) order by id desc), '[]') into rows
     from (select * from px_mod_log order by id desc limit least(greatest(coalesce(p_limit, 60), 1), 200)) q;
   return jsonb_build_object('rows', rows);
 end $$;
@@ -971,13 +1015,186 @@ begin
     if p_n > left_ then return jsonb_build_object('err', 'limit', 'lv_left', left_); end if;
   elsif p_n > 100 then return jsonb_build_object('err', 'up to 100 at a time'); end if;
   insert into px_edits (uid, edit) values (p_uid, jsonb_build_object('addlv', p_n));
-  insert into px_levels (uid, n, who) values (p_uid, p_n, case when px_is_helper() then 'helper' else 'owner' end);
+  insert into px_levels (uid, n, who, hname) values (p_uid, p_n, case when px_is_helper() then 'helper' else 'owner' end, case when px_is_helper() then coalesce(nullif(current_setting('px.hname', true), ''), 'Helper') end);
   insert into px_mod_log (act, target, note) values ('give levels', p_uid || ' (' || nm || ')', '+' || p_n);
   return jsonb_build_object('ok', true, 'lv_left', px_levels_left());
 end $$;
 
 grant execute on function public.px_mod_login(text, text), public.px_mod_ban_game(text, text, numeric, text), public.px_mod_give_levels(text, text, int) to anon, authenticated;
 revoke all on function public.px_mod_check_h(text), public.px_is_helper(), public.px_is_staff(text), public.px_levels_left(), public.px_mod_set_helper_password(text), public.px_mod_clear_helper_password(), public.px_mod_log_who() from public, anon, authenticated;
+
+-- how long each Turf fight took (so the mods can spot wins that were too quick to be real fights)
+create table if not exists public.px_turf_log (id bigserial primary key, at timestamptz not null default now(), uid text, name text, block text, secs real, owner_was text, owner_name text, won boolean not null default true);
+create index if not exists px_turf_log_uid on public.px_turf_log (uid, id desc);
+alter table public.px_turf_log enable row level security;
+revoke all on public.px_turf_log from anon, authenticated;
+
+-- the staff chat: the owner and the helper(s) talk to each other, nobody else can read it
+create table if not exists public.px_staffchat (id bigserial primary key, at timestamptz not null default now(), uid text, role text not null, name text, x text not null);
+alter table public.px_staffchat enable row level security;
+revoke all on public.px_staffchat from anon, authenticated;
+create or replace function public.px_staff_say(p_pw text, p_uid text, p_x text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check_h(p_pw); t text := btrim(left(coalesce(p_x, ''), 400)); nm text;
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  if t = '' then return jsonb_build_object('err', 'empty'); end if;
+  select name into nm from px_players where uid = p_uid;
+  insert into px_staffchat (uid, role, name, x) values (p_uid, case when px_is_helper() then 'helper' else 'owner' end, left(coalesce(case when px_is_helper() then nullif(current_setting('px.hname', true), '') end, nm, case when px_is_helper() then 'Helper' else 'Owner' end), 24), t);
+  if random() < 0.05 then delete from px_staffchat where at < now() - interval '30 days'; end if;
+  return jsonb_build_object('ok', true);
+end $$;
+create or replace function public.px_staff_list(p_pw text, p_since bigint default 0) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check_h(p_pw); rows jsonb; mx bigint;
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  select coalesce(max(id), 0) into mx from px_staffchat;
+  select coalesce(jsonb_agg(jsonb_build_object('id', id, 'r', role, 'n', name, 'x', x, 'at', px_ms(at), 'u', uid) order by id), '[]') into rows
+    from (select * from px_staffchat where id > coalesce(p_since, 0) order by id desc limit 150) q;
+  return jsonb_build_object('rows', rows, 'last', mx);
+end $$;
+grant execute on function public.px_staff_say(text, text, text), public.px_staff_list(text, bigint) to anon, authenticated;
+
+-- ---------- helpers, one account each (the owner manages them in the panel's Overview tab, or here) ----------
+-- the list: who they are, when they last logged in, what they've done this week, levels given today
+create or replace function public.px_mod_helpers(p_pw text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw); rows jsonb; c px_mod_cfg; lg jsonb := '[]';
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  select * into c from px_mod_cfg where id = 1;
+  select coalesce(jsonb_agg(jsonb_build_object('n', h.name, 'added', px_ms(h.added), 'login', px_ms(h.last_login),
+      'acts', (select count(*) from px_mod_log l where l.by_name = h.name and l.act <> 'helper login' and l.at > now() - interval '7 days'),
+      'lv', coalesce((select sum(n) from px_levels x where x.who = 'helper' and x.hname = h.name and x.at > now() - interval '24 hours'), 0)) order by h.name), '[]') into rows from px_helpers h;
+  if c.hhash is not null then   -- the old single helper password still works until you remove it
+    lg := jsonb_build_array(jsonb_build_object('n', 'Helper', 'shared', true, 'login', (select px_ms(max(at)) from px_mod_log where act = 'helper login' and by_name = 'Helper'),
+      'acts', (select count(*) from px_mod_log l where l.by_name = 'Helper' and l.act <> 'helper login' and l.at > now() - interval '7 days'),
+      'lv', coalesce((select sum(n) from px_levels x where x.who = 'helper' and coalesce(x.hname, 'Helper') = 'Helper' and x.at > now() - interval '24 hours'), 0)));
+  end if;
+  return jsonb_build_object('rows', lg || rows);
+end $$;
+-- add a helper (or change their password): a name for the log and their own password
+create or replace function public.px_mod_helper_set(p_pw text, p_name text, p_hpw text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw); c px_mod_cfg; h px_helpers; nm text := btrim(coalesce(p_name, '')); s text := replace(gen_random_uuid()::text, '-', ''); fresh boolean;
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  if nm !~ '^[A-Za-z0-9 _.-]{2,16}$' then return jsonb_build_object('err', 'name: 2 to 16 letters or numbers'); end if;
+  if lower(nm) = 'helper' or lower(nm) = 'owner' then return jsonb_build_object('err', 'pick a real name for them (not "' || nm || '")'); end if;
+  if p_hpw is null or length(p_hpw) < 4 or length(p_hpw) > 64 then return jsonb_build_object('err', 'password: 4 to 64 characters'); end if;
+  select * into c from px_mod_cfg where id = 1;
+  if encode(sha256(convert_to(c.salt || p_hpw, 'utf8')), 'hex') = c.pwhash then return jsonb_build_object('err', 'that''s your own password; give them a different one'); end if;
+  if c.hhash is not null and encode(sha256(convert_to(c.hsalt || p_hpw, 'utf8')), 'hex') = c.hhash then return jsonb_build_object('err', 'that''s the old shared helper password; pick a new one'); end if;
+  for h in select * from px_helpers where lower(name) <> lower(nm) loop
+    if encode(sha256(convert_to(h.salt || p_hpw, 'utf8')), 'hex') = h.hash then return jsonb_build_object('err', 'another helper already has that password'); end if;
+  end loop;
+  fresh := not exists (select 1 from px_helpers where lower(name) = lower(nm));
+  delete from px_helpers where lower(name) = lower(nm);
+  insert into px_helpers (name, salt, hash) values (nm, s, encode(sha256(convert_to(s || p_hpw, 'utf8')), 'hex'));
+  insert into px_mod_log (act, target, note) values (case when fresh then 'add helper' else 'new helper password' end, nm, '');
+  return jsonb_build_object('ok', true);
+end $$;
+-- take a helper away (their password stops working at once); "Helper" is the old shared one
+create or replace function public.px_mod_helper_remove(p_pw text, p_name text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw);
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  if p_name = 'Helper' then update px_mod_cfg set hsalt = null, hhash = null where id = 1;
+  else delete from px_helpers where name = p_name; end if;
+  delete from px_staff where role = 'helper' and hname = p_name;   -- (their device is no longer protected as staff)
+  insert into px_mod_log (act, target, note) values ('remove helper', coalesce(p_name, '?'), '');
+  return jsonb_build_object('ok', true);
+end $$;
+grant execute on function public.px_mod_helpers(text), public.px_mod_helper_set(text, text, text), public.px_mod_helper_remove(text, text) to anon, authenticated;
+
+-- ---------- Sign in with Google ----------
+-- The game signs people in with Supabase Auth (Google). Their requests then carry a signed login token and the database reads the
+-- email straight from it, so nobody can claim an email that isn't theirs. Nothing else about the game changes: a device keeps its
+-- own online profile, and signing in just attaches the Google account to it.
+alter table public.px_mod_cfg add column if not exists req_game boolean not null default false;     -- everyone has to be signed in to play
+alter table public.px_mod_cfg add column if not exists req_helper boolean not null default false;   -- helpers have to be signed in to open the panel
+alter table public.px_mod_cfg add column if not exists upd_until timestamptz;   -- the game is being updated: every game pauses behind a "please hold" screen until then (or until the owner ends it)
+create table if not exists public.px_google (uid text primary key, sub text not null, email text not null, at timestamptz not null default now(), seen timestamptz not null default now());
+create index if not exists px_google_sub on public.px_google (sub);
+alter table public.px_google enable row level security;
+revoke all on public.px_google from anon, authenticated;
+create or replace function public.px_jwt() returns jsonb language sql stable security definer set search_path = public as $$
+  select case when coalesce(nullif(current_setting('request.jwt.claims', true), ''), '') ~ '^\{' then current_setting('request.jwt.claims', true)::jsonb else '{}'::jsonb end $$;
+-- the verified email of whoever's login token came with this request (null for an ordinary, not signed in request)
+create or replace function public.px_google_email() returns text language sql stable security definer set search_path = public as $$
+  select case when px_jwt() ->> 'role' = 'authenticated' and coalesce(px_jwt() ->> 'email', '') <> '' then lower(px_jwt() ->> 'email') end $$;
+create or replace function public.px_google_touch(p_uid text) returns void language plpgsql security definer set search_path = public as $$
+declare e text := px_google_email(); sb text := px_jwt() ->> 'sub';
+begin
+  if e is null or sb is null then return; end if;
+  insert into px_google (uid, sub, email) values (p_uid, sb, left(e, 120)) on conflict (uid) do update set sub = excluded.sub, email = excluded.email, seen = now();
+end $$;
+-- what every game is told each time it checks in
+create or replace function public.px_pub_cfg() returns jsonb language sql stable security definer set search_path = public as $$
+  select jsonb_build_object('reqg', coalesce((select req_game from px_mod_cfg where id = 1), false), 'upd', coalesce((select upd_until > now() from px_mod_cfg where id = 1), false)) $$;
+-- the owner's switches
+create or replace function public.px_mod_google_cfg(p_pw text, p_game boolean, p_helper boolean) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw);
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  if p_game is not null then update px_mod_cfg set req_game = p_game where id = 1; insert into px_mod_log (act, target, note) values ('google for everyone', case when p_game then 'required' else 'optional' end, ''); end if;
+  if p_helper is not null then update px_mod_cfg set req_helper = p_helper where id = 1; insert into px_mod_log (act, target, note) values ('google for helpers', case when p_helper then 'required' else 'optional' end, ''); end if;
+  return (select jsonb_build_object('game', req_game, 'helper', req_helper, 'linked', (select count(*) from px_google)) from px_mod_cfg where id = 1);
+end $$;
+create or replace function public.px_mod_google_get(p_pw text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw);
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  return (select jsonb_build_object('game', req_game, 'helper', req_helper, 'linked', (select count(*) from px_google), 'players', (select count(*) from px_players), 'upd', case when upd_until > now() then px_ms(upd_until) end) from px_mod_cfg where id = 1);
+end $$;
+-- the owner pauses every game for an update (and lets them back in when it's done); it ends by itself after p_mins in case it's forgotten
+create or replace function public.px_mod_update_mode(p_pw text, p_on boolean, p_mins int default 20) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw);
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  update px_mod_cfg set upd_until = case when p_on then now() + make_interval(mins => least(greatest(coalesce(p_mins, 20), 1), 120)) end where id = 1;
+  insert into px_mod_log (act, target, note) values (case when p_on then 'update started' else 'update finished' end, '', case when p_on then 'every game is paused' else '' end);
+  return (select jsonb_build_object('upd', case when upd_until > now() then px_ms(upd_until) end) from px_mod_cfg where id = 1);
+end $$;
+grant execute on function public.px_mod_google_cfg(text, boolean, boolean), public.px_mod_google_get(text), public.px_mod_update_mode(text, boolean, int) to anon, authenticated;
+revoke all on function public.px_jwt(), public.px_google_email(), public.px_google_touch(text), public.px_pub_cfg() from public, anon, authenticated;
+
+-- ---------- Cloud backup (for people signed in with Google): the save follows the Google account, not the browser ----------
+-- Clearing a browser, a school laptop that wipes itself, a new device: sign in with Google and the fighters come back. The backup is
+-- only ever handed to the Google account it belongs to (the database reads who that is from the login token).
+create table if not exists public.px_cloud (sub text primary key, email text, uid text, data jsonb not null, bytes int, at timestamptz not null default now());
+alter table public.px_cloud enable row level security;
+revoke all on public.px_cloud from anon, authenticated;
+drop function if exists public.px_cloud_put(text, text, jsonb);
+create or replace function public.px_cloud_put(p_uid text, p_key text, p_data jsonb, p_base bigint default null, p_force boolean default false) returns jsonb language plpgsql security definer set search_path = public as $$
+declare sb text := px_jwt() ->> 'sub'; e text := px_google_email(); n int := length(coalesce(p_data::text, '')); c px_cloud;
+begin
+  perform px_auth(p_uid, p_key);
+  if sb is null or e is null then return jsonb_build_object('err', 'signin'); end if;
+  if p_data is null or jsonb_typeof(p_data) <> 'object' or n < 20 or n > 900000 then return jsonb_build_object('err', 'size'); end if;
+  select * into c from px_cloud where sub = sb for update;
+  -- a device that hasn't seen the newest backup can't write over it (it has to ask the player first)
+  if found and not coalesce(p_force, false) and px_ms(c.at) is distinct from p_base then return jsonb_build_object('err', 'newer', 'at', px_ms(c.at)); end if;
+  insert into px_cloud (sub, email, uid, data, bytes) values (sb, left(e, 120), p_uid, p_data, n)
+    on conflict (sub) do update set email = excluded.email, uid = excluded.uid, data = excluded.data, bytes = excluded.bytes, at = now();
+  return jsonb_build_object('ok', true, 'at', (select px_ms(at) from px_cloud where sub = sb));
+end $$;
+-- what's in the backup (no save data): when, and who the fighters are
+create or replace function public.px_cloud_meta() returns jsonb language plpgsql security definer set search_path = public as $$
+declare sb text := px_jwt() ->> 'sub'; c px_cloud;
+begin
+  if sb is null or px_google_email() is null then return jsonb_build_object('err', 'signin'); end if;
+  select * into c from px_cloud where sub = sb;
+  if not found then return jsonb_build_object('has', false); end if;
+  return jsonb_build_object('has', true, 'at', px_ms(c.at), 'uid', c.uid, 'bytes', c.bytes,
+    'f', coalesce((select jsonb_agg(jsonb_build_object('n', x ->> 'name', 'lv', x -> 'level', 'rb', x -> 'rebirths')) from jsonb_array_elements(coalesce(c.data -> 'save' -> 'fighters', '[]'::jsonb)) x), '[]'::jsonb));
+end $$;
+create or replace function public.px_cloud_get() returns jsonb language plpgsql security definer set search_path = public as $$
+declare sb text := px_jwt() ->> 'sub'; c px_cloud;
+begin
+  if sb is null or px_google_email() is null then return jsonb_build_object('err', 'signin'); end if;
+  select * into c from px_cloud where sub = sb;
+  if not found then return jsonb_build_object('has', false); end if;
+  return jsonb_build_object('has', true, 'at', px_ms(c.at), 'data', c.data);
+end $$;
+grant execute on function public.px_cloud_put(text, text, jsonb, bigint, boolean), public.px_cloud_meta(), public.px_cloud_get() to anon, authenticated;
 
 -- ONE-TIME, PRIVATE: set the mod password by running this single line yourself in the SQL Editor (don't save it into this file):
 --   select px_mod_set_password('your password here');
