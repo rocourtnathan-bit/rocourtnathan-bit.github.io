@@ -185,11 +185,12 @@ begin
   select * into bn from px_bans where uid = p_uid and kind = 'ban' and (until is null or until > now());
   select * into mu from px_bans where uid = p_uid and kind = 'mute' and (until is null or until > now());
   select jsonb_build_object('id', id, 'x', x) into ann from px_announce where until > now() order by id desc limit 1;
-  -- an old copy of the game (below the minimum version the creator set): shut like a ban until it's updated. Copies from v13 up close the whole game;
-  -- older ones (or ones that don't say) lose the online doors. Staff are never locked out.
+  -- an old copy of the game (below the minimum version the creator set) that can't show its own update screen (older than v15): shut like a ban until it's
+  -- updated. Copies from v13 up close the whole game; older ones (or ones that don't say) lose the online doors. Staff are never locked out.
   select min_ver into mv from px_mod_cfg where id = 1;
   vv := case when p_info is not null and jsonb_typeof(p_info) = 'object' and (p_info ->> 'ver') ~ '^[0-9]{1,4}$' then (p_info ->> 'ver')::int end;
-  if coalesce(mv, 0) > 0 and bn.uid is null and (vv is null or vv < mv) and px_staff_rank(p_uid) is null then oldv := true; end if;
+  -- (a copy from v15 up has its own full-screen "download the update" screen, which a lock screen would cover: the game itself is told the minimum in the config, below, and shows that screen)
+  if coalesce(mv, 0) > 0 and bn.uid is null and (vv is null or (vv < mv and vv < 15)) and px_staff_rank(p_uid) is null then oldv := true; end if;
   if bn.uid is not null or oldv then -- banned: no chat, no people, just the news that they are
     return jsonb_build_object('last', 0, 'msgs', '[]'::jsonb, 'people', null, 'online', onl, 'ann', ann, 'cfg', px_pub_cfg(),
       'ban', case when oldv then jsonb_build_object('until', null, 'why', left('Out of date. Get Pixel Games v' || mv || ' or newer: re-download it, or open rocourtnathan-bit.github.io/pixel-games.html', 120), 'full', (vv is not null and vv >= 13))
@@ -1160,7 +1161,7 @@ begin
 end $$;
 -- what every game is told each time it checks in
 create or replace function public.px_pub_cfg() returns jsonb language sql stable security definer set search_path = public as $$
-  select jsonb_build_object('reqg', coalesce((select req_game from px_mod_cfg where id = 1), false), 'upd', coalesce((select upd_until > now() from px_mod_cfg where id = 1), false), 'dm', coalesce((select dm_mode from px_mod_cfg where id = 1), 'all')) $$;
+  select jsonb_build_object('reqg', coalesce((select req_game from px_mod_cfg where id = 1), false), 'upd', coalesce((select upd_until > now() from px_mod_cfg where id = 1), false), 'dm', coalesce((select dm_mode from px_mod_cfg where id = 1), 'all'), 'minv', (select nullif(min_ver, 0) from px_mod_cfg where id = 1)) $$;
 -- the owner's switches
 create or replace function public.px_mod_google_cfg(p_pw text, p_game boolean, p_helper boolean) returns jsonb language plpgsql security definer set search_path = public as $$
 declare v text := px_mod_check(p_pw);
@@ -1685,6 +1686,33 @@ begin
   return res;
 end $$;
 grant execute on function public.px_net_put(text, text, jsonb), public.px_mod_net(text) to anon, authenticated;
+
+-- ---------- v16: the Online Shop's items, edited by the creator ----------
+-- The list of things for sale (name, what it gives, price) lives here, so the creator can add, remove, rename and re-price them in the
+-- panel without a new version of the game. null = never edited: the game shows its built-in starting list. Buying isn't switched on yet.
+alter table public.px_mod_cfg add column if not exists shop jsonb;
+create or replace function public.px_shop_get() returns jsonb language sql stable security definer set search_path = public as $$
+  select jsonb_build_object('items', (select shop from px_mod_cfg where id = 1)) $$;
+create or replace function public.px_mod_shop_save(p_pw text, p_items jsonb) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw); res jsonb;
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  if p_items is null or jsonb_typeof(p_items) <> 'array' then return jsonb_build_object('err', 'bad items'); end if;
+  if jsonb_array_length(p_items) > 30 then return jsonb_build_object('err', 'too many (30 at most)'); end if;
+  with a as (
+    select ord, case when (e ->> 'id') ~ '^[a-z0-9_]{1,20}$' then e ->> 'id' else 'i' || ord end id0, left(btrim(coalesce(e ->> 'name', '')), 40) nm,
+      case when (e ->> 'kind') in ('levels', 'cash', 'clothes', 'other') then e ->> 'kind' else 'other' end kd,
+      case when (e ->> 'amount') ~ '^[0-9]{1,6}$' then (e ->> 'amount')::int else 0 end am,
+      case when (e ->> 'ref') ~ '^[a-z0-9_]{1,40}$' then e ->> 'ref' else '' end rf,
+      case when (e ->> 'price') ~ '^[0-9]{1,3}(\.[0-9]{1,2})?$' then (e ->> 'price')::numeric else 0 end pr
+    from jsonb_array_elements(p_items) with ordinality t (e, ord)),
+  b as (select *, case when count(*) over (partition by id0) > 1 then id0 || '_' || ord else id0 end id from a where nm <> '')
+  select coalesce(jsonb_agg(jsonb_build_object('id', id, 'name', nm, 'kind', kd, 'amount', am, 'ref', rf, 'price', pr) order by ord), '[]'::jsonb) into res from b;
+  update px_mod_cfg set shop = res where id = 1;
+  insert into px_mod_log (act, note) values ('shop items', jsonb_array_length(res)::text || ' items');
+  return jsonb_build_object('ok', true, 'items', res);
+end $$;
+grant execute on function public.px_shop_get(), public.px_mod_shop_save(text, jsonb) to anon, authenticated;
 
 -- ONE-TIME, PRIVATE: set the mod password by running this single line yourself in the SQL Editor (don't save it into this file):
 --   select px_mod_set_password('your password here');
