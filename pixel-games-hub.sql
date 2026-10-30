@@ -175,7 +175,7 @@ end $$;
 drop function if exists public.px_hello(text, text, text, int, int, text, bigint, boolean);
 create or replace function public.px_hello(p_uid text, p_key text, p_name text, p_lv int, p_rb int, p_st text, p_since bigint, p_people boolean, p_info jsonb default null)
 returns jsonb language plpgsql security definer set search_path = public as $$
-declare r px_players; msgs jsonb; ppl jsonb := null; mx bigint; onl int; bn px_bans; mu px_bans; ann jsonb; eds jsonb; ds bigint; dels jsonb := null; dcur bigint;
+declare r px_players; msgs jsonb; ppl jsonb := null; mx bigint; onl int; bn px_bans; mu px_bans; ann jsonb; eds jsonb; ds bigint; dels jsonb := null; dcur bigint; mv int; vv int; oldv boolean := false;
 begin
   r := px_auth(p_uid, p_key, p_name);
   perform px_google_touch(p_uid);   -- (signed in with Google? remember whose account this device is)
@@ -185,9 +185,15 @@ begin
   select * into bn from px_bans where uid = p_uid and kind = 'ban' and (until is null or until > now());
   select * into mu from px_bans where uid = p_uid and kind = 'mute' and (until is null or until > now());
   select jsonb_build_object('id', id, 'x', x) into ann from px_announce where until > now() order by id desc limit 1;
-  if bn.uid is not null then -- banned: no chat, no people, just the news that they are
+  -- an old copy of the game (below the minimum version the creator set): shut like a ban until it's updated. Copies from v13 up close the whole game;
+  -- older ones (or ones that don't say) lose the online doors. Staff are never locked out.
+  select min_ver into mv from px_mod_cfg where id = 1;
+  vv := case when p_info is not null and jsonb_typeof(p_info) = 'object' and (p_info ->> 'ver') ~ '^[0-9]{1,4}$' then (p_info ->> 'ver')::int end;
+  if coalesce(mv, 0) > 0 and bn.uid is null and (vv is null or vv < mv) and px_staff_rank(p_uid) is null then oldv := true; end if;
+  if bn.uid is not null or oldv then -- banned: no chat, no people, just the news that they are
     return jsonb_build_object('last', 0, 'msgs', '[]'::jsonb, 'people', null, 'online', onl, 'ann', ann, 'cfg', px_pub_cfg(),
-      'ban', jsonb_build_object('until', case when bn.until is null then null else (extract(epoch from bn.until) * 1000)::bigint end, 'why', bn.reason, 'full', bn."full"),
+      'ban', case when oldv then jsonb_build_object('until', null, 'why', left('Out of date. Get Pixel Games v' || mv || ' or newer: re-download it, or open rocourtnathan-bit.github.io/pixel-games.html', 120), 'full', (vv is not null and vv >= 13))
+        else jsonb_build_object('until', case when bn.until is null then null else (extract(epoch from bn.until) * 1000)::bigint end, 'why', bn.reason, 'full', bn."full") end,
       'me', jsonb_build_object('ef', r.elo_f, 'gf', r.gf, 'wf', r.wf, 'eh', r.elo_h, 'gh', r.gh, 'wh', r.wh, 'grade', r.grade, 'staff', px_staff_rank(p_uid)));
   end if;
   select coalesce(max(id), 0) into mx from px_msgs;
@@ -1168,7 +1174,7 @@ create or replace function public.px_mod_google_get(p_pw text) returns jsonb lan
 declare v text := px_mod_check(p_pw);
 begin
   if v <> 'ok' then return jsonb_build_object('err', v); end if;
-  return (select jsonb_build_object('game', req_game, 'helper', req_helper, 'linked', (select count(*) from px_google), 'players', (select count(*) from px_players), 'upd', case when upd_until > now() then px_ms(upd_until) end) from px_mod_cfg where id = 1);
+  return (select jsonb_build_object('game', req_game, 'helper', req_helper, 'linked', (select count(*) from px_google), 'players', (select count(*) from px_players), 'minver', nullif(min_ver, 0), 'upd', case when upd_until > now() then px_ms(upd_until) end) from px_mod_cfg where id = 1);
 end $$;
 -- the owner pauses every game for an update (and lets them back in when it's done); it ends by itself after p_mins in case it's forgotten
 create or replace function public.px_mod_update_mode(p_pw text, p_on boolean, p_mins int default 20) returns jsonb language plpgsql security definer set search_path = public as $$
@@ -1618,6 +1624,67 @@ create or replace function public.px_mod_make_creator(p_uid text) returns void l
 revoke all on function public.px_mod_make_creator(text), public.px_rank(), public.px_staff_rank(text) from public, anon, authenticated;
 grant execute on function public.px_mod_staff_set(text, text, text), public.px_mod_staff_list(text) to anon, authenticated;
 
+-- the lowest game version that may play at all. Anything older is locked until it updates (see px_hello). 0 turns it off.
+alter table public.px_mod_cfg add column if not exists min_ver int not null default 0;
+create or replace function public.px_mod_min_ver(p_pw text, p_ver int) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw);
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  update px_mod_cfg set min_ver = least(greatest(coalesce(p_ver, 0), 0), 9999) where id = 1;
+  insert into px_mod_log (act, note) values ('minimum version', coalesce(p_ver, 0)::text);
+  return jsonb_build_object('ok', true);
+end $$;
+grant execute on function public.px_mod_min_ver(text, int) to anon, authenticated;
+do $$ begin   -- one time: v15 is out, so older copies are locked until they update (the creator can change or switch this off in the panel)
+  if not exists (select 1 from px_migrations where name = 'minver_15') then
+    update px_mod_cfg set min_ver = 15 where id = 1 and min_ver = 0;
+    insert into px_migrations (name) values ('minver_15');
+  end if;
+end $$;
+
+
+-- ---------- v15: how good are people's online connections? ----------
+-- Every online match, the game sends one small summary when it ends (typical ping, the slow spells, how it got through,
+-- how often the fight had to wait or rewind). The mods see the totals, so we can fix what's actually wrong instead of guessing.
+-- Nothing in it says who they played or what was said. Kept for two weeks.
+create table if not exists public.px_netlog (id bigserial primary key, at timestamptz not null default now(), uid text not null, game text not null, secs int, rtt int, rtt90 int, jit int, loss int,
+  route text, stalls int, rolls int, maxroll int, ver int, dev text, via text);
+create index if not exists px_netlog_at on public.px_netlog (at desc);
+alter table public.px_netlog enable row level security; revoke all on public.px_netlog from anon, authenticated;
+create or replace function public.px_net_put(p_uid text, p_key text, p_r jsonb) returns jsonb language plpgsql security definer set search_path = public as $$
+declare pl px_players; g text;
+begin
+  pl := px_auth(p_uid, p_key);
+  if p_r is null or jsonb_typeof(p_r) <> 'object' then return jsonb_build_object('ok', false); end if;
+  g := case when (p_r ->> 'g') in ('f', 'h') then p_r ->> 'g' end; if g is null then return jsonb_build_object('ok', false); end if;
+  if (select count(*) from px_netlog where uid = p_uid and at > now() - interval '1 hour') >= 40 then return jsonb_build_object('ok', false); end if;
+  insert into px_netlog (uid, game, secs, rtt, rtt90, jit, loss, route, stalls, rolls, maxroll, ver, dev, via)
+  values (p_uid, g,
+    least(greatest(coalesce((p_r ->> 's') ::numeric, 0), 0), 3600)::int, least(greatest(coalesce((p_r ->> 'rtt') ::numeric, 0), 0), 5000)::int, least(greatest(coalesce((p_r ->> 'r90') ::numeric, 0), 0), 5000)::int,
+    least(greatest(coalesce((p_r ->> 'jit') ::numeric, 0), 0), 5000)::int, least(greatest(coalesce((p_r ->> 'loss') ::numeric, 0), 0), 100)::int,
+    case when (p_r ->> 'route') in ('DIRECT', 'RELAY', 'SERVER') then p_r ->> 'route' else 'SERVER' end,
+    least(greatest(coalesce((p_r ->> 'st') ::numeric, 0), 0), 100000)::int, least(greatest(coalesce((p_r ->> 'ro') ::numeric, 0), 0), 100000)::int, least(greatest(coalesce((p_r ->> 'mr') ::numeric, 0), 0), 1000)::int,
+    case when (pl.info ->> 'ver') ~ '^[0-9]{1,4}$' then (pl.info ->> 'ver')::int end, left(pl.info -> 'dev' ->> 'k', 20), left(pl.info ->> 'via', 8));
+  if random() < 0.05 then delete from px_netlog where at < now() - interval '14 days'; end if;
+  return jsonb_build_object('ok', true);
+end $$;
+create or replace function public.px_mod_net(p_pw text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check_h(p_pw); res jsonb;
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  with w as (select *, (case when secs > 0 then stalls * 60.0 / secs else 0 end) spm from px_netlog where at > now() - interval '7 days'),
+  smooth as (select count(*) filter (where rtt < 120 and spm < 3 and loss < 3) good, count(*) filter (where rtt >= 250 or spm >= 10 or loss >= 8) rough, count(*) n from w)
+  select jsonb_build_object('n', (select n from smooth), 'good', (select good from smooth), 'rough', (select rough from smooth),
+    'rtt', (select percentile_cont(0.5) within group (order by rtt) from w), 'rtt90', (select percentile_cont(0.9) within group (order by rtt) from w),
+    'routes', (select coalesce(jsonb_object_agg(route, c), '{}'::jsonb) from (select route, count(*) c from w group by route) q),
+    'games', (select coalesce(jsonb_object_agg(game, c), '{}'::jsonb) from (select game, count(*) c from w group by game) q),
+    'dev', (select coalesce(jsonb_agg(jsonb_build_object('k', coalesce(dev, '?'), 'via', coalesce(via, '?'), 'n', c, 'rtt', m, 'rough', r) order by c desc), '[]'::jsonb) from (select dev, via, count(*) c, round(percentile_cont(0.5) within group (order by rtt)) m, count(*) filter (where rtt >= 250 or spm >= 10 or loss >= 8) r from w group by dev, via order by c desc limit 8) q),
+    'worst', (select coalesce(jsonb_agg(jsonb_build_object('uid', uid, 'n', (select name from px_players p where p.uid = q.uid), 'c', c, 'rtt', m, 'spm', round(sp::numeric, 1), 'route', rt) order by m desc), '[]'::jsonb)
+      from (select uid, count(*) c, round(percentile_cont(0.5) within group (order by rtt)) m, avg(spm) sp, mode() within group (order by route) rt from w group by uid having count(*) >= 2 order by percentile_cont(0.5) within group (order by rtt) desc limit 8) q))
+  into res;
+  return res;
+end $$;
+grant execute on function public.px_net_put(text, text, jsonb), public.px_mod_net(text) to anon, authenticated;
 
 -- ONE-TIME, PRIVATE: set the mod password by running this single line yourself in the SQL Editor (don't save it into this file):
 --   select px_mod_set_password('your password here');
