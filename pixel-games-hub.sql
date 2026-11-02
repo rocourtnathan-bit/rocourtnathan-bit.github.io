@@ -1160,8 +1160,9 @@ begin
   insert into px_google (uid, sub, email) values (p_uid, sb, left(e, 120)) on conflict (uid) do update set sub = excluded.sub, email = excluded.email, seen = now();
 end $$;
 -- what every game is told each time it checks in
+alter table public.px_mod_cfg add column if not exists byline text;   -- (the start screen line, below)
 create or replace function public.px_pub_cfg() returns jsonb language sql stable security definer set search_path = public as $$
-  select jsonb_build_object('reqg', coalesce((select req_game from px_mod_cfg where id = 1), false), 'upd', coalesce((select upd_until > now() from px_mod_cfg where id = 1), false), 'dm', coalesce((select dm_mode from px_mod_cfg where id = 1), 'all'), 'minv', (select nullif(min_ver, 0) from px_mod_cfg where id = 1)) $$;
+  select jsonb_build_object('reqg', coalesce((select req_game from px_mod_cfg where id = 1), false), 'upd', coalesce((select upd_until > now() from px_mod_cfg where id = 1), false), 'dm', coalesce((select dm_mode from px_mod_cfg where id = 1), 'all'), 'minv', (select nullif(min_ver, 0) from px_mod_cfg where id = 1), 'by', (select byline from px_mod_cfg where id = 1)) $$;
 -- the owner's switches
 create or replace function public.px_mod_google_cfg(p_pw text, p_game boolean, p_helper boolean) returns jsonb language plpgsql security definer set search_path = public as $$
 declare v text := px_mod_check(p_pw);
@@ -1175,7 +1176,7 @@ create or replace function public.px_mod_google_get(p_pw text) returns jsonb lan
 declare v text := px_mod_check(p_pw);
 begin
   if v <> 'ok' then return jsonb_build_object('err', v); end if;
-  return (select jsonb_build_object('game', req_game, 'helper', req_helper, 'linked', (select count(*) from px_google), 'players', (select count(*) from px_players), 'minver', nullif(min_ver, 0), 'upd', case when upd_until > now() then px_ms(upd_until) end) from px_mod_cfg where id = 1);
+  return (select jsonb_build_object('game', req_game, 'helper', req_helper, 'linked', (select count(*) from px_google), 'players', (select count(*) from px_players), 'minver', nullif(min_ver, 0), 'by', byline, 'upd', case when upd_until > now() then px_ms(upd_until) end) from px_mod_cfg where id = 1);
 end $$;
 -- the owner pauses every game for an update (and lets them back in when it's done); it ends by itself after p_mins in case it's forgotten
 create or replace function public.px_mod_update_mode(p_pw text, p_on boolean, p_mins int default 20) returns jsonb language plpgsql security definer set search_path = public as $$
@@ -1713,6 +1714,19 @@ begin
   return jsonb_build_object('ok', true, 'items', res);
 end $$;
 grant execute on function public.px_shop_get(), public.px_mod_shop_save(text, jsonb) to anon, authenticated;
+
+-- ---------- the line on the start screen ("Made by ..."): the creator can change it ----------
+create or replace function public.px_mod_byline(p_pw text, p_text text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw); t text;
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  t := left(btrim(regexp_replace(coalesce(p_text, ''), '[<>[:cntrl:]]', '', 'g')), 60);
+  update px_mod_cfg set byline = nullif(t, '') where id = 1;
+  insert into px_mod_log (act, target, note) values ('start screen line', '', left(t, 60));
+  return jsonb_build_object('ok', true, 'by', nullif(t, ''));
+end $$;
+grant execute on function public.px_mod_byline(text, text) to anon, authenticated;
+
 
 -- ONE-TIME, PRIVATE: set the mod password by running this single line yourself in the SQL Editor (don't save it into this file):
 --   select px_mod_set_password('your password here');
