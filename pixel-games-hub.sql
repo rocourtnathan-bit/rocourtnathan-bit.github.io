@@ -1692,8 +1692,10 @@ grant execute on function public.px_net_put(text, text, jsonb), public.px_mod_ne
 -- The list of things for sale (name, what it gives, price) lives here, so the creator can add, remove, rename and re-price them in the
 -- panel without a new version of the game. null = never edited: the game shows its built-in starting list. Buying isn't switched on yet.
 alter table public.px_mod_cfg add column if not exists shop jsonb;
+-- v21: the "under development" switch for buying (true = pressing Buy says under development for everyone, even for items that have a payment link)
+alter table public.px_mod_cfg add column if not exists shop_dev boolean not null default true;
 create or replace function public.px_shop_get() returns jsonb language sql stable security definer set search_path = public as $$
-  select jsonb_build_object('items', (select shop from px_mod_cfg where id = 1)) $$;
+  select jsonb_build_object('items', (select shop from px_mod_cfg where id = 1), 'dev', coalesce((select shop_dev from px_mod_cfg where id = 1), true)) $$;
 create or replace function public.px_mod_shop_save(p_pw text, p_items jsonb) returns jsonb language plpgsql security definer set search_path = public as $$
 declare v text := px_mod_check(p_pw); res jsonb;
 begin
@@ -1705,10 +1707,11 @@ begin
       case when (e ->> 'kind') in ('levels', 'cash', 'clothes', 'other') then e ->> 'kind' else 'other' end kd,
       case when (e ->> 'amount') ~ '^[0-9]{1,6}$' then (e ->> 'amount')::int else 0 end am,
       case when (e ->> 'ref') ~ '^[a-z0-9_]{1,40}$' then e ->> 'ref' else '' end rf,
-      case when (e ->> 'price') ~ '^[0-9]{1,3}(\.[0-9]{1,2})?$' then (e ->> 'price')::numeric else 0 end pr
+      case when (e ->> 'price') ~ '^[0-9]{1,3}(\.[0-9]{1,2})?$' then (e ->> 'price')::numeric else 0 end pr,
+      case when (e ->> 'link') ~ '^https://[A-Za-z0-9._~:/?#@!$&()*+,;=%-]{4,250}$' then e ->> 'link' else '' end lk
     from jsonb_array_elements(p_items) with ordinality t (e, ord)),
   b as (select *, case when count(*) over (partition by id0) > 1 then id0 || '_' || ord else id0 end id from a where nm <> '')
-  select coalesce(jsonb_agg(jsonb_build_object('id', id, 'name', nm, 'kind', kd, 'amount', am, 'ref', rf, 'price', pr) order by ord), '[]'::jsonb) into res from b;
+  select coalesce(jsonb_agg(jsonb_build_object('id', id, 'name', nm, 'kind', kd, 'amount', am, 'ref', rf, 'price', pr, 'link', lk) order by ord), '[]'::jsonb) into res from b;
   update px_mod_cfg set shop = res where id = 1;
   insert into px_mod_log (act, note) values ('shop items', jsonb_array_length(res)::text || ' items');
   return jsonb_build_object('ok', true, 'items', res);
@@ -1734,3 +1737,77 @@ grant execute on function public.px_mod_byline(text, text) to anon, authenticate
 -- It has to be different from yours:
 --   select px_mod_set_helper_password('their password here');
 -- To switch their access off:   select px_mod_clear_helper_password();
+
+-- ---------- v21: buying in the Online Shop ----------
+-- How a purchase gets to a player (the game never decides "this player paid", only this table can):
+--   1. The player taps Buy. The game opens the item's payment link (Stripe) with the player's id on it.
+--   2. Stripe tells the server (the small "stripe-webhook" function, see pixel-games-stripe-setup.md) the payment worked.
+--   3. That function writes a row here, using the server's secret key. The game's own key can't write here at all.
+--   4. The game asks "anything paid for me?" (px_shop_claims), then takes it once (px_shop_claim) and gives the levels / credits / outfit.
+-- provider_ref (the Stripe checkout id) is unique, so the same payment can never be recorded twice.
+create table if not exists public.px_purchases (
+  id bigint generated always as identity primary key,
+  uid text not null,
+  item_id text not null,
+  name text not null default '',
+  kind text not null default 'other',
+  amount int not null default 0,
+  ref text not null default '',
+  price numeric not null default 0,
+  provider text not null default 'stripe',
+  provider_ref text unique,
+  status text not null default 'paid',        -- paid (waiting to be taken) → claimed (given) | refunded (taken back before it was claimed)
+  created_at timestamptz not null default now(),
+  claimed_at timestamptz);
+create index if not exists px_purchases_uid on public.px_purchases (uid, status);
+alter table public.px_purchases enable row level security;   -- no policies: the game's key can't read or write the table itself
+revoke all on public.px_purchases from anon, authenticated;
+
+-- what is waiting for this player (nothing is changed)
+create or replace function public.px_shop_claims(p_uid text) returns jsonb language sql stable security definer set search_path = public as $$
+  select jsonb_build_object('items', coalesce((select jsonb_agg(jsonb_build_object('id', id, 'item', item_id, 'name', name, 'kind', kind, 'amount', amount, 'ref', ref) order by id)
+    from px_purchases where uid = p_uid and status = 'paid' and p_uid ~ '^[a-z0-9]{8,32}$'), '[]'::jsonb)) $$;
+-- take these purchases (once: a second call gets nothing). Returns exactly the ones this call took.
+create or replace function public.px_shop_claim(p_uid text, p_ids bigint[]) returns jsonb language plpgsql security definer set search_path = public as $$
+declare res jsonb;
+begin
+  if p_uid !~ '^[a-z0-9]{8,32}$' or p_ids is null or cardinality(p_ids) = 0 or cardinality(p_ids) > 50 then return jsonb_build_object('items', '[]'::jsonb); end if;
+  with c as (update px_purchases set status = 'claimed', claimed_at = now() where uid = p_uid and status = 'paid' and id = any (p_ids)
+    returning id, item_id, name, kind, amount, ref)
+  select coalesce(jsonb_agg(jsonb_build_object('id', id, 'item', item_id, 'name', name, 'kind', kind, 'amount', amount, 'ref', ref) order by id), '[]'::jsonb) into res from c;
+  return jsonb_build_object('items', res);
+end $$;
+grant execute on function public.px_shop_claims(text), public.px_shop_claim(text, bigint[]) to anon, authenticated;
+
+-- the creator's list of recent purchases, and "take back" for one nobody has claimed yet (a refund)
+create or replace function public.px_mod_purchases(p_pw text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw);
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  return jsonb_build_object('rows', coalesce((select jsonb_agg(r order by (r ->> 'id')::bigint desc) from (
+    select jsonb_build_object('id', p.id, 'uid', p.uid, 'player', (select name from px_players q where q.uid = p.uid), 'name', p.name, 'price', p.price, 'status', p.status, 'at', p.created_at, 'claimed', p.claimed_at) r
+    from px_purchases p order by p.id desc limit 40) t), '[]'::jsonb),
+    'paid', (select coalesce(sum(price), 0) from px_purchases where status in ('paid', 'claimed')),
+    'waiting', (select count(*) from px_purchases where status = 'paid'));
+end $$;
+create or replace function public.px_mod_purchase_refund(p_pw text, p_id bigint) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw); n int;
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  update px_purchases set status = 'refunded' where id = p_id and status = 'paid'; get diagnostics n = row_count;
+  if n = 0 then return jsonb_build_object('err', 'already given to the player (or not found): nothing to take back'); end if;
+  insert into px_mod_log (act, note) values ('purchase refunded', p_id::text);
+  return jsonb_build_object('ok', true);
+end $$;
+grant execute on function public.px_mod_purchases(text), public.px_mod_purchase_refund(text, bigint) to anon, authenticated;
+
+-- the creator's "under development" switch: yes = nothing can be bought yet, no = items with a payment link can be bought
+create or replace function public.px_mod_shop_dev(p_pw text, p_on boolean) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw);
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  update px_mod_cfg set shop_dev = coalesce(p_on, true) where id = 1;
+  insert into px_mod_log (act, note) values ('shop under development', case when coalesce(p_on, true) then 'yes' else 'no (buying on)' end);
+  return jsonb_build_object('ok', true, 'dev', coalesce(p_on, true));
+end $$;
+grant execute on function public.px_mod_shop_dev(text, boolean) to anon, authenticated;
