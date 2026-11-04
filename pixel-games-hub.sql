@@ -1162,7 +1162,8 @@ end $$;
 -- what every game is told each time it checks in
 alter table public.px_mod_cfg add column if not exists byline text;   -- (the start screen line, below)
 -- v22: is Pixel Football open to everyone? (false = only staff can open it; everyone else sees "under development")
-alter table public.px_mod_cfg add column if not exists football_public boolean not null default false;
+alter table public.px_mod_cfg add column if not exists football_public boolean not null default true;
+alter table public.px_mod_cfg alter column football_public set default true;   -- (v23: open to everyone unless the creator makes it private)
 create or replace function public.px_pub_cfg() returns jsonb language sql stable security definer set search_path = public as $$
   select jsonb_build_object('reqg', coalesce((select req_game from px_mod_cfg where id = 1), false), 'upd', coalesce((select upd_until > now() from px_mod_cfg where id = 1), false), 'dm', coalesce((select dm_mode from px_mod_cfg where id = 1), 'all'), 'minv', (select nullif(min_ver, 0) from px_mod_cfg where id = 1), 'by', (select byline from px_mod_cfg where id = 1), 'fb', coalesce((select football_public from px_mod_cfg where id = 1), false)) $$;
 -- the owner's switches
