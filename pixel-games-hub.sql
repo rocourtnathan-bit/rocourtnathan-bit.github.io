@@ -1161,8 +1161,10 @@ begin
 end $$;
 -- what every game is told each time it checks in
 alter table public.px_mod_cfg add column if not exists byline text;   -- (the start screen line, below)
+-- v22: is Pixel Football open to everyone? (false = only staff can open it; everyone else sees "under development")
+alter table public.px_mod_cfg add column if not exists football_public boolean not null default false;
 create or replace function public.px_pub_cfg() returns jsonb language sql stable security definer set search_path = public as $$
-  select jsonb_build_object('reqg', coalesce((select req_game from px_mod_cfg where id = 1), false), 'upd', coalesce((select upd_until > now() from px_mod_cfg where id = 1), false), 'dm', coalesce((select dm_mode from px_mod_cfg where id = 1), 'all'), 'minv', (select nullif(min_ver, 0) from px_mod_cfg where id = 1), 'by', (select byline from px_mod_cfg where id = 1)) $$;
+  select jsonb_build_object('reqg', coalesce((select req_game from px_mod_cfg where id = 1), false), 'upd', coalesce((select upd_until > now() from px_mod_cfg where id = 1), false), 'dm', coalesce((select dm_mode from px_mod_cfg where id = 1), 'all'), 'minv', (select nullif(min_ver, 0) from px_mod_cfg where id = 1), 'by', (select byline from px_mod_cfg where id = 1), 'fb', coalesce((select football_public from px_mod_cfg where id = 1), false)) $$;
 -- the owner's switches
 create or replace function public.px_mod_google_cfg(p_pw text, p_game boolean, p_helper boolean) returns jsonb language plpgsql security definer set search_path = public as $$
 declare v text := px_mod_check(p_pw);
@@ -1176,7 +1178,7 @@ create or replace function public.px_mod_google_get(p_pw text) returns jsonb lan
 declare v text := px_mod_check(p_pw);
 begin
   if v <> 'ok' then return jsonb_build_object('err', v); end if;
-  return (select jsonb_build_object('game', req_game, 'helper', req_helper, 'linked', (select count(*) from px_google), 'players', (select count(*) from px_players), 'minver', nullif(min_ver, 0), 'by', byline, 'upd', case when upd_until > now() then px_ms(upd_until) end) from px_mod_cfg where id = 1);
+  return (select jsonb_build_object('game', req_game, 'helper', req_helper, 'linked', (select count(*) from px_google), 'players', (select count(*) from px_players), 'minver', nullif(min_ver, 0), 'by', byline, 'fb', football_public, 'upd', case when upd_until > now() then px_ms(upd_until) end) from px_mod_cfg where id = 1);
 end $$;
 -- the owner pauses every game for an update (and lets them back in when it's done); it ends by itself after p_mins in case it's forgotten
 create or replace function public.px_mod_update_mode(p_pw text, p_on boolean, p_mins int default 20) returns jsonb language plpgsql security definer set search_path = public as $$
@@ -1811,3 +1813,14 @@ begin
   return jsonb_build_object('ok', true, 'dev', coalesce(p_on, true));
 end $$;
 grant execute on function public.px_mod_shop_dev(text, boolean) to anon, authenticated;
+
+-- the creator makes Pixel Football public (everyone) or private (staff only)
+create or replace function public.px_mod_football(p_pw text, p_public boolean) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw);
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  update px_mod_cfg set football_public = coalesce(p_public, false) where id = 1;
+  insert into px_mod_log (act, note) values ('football', case when coalesce(p_public, false) then 'public: everyone can play' else 'private: staff only' end);
+  return jsonb_build_object('ok', true, 'fb', coalesce(p_public, false));
+end $$;
+grant execute on function public.px_mod_football(text, boolean) to anon, authenticated;
