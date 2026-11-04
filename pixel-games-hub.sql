@@ -184,7 +184,7 @@ begin
   select count(*) into onl from px_players where seen > now() - interval '40 seconds';
   select * into bn from px_bans where uid = p_uid and kind = 'ban' and (until is null or until > now());
   select * into mu from px_bans where uid = p_uid and kind = 'mute' and (until is null or until > now());
-  select jsonb_build_object('id', id, 'x', x) into ann from px_announce where until > now() order by id desc limit 1;
+  ann := px_ann_json(p_uid);
   -- an old copy of the game (below the minimum version the creator set) that can't show its own update screen (older than v15): shut like a ban until it's
   -- updated. Copies from v13 up close the whole game; older ones (or ones that don't say) lose the online doors. Staff are never locked out.
   select min_ver into mv from px_mod_cfg where id = 1;
@@ -609,7 +609,7 @@ begin
   if to_regclass('public.turf') is not null then
     begin execute 'select count(*), count(distinct owner_uid) from public.turf where owner_id is not null and claimed_at >= px_turf_week()' into blocks, owners; exception when others then blocks := 0; end;
   end if;
-  select jsonb_build_object('id', id, 'x', x, 'until', px_ms(until)) into ann from px_announce where until > now() order by id desc limit 1;
+  ann := px_ann_json(null);
   select jsonb_build_object(
     'players', count(*), 'online', count(*) filter (where seen > now() - interval '40 seconds'),
     'day', count(*) filter (where seen > now() - interval '1 day'), 'week', count(*) filter (where seen > now() - interval '7 days'),
@@ -622,7 +622,7 @@ begin
     'mutes', (select count(*) from px_bans where kind = 'mute' and (until is null or until > now())),
     'matches', (select count(*) from px_matches where done), 'matches_day', (select count(*) from px_matches where done and at > now() - interval '1 day'),
     'chat_hour', (select count(*) from px_msgs where kind = 'm' and at > now() - interval '1 hour'),
-    'blocks', blocks, 'owners', owners, 'vers', vers, 'ann', ann,
+    'blocks', blocks, 'owners', owners, 'vers', vers, 'ann', ann, 'polls', px_ann_polls(),
     'grades', (select coalesce(jsonb_object_agg(coalesce(grade, '?'), n), '{}') from (select grade, count(*) n from px_players group by 1) g),
     'suggest_new', (select count(*) from px_suggest where status = 'new'));
   if px_is_helper() then
@@ -842,15 +842,16 @@ begin
 end $$;
 
 -- a message every player sees once, the next time their game checks in
-create or replace function public.px_mod_announce(p_pw text, p_text text, p_hours numeric) returns jsonb language plpgsql security definer set search_path = public as $$
+drop function if exists public.px_mod_announce(text, text, numeric);
+create or replace function public.px_mod_announce(p_pw text, p_text text, p_hours numeric, p_poll boolean default false) returns jsonb language plpgsql security definer set search_path = public as $$
 declare v text := px_mod_check_h(p_pw);
 begin
   if v <> 'ok' then return jsonb_build_object('err', v); end if;
   if px_is_helper() then p_hours := least(coalesce(p_hours, 1), case when px_rank() = 'moderator' then 24 else 1 end); end if;   -- (a helper's announcement lasts an hour at most, a moderator's a day)
   update px_announce set until = now() where until > now();
   if p_text is not null and length(btrim(p_text)) > 0 then
-    insert into px_announce (x, until) values (left(btrim(p_text), 200), now() + make_interval(secs => (least(greatest(coalesce(p_hours, 6), 0.1), 720) * 3600)::int));
-    insert into px_mod_log (act, note) values ('announce', left(btrim(p_text), 120));
+    insert into px_announce (x, until, poll) values (left(btrim(p_text), 200), now() + make_interval(secs => (least(greatest(coalesce(p_hours, 6), 0.1), 720) * 3600)::int), coalesce(p_poll, false));
+    insert into px_mod_log (act, note) values ('announce', left(btrim(p_text), 110) || case when coalesce(p_poll, false) then ' (with a poll)' else '' end);
   else insert into px_mod_log (act, note) values ('announcement cleared', ''); end if;
   return jsonb_build_object('ok', true);
 end $$;
@@ -911,7 +912,7 @@ grant execute on function public.px_edit_done(text, text, bigint[]), public.px_m
 grant execute on function public.px_mod_overview(text), public.px_mod_players(text, text, text, text, int, int), public.px_mod_player(text, text), public.px_mod_chat(text, int, bigint),
   public.px_mod_delmsg(text, bigint, text), public.px_mod_ban(text, text, text, numeric, text), public.px_mod_unban(text, text, text), public.px_mod_bans(text),
   public.px_mod_elo(text, text, text, int, boolean), public.px_mod_rename(text, text, text), public.px_mod_matches(text, int), public.px_mod_turf(text),
-  public.px_mod_turf_release(text, text, text), public.px_mod_announce(text, text, numeric), public.px_mod_log(text, int) to anon, authenticated;
+  public.px_mod_turf_release(text, text, text), public.px_mod_announce(text, text, numeric, boolean), public.px_mod_log(text, int) to anon, authenticated;
 
 
 -- ===== grades, suggestions, room codes, and a no-websocket way to connect =====
@@ -1825,3 +1826,34 @@ begin
   return jsonb_build_object('ok', true, 'fb', coalesce(p_public, false));
 end $$;
 grant execute on function public.px_mod_football(text, boolean) to anon, authenticated;
+
+
+-- ===== v24: a poll on an announcement (a check or an X: do people like the update?) =====
+alter table public.px_announce add column if not exists poll boolean not null default false;
+create table if not exists public.px_ann_votes (ann_id bigint not null, uid text not null, v smallint not null check (v in (1, -1)), at timestamptz not null default now(), primary key (ann_id, uid));
+alter table public.px_ann_votes enable row level security;
+revoke all on public.px_ann_votes from anon, authenticated;
+-- the live announcement, with its poll totals and (for a player) how that player voted
+create or replace function public.px_ann_json(p_uid text) returns jsonb language sql stable security definer set search_path = public as $$
+  select jsonb_build_object('id', a.id, 'x', a.x, 'poll', a.poll, 'until', px_ms(a.until),
+    'yes', (select count(*) from px_ann_votes where ann_id = a.id and v = 1), 'no', (select count(*) from px_ann_votes where ann_id = a.id and v = -1),
+    'mine', (select v from px_ann_votes where ann_id = a.id and uid = p_uid))
+  from px_announce a where a.until > now() order by a.id desc limit 1
+$$;
+-- the last few polls with their results (for the creator panel)
+create or replace function public.px_ann_polls() returns jsonb language sql stable security definer set search_path = public as $$
+  select coalesce(jsonb_agg(q order by (q ->> 'id')::bigint desc), '[]'::jsonb) from (
+    select jsonb_build_object('id', a.id, 'x', a.x, 'at', px_ms(a.at), 'live', a.until > now(),
+      'yes', (select count(*) from px_ann_votes where ann_id = a.id and v = 1), 'no', (select count(*) from px_ann_votes where ann_id = a.id and v = -1)) q
+    from px_announce a where a.poll order by a.id desc limit 6) z
+$$;
+create or replace function public.px_ann_vote(p_uid text, p_key text, p_id bigint, p_v int) returns jsonb language plpgsql security definer set search_path = public as $$
+begin
+  perform px_auth(p_uid, p_key);
+  if not exists (select 1 from px_announce where id = p_id and poll and until > now()) then return jsonb_build_object('err', 'closed'); end if;
+  if p_v in (1, -1) then insert into px_ann_votes (ann_id, uid, v) values (p_id, p_uid, p_v) on conflict (ann_id, uid) do update set v = excluded.v, at = now();
+  else delete from px_ann_votes where ann_id = p_id and uid = p_uid; end if;
+  return jsonb_build_object('ok', true, 'ann', px_ann_json(p_uid));
+end $$;
+revoke all on function public.px_ann_json(text), public.px_ann_polls() from public, anon, authenticated;
+grant execute on function public.px_ann_vote(text, text, bigint, int) to anon, authenticated;
