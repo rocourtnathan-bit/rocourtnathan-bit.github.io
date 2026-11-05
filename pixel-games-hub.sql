@@ -124,7 +124,7 @@ begin
   if p_uid is null or length(p_uid) < 8 or length(p_uid) > 32 or p_key is null or length(p_key) < 16 then raise exception 'bad id'; end if;
   select * into r from px_players where uid = p_uid;
   if not found then
-    insert into px_players (uid, keyhash, name) values (p_uid, md5(p_key || ':pxk'), coalesce(left(p_name, 16), 'Player')) returning * into r;
+    insert into px_players (uid, keyhash, name) values (p_uid, md5(p_key || ':pxk'), coalesce(px_name_clean(p_name), 'Player')) returning * into r;
   elsif r.keyhash <> md5(p_key || ':pxk') then raise exception 'bad key';
   end if;
   return r;
@@ -179,9 +179,10 @@ declare r px_players; msgs jsonb; ppl jsonb := null; mx bigint; onl int; bn px_b
 begin
   r := px_auth(p_uid, p_key, p_name);
   perform px_google_touch(p_uid);   -- (signed in with Google? remember whose account this device is)
-  update px_players set name = coalesce(left(p_name, 16), name), lv = coalesce(p_lv, lv), rb = coalesce(p_rb, rb), st = coalesce(left(p_st, 40), st), seen = now(),
+  update px_players set name = case when name_lock then name else coalesce(px_name_clean(p_name), name) end, iph = coalesce(px_net_tag(), iph), lv = coalesce(p_lv, lv), rb = coalesce(p_rb, rb), st = coalesce(left(p_st, 40), st), seen = now(),
     info = case when p_info is not null and jsonb_typeof(p_info) = 'object' and length(p_info::text) < 1800 then p_info else info end where uid = p_uid returning * into r;
   select count(*) into onl from px_players where seen > now() - interval '40 seconds';
+  perform px_ban_follow(p_uid, p_info);   -- (a ban or mute on another id this device used, or this Google account, follows the player here)
   select * into bn from px_bans where uid = p_uid and kind = 'ban' and (until is null or until > now());
   select * into mu from px_bans where uid = p_uid and kind = 'mute' and (until is null or until > now());
   ann := px_ann_json(p_uid);
@@ -233,8 +234,10 @@ begin
   if px_is_banned(p_uid) then raise exception 'banned'; end if;
   if p_kind = 'm' and px_is_banned(p_uid, 'mute') then raise exception 'muted'; end if;
   if p_kind = 'm' and r.grade is null then raise exception 'pick a grade first'; end if;
+  if px_staff_role(p_uid) is null then perform px_chat_rules(p_uid, p_kind); end if;
   if p_kind not in ('m', 'inv', 'invno', 'invok') then raise exception 'bad kind'; end if;
   if p_kind = 'm' and (p_x is null or length(btrim(p_x)) = 0) then raise exception 'empty'; end if;
+  if p_kind = 'm' and px_chat_guard(r, p_x) then return -1; end if;   -- (-1: the chat just muted them; the line isn't posted, the mute is kept)
   if p_kind <> 'm' and p_to is null then raise exception 'no target'; end if;
   select count(*) into recent from px_msgs where uid = p_uid and at > now() - interval '8 seconds';
   if recent >= 6 then raise exception 'slow down'; end if;
@@ -250,6 +253,7 @@ declare me px_queue; o px_queue;
 begin
   perform px_auth(p_uid, p_key);
   if px_is_banned(p_uid) then delete from px_queue where uid = p_uid; return jsonb_build_object('ban', true); end if;
+  if coalesce((select online_off from px_mod_cfg where id = 1), false) and px_staff_role(p_uid) is null then delete from px_queue where uid = p_uid; return jsonb_build_object('off', true); end if;
   select * into me from px_queue where uid = p_uid;
   if found and me.paired_with is not null then
     delete from px_queue where uid = p_uid;
@@ -508,16 +512,25 @@ end $$;
 
 -- 'ok' (the owner) | 'helper' (the weaker account) | 'wrong' | 'locked' | 'setup' (it returns instead of raising so a wrong guess is still counted)
 create or replace function public.px_mod_check(p_pw text) returns text language plpgsql security definer set search_path = public as $$
-declare c px_mod_cfg; su text; sk text; pl px_players; st px_staff;
+declare c px_mod_cfg; su text; sk text; tk text; pl px_players; st px_staff; rl text;
 begin
-  perform set_config('px.who', '', true); perform set_config('px.hname', '', true); perform set_config('px.rank', '', true); perform set_config('px.suid', '', true);
-  -- staff (helper, moderator, creator) are known by who they are, not by a password: "<player id>|<their secret key>"
-  if p_pw is not null and position('|' in p_pw) > 0 and length(p_pw) <= 120 then
-    su := split_part(p_pw, '|', 1); sk := substr(p_pw, position('|' in p_pw) + 1);
+  perform set_config('px.who', '', true); perform set_config('px.hname', '', true); perform set_config('px.rank', '', true); perform set_config('px.suid', '', true); perform set_config('px.tok', '', true);
+  -- staff (helper, moderator, admin) are known by who they are, not by a password: "<player id>|<their secret key>" and, once they
+  -- have a panel PIN, "|<the session the PIN opened>"
+  if p_pw is not null and position('|' in p_pw) > 0 and length(p_pw) <= 200 then
+    su := split_part(p_pw, '|', 1); sk := split_part(p_pw, '|', 2); tk := nullif(split_part(p_pw, '|', 3), '');
     select * into pl from px_players where uid = su and keyhash = md5(sk || ':pxk');
     if not found then return 'wrong'; end if;
+    rl := px_staff_role(su);
+    if rl is null then return 'wrong'; end if;
+    insert into px_staff (uid, role, name) values (su, rl, pl.name) on conflict (uid) do nothing;   -- (staff by Google account: this device joins the list)
     select * into st from px_staff where uid = su;
-    if not found then return 'wrong'; end if;
+    -- the panel PIN: needed once a staff member has set one, and by everyone when an admin switched that on
+    if st.pin_hash is not null or coalesce((select req_pin from px_mod_cfg where id = 1), false) then
+      if st.pin_hash is null then return 'needpin'; end if;
+      if tk is null or not exists (select 1 from px_staff_sessions s where s.uid = su and s.token_hash = encode(sha256(convert_to(tk, 'utf8')), 'hex') and s.expires > now()) then return 'pin'; end if;
+      perform set_config('px.tok', encode(sha256(convert_to(tk, 'utf8')), 'hex'), true);
+    end if;
     perform set_config('px.hname', coalesce(pl.name, 'Staff'), true); perform set_config('px.suid', su, true);
     if st.role = 'owner' then perform set_config('px.who', 'owner', true); perform set_config('px.rank', 'creator', true); return 'ok'; end if;
     perform set_config('px.who', 'helper', true); perform set_config('px.rank', case when st.role = 'moderator' then 'moderator' else 'helper' end, true);
@@ -540,6 +553,7 @@ begin
   else
     update px_mod_cfg set fails = c.fails + 1 where id = 1;
   end if;
+  insert into px_sec_log (act, note, iph) values ('wrong creator password', (c.fails + 1) || ' in a row', px_net_tag());
   return 'wrong';
 end $$;
 create or replace function public.px_mod_check_h(p_pw text) returns text language plpgsql security definer set search_path = public as $$
@@ -587,6 +601,9 @@ begin
     insert into px_staff (uid, role, name) values (p_uid, 'owner', nm) on conflict (uid) do update set role = 'owner', name = coalesce(excluded.name, px_staff.name);
   end if;
   if v = 'helper' then insert into px_mod_log (act, target, note) values ('staff login', coalesce(current_setting('px.suid', true), '?'), px_rank()); end if;
+  insert into px_sec_log (act, uid, name, note, iph) values (case when position('|' in coalesce(p_pw, '')) = 0 then 'signed in with the creator password' else 'opened the panel' end,
+    coalesce(nullif(current_setting('px.suid', true), ''), p_uid), coalesce(nullif(current_setting('px.hname', true), ''), (select name from px_players where uid = p_uid)), px_rank(), px_net_tag());
+  update px_staff set last_login = now() where uid = coalesce(nullif(current_setting('px.suid', true), ''), p_uid);
   return jsonb_build_object('role', case when v = 'ok' then 'owner' else 'helper' end, 'rank', px_rank(), 'lv_left', px_levels_left(), 'name', nullif(current_setting('px.hname', true), ''), 'email', px_google_email());
 end $$;
 
@@ -682,7 +699,7 @@ begin
   select jsonb_build_object('w', count(*) filter (where won), 'l', count(*) filter (where not won), 'fast', count(*) filter (where won and secs < 12), 'min', min(secs) filter (where won), 'avg', avg(secs) filter (where won),
     'recent', coalesce((select jsonb_agg(jsonb_build_object('b', block, 's', round(secs::numeric, 1), 'won', won, 'from', owner_name, 'at', px_ms(at)) order by id desc) from (select * from px_turf_log where uid = p_uid order by id desc limit 8) r), '[]')) into tf
     from px_turf_log where uid = p_uid and at > now() - interval '14 days';
-  return jsonb_build_object('linked', lk, 'turf', tf, 'uid', pl.uid, 'n', pl.name, 'grade', pl.grade, 'lv', pl.lv, 'rb', pl.rb, 'st', pl.st, 'seen', px_ms(pl.seen), 'created', px_ms(pl.created), 'on', pl.seen > now() - interval '40 seconds',
+  return jsonb_build_object('nlock', pl.name_lock, 'prev', (select coalesce(jsonb_agg(jsonb_build_object('uid', o.uid, 'n', o.name, 'seen', px_ms(o.seen), 'ban', px_is_banned(o.uid))), '[]'::jsonb) from px_players o where o.uid = any(coalesce(pl.prev, '{}')) and o.uid <> pl.uid)) || jsonb_build_object('linked', lk, 'turf', tf, 'uid', pl.uid, 'n', pl.name, 'grade', pl.grade, 'lv', pl.lv, 'rb', pl.rb, 'st', pl.st, 'seen', px_ms(pl.seen), 'created', px_ms(pl.created), 'on', pl.seen > now() - interval '40 seconds',
     'ef', pl.elo_f, 'gf', pl.gf, 'wf', pl.wf, 'eh', pl.elo_h, 'gh', pl.gh, 'wh', pl.wh, 'info', pl.info, 'matches', ms, 'chat', ch, 'blocks', bl, 'bans', bans, 'google', (select g.email from px_google g where g.uid = p_uid), 'cloud', (select px_ms(cl.at) from px_cloud cl join px_google g2 on g2.sub = cl.sub where g2.uid = p_uid), 'staff', (select role from px_staff where uid = p_uid), 'sname', (select hname from px_staff where uid = p_uid), 'lv_left', px_levels_left(), 'helper', px_is_helper());
 end $$;
 
@@ -732,6 +749,7 @@ begin
   insert into px_bans (uid, kind, name, reason, at, until, "full", "by", by_name) values (p_uid, p_kind, nm, left(coalesce(p_reason, ''), 120), now(), case when hrs is null or hrs <= 0 then null else now() + make_interval(secs => (hrs * 3600)::int) end, false, case when px_is_helper() then 'helper' else 'owner' end, case when px_is_helper() then coalesce(nullif(current_setting('px.hname', true), ''), 'Helper') end)
     on conflict (uid, kind) do update set name = excluded.name, reason = excluded.reason, at = now(), until = excluded.until, "full" = false, "by" = excluded."by", by_name = excluded.by_name;
   if p_kind = 'ban' then delete from px_queue where uid = p_uid; end if;
+  delete from px_ban_ok where uid = p_uid; update px_bans set src = null where uid = p_uid and kind = p_kind;
   insert into px_mod_log (act, target, note) values (p_kind, p_uid || ' (' || nm || ')', coalesce(case when hrs is null or hrs <= 0 then 'for good' else hrs || ' h' end, '') || ' · ' || left(coalesce(p_reason, ''), 120));
   return jsonb_build_object('ok', true);
 end $$;
@@ -747,7 +765,7 @@ begin
   if nm is null then return jsonb_build_object('err', 'nobody'); end if;
   insert into px_bans (uid, kind, name, reason, at, until, "full", "by", by_name) values (p_uid, 'ban', nm, left(coalesce(p_reason, ''), 120), now(), case when p_hours is null or p_hours <= 0 then null else now() + make_interval(secs => (p_hours * 3600)::int) end, true, case when px_is_helper() then 'helper' else 'owner' end, case when px_is_helper() then coalesce(nullif(current_setting('px.hname', true), ''), 'Helper') end)
     on conflict (uid, kind) do update set name = excluded.name, reason = excluded.reason, at = now(), until = excluded.until, "full" = true, "by" = excluded."by", by_name = excluded.by_name;
-  delete from px_queue where uid = p_uid;
+  delete from px_queue where uid = p_uid; delete from px_ban_ok where uid = p_uid; update px_bans set src = null where uid = p_uid and kind = 'ban';
   insert into px_mod_log (act, target, note) values ('ban from game', p_uid || ' (' || nm || ')', coalesce(case when p_hours is null or p_hours <= 0 then 'for good' else p_hours || ' h' end, '') || ' · ' || left(coalesce(p_reason, ''), 120));
   return jsonb_build_object('ok', true);
 end $$;
@@ -764,7 +782,8 @@ begin
       return jsonb_build_object('err', 'owner only');
     end if;
   end if;
-  delete from px_bans where uid = p_uid and (p_kind is null or kind = p_kind);
+  delete from px_bans where (uid = p_uid or src = p_uid) and (p_kind is null or kind = p_kind);
+  insert into px_ban_ok (uid) values (p_uid) on conflict do nothing;   -- (cleared by a mod: an old id's ban doesn't follow onto this one again)
   insert into px_mod_log (act, target, note) values ('lift ' || coalesce(p_kind, 'ban+mute'), p_uid, '');
   return jsonb_build_object('ok', true);
 end $$;
@@ -773,9 +792,9 @@ create or replace function public.px_mod_bans(p_pw text) returns jsonb language 
 declare v text := px_mod_check_h(p_pw); rows jsonb;
 begin
   if v <> 'ok' then return jsonb_build_object('err', v); end if;
-  select coalesce(jsonb_agg(jsonb_build_object('uid', uid, 'n', coalesce((select name from px_players p where p.uid = b.uid), b.name), 'k', kind, 'full', "full", 'why', reason, 'by', "by", 'bn', by_name, 'at', px_ms(at), 'until', px_ms(until)) order by at desc), '[]') into rows
+  select coalesce(jsonb_agg(jsonb_build_object('uid', uid, 'n', coalesce((select name from px_players p where p.uid = b.uid), b.name), 'k', kind, 'full', "full", 'why', reason, 'by', "by", 'bn', by_name, 'at', px_ms(at), 'until', px_ms(until), 'src', src, 'srcn', (select name from px_players p where p.uid = b.src)) order by at desc), '[]') into rows
     from px_bans b where until is null or until > now();
-  return jsonb_build_object('rows', rows);
+  return jsonb_build_object('rows', rows, 'evaders', px_evaders());
 end $$;
 
 -- fix a rating (reset to 1000 and 0 games, or set it by hand), or an unfit name
@@ -800,7 +819,7 @@ begin
   if v <> 'ok' then return jsonb_build_object('err', v); end if;
   if px_is_helper() and px_is_staff(p_uid) then return jsonb_build_object('err', 'staff'); end if;
   select name into old from px_players where uid = p_uid;
-  update px_players set name = left(coalesce(nullif(btrim(p_name), ''), 'Player'), 16) where uid = p_uid;
+  update px_players set name = left(coalesce(nullif(btrim(p_name), ''), 'Player'), 16), name_lock = true where uid = p_uid;
   insert into px_mod_log (act, target, note) values ('rename', p_uid, coalesce(old, '?') || ' → ' || left(coalesce(p_name, 'Player'), 16));
   return jsonb_build_object('ok', true);
 end $$;
@@ -1610,6 +1629,10 @@ begin
   if found and cur.role = 'owner' then return jsonb_build_object('err', 'creator'); end if;
   if p_rank is null or p_rank in ('', 'none') then
     delete from px_staff where uid = p_uid; insert into px_mod_log (act, target, note) values ('staff removed', p_uid || ' (' || nm || ')', '');
+  elsif p_rank = 'admin' then
+    insert into px_staff (uid, role, name) values (p_uid, 'owner', nm) on conflict (uid) do update set role = 'owner', name = excluded.name;
+    insert into px_mod_log (act, target, note) values ('staff set', p_uid || ' (' || nm || ')', 'admin');
+    insert into px_sec_log (act, uid, name, note, iph) values ('made an admin', p_uid, nm, 'by ' || coalesce(nullif(current_setting('px.hname', true), ''), 'an admin'), px_net_tag());
   elsif p_rank in ('helper', 'moderator') then
     insert into px_staff (uid, role, name) values (p_uid, p_rank, nm) on conflict (uid) do update set role = excluded.role, name = excluded.name;
     insert into px_mod_log (act, target, note) values ('staff set', p_uid || ' (' || nm || ')', p_rank);
@@ -1857,3 +1880,289 @@ begin
 end $$;
 revoke all on function public.px_ann_json(text), public.px_ann_polls() from public, anon, authenticated;
 grant execute on function public.px_ann_vote(text, text, bigint, int) to anon, authenticated;
+
+
+-- ===== v25: bans that stick, names that stay clean, chat that mutes spam and hate on its own =====
+alter table public.px_players add column if not exists name_lock boolean not null default false;   -- a mod renamed them: their game can't change it back
+alter table public.px_players add column if not exists prev text[];                                -- the other ids this device has used (it remembers them outside the save)
+alter table public.px_players add column if not exists iph text;                                    -- a scrambled tag of the network they play from (never the address itself)
+alter table public.px_bans add column if not exists src text;                                       -- a ban that followed the player from another id: that id
+create table if not exists public.px_ban_ok (uid text primary key, at timestamptz not null default now());   -- ids a mod cleared: old bans don't follow onto them
+alter table public.px_ban_ok enable row level security; revoke all on public.px_ban_ok from anon, authenticated;
+create index if not exists px_players_iph on public.px_players (iph);
+
+-- hateful words (not just swearing): these get an automatic mute; the spellings people use to sneak them past a filter count too
+create or replace function public.px_slur(x text) returns boolean language sql immutable as $$
+  select regexp_replace(translate(lower(coalesce(x, '')), '134@0!9$', 'ieaaoigs'), '[^a-z\s]', '', 'g')
+    ~ '\y(n+i+g+g+(a|ah|as|az|e|er|ers|uh|uhs)?|n+i+g+a+s?|f+a+g+s?|f+a+g+o+t+s?|r+e+t+a+r+d+s?|r+e+t+a+r+d+e+d|k+i+k+e+s?|c+h+i+n+k+s?|s+p+i+c+s?|t+r+a+n+n+y+)\y' $$;
+-- (whole words only, so "spicy" or "snigger" are fine; spellings with numbers and dots inside count)
+
+-- a name nobody should wear becomes Player; otherwise trimmed to 16
+create or replace function public.px_name_clean(n text) returns text language sql immutable as $$
+  select case when n is null then null when px_slur(n) or px_dm_filter(n) <> px_dm_clean(n) then 'Player' else nullif(left(btrim(regexp_replace(n, '[\u0000-\u001f\u007f]', '', 'g')), 16), '') end $$;
+
+-- the network a request came from, scrambled (the same network gives the same tag; the address can't be read back)
+create or replace function public.px_net_tag() returns text language plpgsql stable as $$
+declare h json; ip text;
+begin
+  begin h := nullif(current_setting('request.headers', true), '')::json; exception when others then return null; end;
+  if h is null then return null; end if;
+  ip := coalesce(h ->> 'cf-connecting-ip', h ->> 'x-real-ip', split_part(coalesce(h ->> 'x-forwarded-for', ''), ',', 1));
+  ip := nullif(btrim(coalesce(ip, '')), ''); if ip is null then return null; end if;
+  return left(md5('pxn:' || ip), 12);
+end $$;
+
+-- a ban or mute on another id this device used (the game remembers them outside the save), or on this Google account,
+-- follows the player onto this id. Staff are never caught, and an id a mod cleared stays clear.
+create or replace function public.px_ban_follow(p_uid text, p_info jsonb) returns void language plpgsql security definer set search_path = public as $$
+declare pv text[]; g text; b px_bans; k text; nm text;
+begin
+  pv := array(select left(x, 32) from jsonb_array_elements_text(case when p_info is not null and jsonb_typeof(p_info -> 'pv') = 'array' then p_info -> 'pv' else '[]'::jsonb end) x where x <> p_uid limit 8);
+  if array_length(pv, 1) > 0 then
+    update px_players set prev = (select array(select distinct v from unnest(coalesce(prev, '{}') || pv) v limit 16)) where uid = p_uid and (prev is null or not (prev @> pv));
+  end if;
+  if px_is_staff(p_uid) or exists (select 1 from px_ban_ok where uid = p_uid) then return; end if;
+  select sub into g from px_google where uid = p_uid;
+  if coalesce(array_length(pv, 1), 0) = 0 and g is null then return; end if;
+  foreach k in array array['ban', 'mute'] loop
+    if px_is_banned(p_uid, k) then continue; end if;
+    select * into b from px_bans x where x.kind = k and (x.until is null or x.until > now()) and x.uid <> p_uid
+      and (x.uid = any(pv) or (g is not null and x.uid in (select uid from px_google where sub = g)))
+      order by x."full" desc, x.until desc nulls first limit 1;
+    if found then
+      select name into nm from px_players where uid = p_uid;
+      insert into px_bans (uid, kind, name, reason, at, until, "full", "by", by_name, src) values (p_uid, k, nm, b.reason, now(), b.until, b."full", b."by", b.by_name, coalesce(b.src, b.uid))
+        on conflict (uid, kind) do update set reason = excluded.reason, at = now(), until = excluded.until, "full" = excluded."full", "by" = excluded."by", by_name = excluded.by_name, src = excluded.src;
+      insert into px_mod_log (act, target, note) values (k || ' followed to a new id', p_uid || ' (' || coalesce(nm, '?') || ')', 'from ' || b.uid || ' (' || coalesce(b.name, '?') || ')');
+    end if;
+  end loop;
+end $$;
+
+-- Global chat on its own: a hateful word mutes the sender for 30 minutes; the same line over and over, or a flood, for 5
+drop function if exists public.px_chat_guard(px_players, text);
+create or replace function public.px_chat_guard(r px_players, p_x text) returns boolean language plpgsql security definer set search_path = public as $$
+declare why text; mins int;
+begin
+  if px_is_staff(r.uid) then return false; end if;
+  if px_slur(p_x) then why := 'Auto: hateful language'; mins := 30;
+  elsif px_word_hit(p_x) then why := 'Auto: a word the admins blocked'; mins := 10;
+  elsif (select count(*) from px_msgs where uid = r.uid and kind = 'm' and at > now() - interval '60 seconds' and lower(btrim(x)) = lower(btrim(left(p_x, 160)))) >= 2 then why := 'Auto: spamming the same message'; mins := 5;
+  elsif (select count(*) from px_msgs where uid = r.uid and kind = 'm' and at > now() - interval '40 seconds') >= 14 then why := 'Auto: flooding the chat'; mins := 5;
+  end if;
+  if why is null then return false; end if;
+  insert into px_bans (uid, kind, name, reason, at, until, "full", "by") values (r.uid, 'mute', r.name, why, now(), now() + make_interval(mins => mins), false, 'auto')
+    on conflict (uid, kind) do update set reason = excluded.reason, at = now(), until = excluded.until, "by" = 'auto', src = null;
+  insert into px_mod_log (act, target, note) values ('auto-mute', r.uid || ' (' || coalesce(r.name, '?') || ')', why || ' · ' || mins || ' min · "' || left(p_x, 80) || '"');
+  return true;
+end $$;
+
+-- players who look like a banned player back on a new id: made after the ban, on the same network AND the same kind of device.
+-- (Schools share networks and computers, so this is a pointer for a mod to check, never an automatic ban.)
+create or replace function public.px_evaders() returns jsonb language sql stable security definer set search_path = public as $$
+  select coalesce(jsonb_agg(q order by (q ->> 'created')::bigint desc), '[]'::jsonb) from (
+    select jsonb_build_object('uid', o.uid, 'n', o.name, 'created', px_ms(o.created), 'seen', px_ms(o.seen), 'buid', b.uid, 'bn', bp.name, 'samename', lower(o.name) = lower(bp.name)) q
+    from px_bans b join px_players bp on bp.uid = b.uid
+    join px_players o on o.iph = bp.iph and o.iph is not null and o.uid <> b.uid and o.created > b.at - interval '1 hour' and o.created > now() - interval '30 days'
+      and coalesce(o.info -> 'dev' ->> 'id', '') = coalesce(bp.info -> 'dev' ->> 'id', '-') and coalesce(o.info -> 'dev' ->> 'id', '') <> ''
+    where b.kind = 'ban' and (b.until is null or b.until > now()) and b.src is null
+      and not px_is_banned(o.uid) and not px_is_staff(o.uid)
+    limit 30) z $$;
+
+-- let a renamed player pick their own name again
+create or replace function public.px_mod_name_free(p_pw text, p_uid text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check_h(p_pw);
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  update px_players set name_lock = false where uid = p_uid;
+  insert into px_mod_log (act, target, note) values ('name unlocked', p_uid, '');
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.px_slur(text), public.px_name_clean(text), public.px_net_tag(), public.px_ban_follow(text, jsonb), public.px_chat_guard(px_players, text), public.px_evaders() from public, anon, authenticated;
+grant execute on function public.px_mod_name_free(text, text) to anon, authenticated;
+
+
+-- ===== v26: a safer panel (PINs, sessions, a security log), admins, signing in from any device, the online switch, the chat's rules =====
+alter table public.px_staff add column if not exists pin_salt text;
+alter table public.px_staff add column if not exists pin_hash text;
+alter table public.px_staff add column if not exists pin_fails int not null default 0;
+alter table public.px_staff add column if not exists pin_locked timestamptz;
+alter table public.px_staff add column if not exists last_login timestamptz;
+create table if not exists public.px_staff_sessions (token_hash text primary key, uid text not null, at timestamptz not null default now(), expires timestamptz not null, dev text, iph text);
+create table if not exists public.px_staff_emails (email text primary key, role text not null check (role in ('owner', 'moderator', 'helper')), added_by text, at timestamptz not null default now());
+create table if not exists public.px_sec_log (id bigserial primary key, at timestamptz not null default now(), act text not null, uid text, name text, note text, iph text);
+alter table public.px_staff_sessions enable row level security; alter table public.px_staff_emails enable row level security; alter table public.px_sec_log enable row level security;
+revoke all on public.px_staff_sessions, public.px_staff_emails, public.px_sec_log from anon, authenticated;
+alter table public.px_mod_cfg add column if not exists req_pin boolean not null default false;
+alter table public.px_mod_cfg add column if not exists online_off boolean not null default false;
+alter table public.px_mod_cfg add column if not exists online_msg text;
+alter table public.px_mod_cfg add column if not exists chat_off boolean not null default false;
+alter table public.px_mod_cfg add column if not exists chat_slow int not null default 0;
+alter table public.px_mod_cfg add column if not exists words text[] not null default '{}';
+
+-- the rank a player has: their device on the staff list, or the Google account they signed in with on an admin's list of emails
+create or replace function public.px_staff_role(p_uid text) returns text language sql stable security definer set search_path = public as $$
+  select coalesce((select role from px_staff where uid = p_uid),
+    (select e.role from px_staff_emails e join px_google g on lower(g.email) = lower(e.email) where g.uid = p_uid order by case e.role when 'owner' then 0 when 'moderator' then 1 else 2 end limit 1)) $$;
+
+-- the chat's rules for someone who isn't staff: online play off, the chat off, slow mode
+create or replace function public.px_chat_rules(p_uid text, p_kind text) returns void language plpgsql security definer set search_path = public as $$
+declare c px_mod_cfg;
+begin
+  select * into c from px_mod_cfg where id = 1; if not found then return; end if;
+  if c.online_off then raise exception 'Online play is switched off right now'; end if;
+  if p_kind = 'm' and c.chat_off then raise exception 'The chat is switched off right now'; end if;
+  if p_kind = 'm' and c.chat_slow > 0 and exists (select 1 from px_msgs where uid = p_uid and kind = 'm' and at > now() - make_interval(secs => c.chat_slow)) then raise exception 'slow down'; end if;
+end $$;
+-- a word on the admins' own list (whole words, any case)
+create or replace function public.px_word_hit(x text) returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from unnest(coalesce((select words from px_mod_cfg where id = 1), '{}')) w
+    where length(btrim(w)) >= 2 and regexp_replace(lower(coalesce(x, '')), '[^a-z0-9\s]', '', 'g') ~ ('\y' || regexp_replace(lower(btrim(w)), '[^a-z0-9 ]', '', 'g') || '\y')) $$;
+
+-- the panel PIN: set it (or change it: the old one is needed), then open a session with it (12 hours, this device only)
+create or replace function public.px_staff_set_pin(p_uid text, p_key text, p_old text, p_new text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare pl px_players; st px_staff; rl text; salt text;
+begin
+  select * into pl from px_players where uid = p_uid and keyhash = md5(coalesce(p_key, '') || ':pxk');
+  if not found then return jsonb_build_object('err', 'wrong'); end if;
+  rl := px_staff_role(p_uid); if rl is null then return jsonb_build_object('err', 'wrong'); end if;
+  insert into px_staff (uid, role, name) values (p_uid, rl, pl.name) on conflict (uid) do nothing;
+  select * into st from px_staff where uid = p_uid;
+  if p_new is null or p_new !~ '^[0-9]{4,8}$' then return jsonb_build_object('err', 'A PIN is 4 to 8 numbers.'); end if;
+  if st.pin_hash is not null then
+    if st.pin_locked is not null and st.pin_locked > now() then return jsonb_build_object('err', 'locked'); end if;
+    if encode(sha256(convert_to(st.pin_salt || coalesce(p_old, ''), 'utf8')), 'hex') <> st.pin_hash then
+      update px_staff set pin_locked = case when pin_fails + 1 >= 5 then now() + interval '15 minutes' end, pin_fails = case when pin_fails + 1 >= 5 then 0 else pin_fails + 1 end where uid = p_uid;
+      insert into px_sec_log (act, uid, name, iph) values ('wrong PIN (changing it)', p_uid, pl.name, px_net_tag());
+      return jsonb_build_object('err', 'The old PIN is wrong.');
+    end if;
+  end if;
+  salt := md5(gen_random_uuid()::text);
+  update px_staff set pin_salt = salt, pin_hash = encode(sha256(convert_to(salt || p_new, 'utf8')), 'hex'), pin_fails = 0, pin_locked = null where uid = p_uid;
+  delete from px_staff_sessions where uid = p_uid;   -- (every open panel of this person closes)
+  insert into px_sec_log (act, uid, name, iph) values (case when st.pin_hash is null then 'set a panel PIN' else 'changed their panel PIN' end, p_uid, pl.name, px_net_tag());
+  return jsonb_build_object('ok', true);
+end $$;
+create or replace function public.px_staff_unlock(p_uid text, p_key text, p_pin text, p_dev text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare pl px_players; st px_staff; tok text;
+begin
+  select * into pl from px_players where uid = p_uid and keyhash = md5(coalesce(p_key, '') || ':pxk');
+  if not found or px_staff_role(p_uid) is null then return jsonb_build_object('err', 'wrong'); end if;
+  select * into st from px_staff where uid = p_uid;
+  if not found or st.pin_hash is null then return jsonb_build_object('err', 'needpin'); end if;
+  if st.pin_locked is not null and st.pin_locked > now() then return jsonb_build_object('err', 'locked', 'until', px_ms(st.pin_locked)); end if;
+  if encode(sha256(convert_to(st.pin_salt || coalesce(p_pin, ''), 'utf8')), 'hex') <> st.pin_hash then
+    update px_staff set pin_fails = case when pin_fails + 1 >= 5 then 0 else pin_fails + 1 end, pin_locked = case when pin_fails + 1 >= 5 then now() + interval '15 minutes' end where uid = p_uid;
+    insert into px_sec_log (act, uid, name, note, iph) values ('wrong panel PIN', p_uid, pl.name, case when st.pin_fails + 1 >= 5 then 'locked for 15 minutes' else (st.pin_fails + 1) || ' in a row' end, px_net_tag());
+    return jsonb_build_object('err', case when st.pin_fails + 1 >= 5 then 'locked' else 'wrongpin' end, 'left', greatest(0, 4 - st.pin_fails));
+  end if;
+  tok := replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '');
+  update px_staff set pin_fails = 0, pin_locked = null where uid = p_uid;
+  insert into px_staff_sessions (token_hash, uid, expires, dev, iph) values (encode(sha256(convert_to(tok, 'utf8')), 'hex'), p_uid, now() + interval '12 hours', left(coalesce(p_dev, ''), 60), px_net_tag());
+  delete from px_staff_sessions where expires < now() - interval '1 day';
+  return jsonb_build_object('ok', true, 'token', tok);
+end $$;
+
+-- the admins' security page: who has the panel open where, what happened, the admin emails, the switches
+create or replace function public.px_mod_sec(p_pw text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw);
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  return jsonb_build_object(
+    'sessions', coalesce((select jsonb_agg(jsonb_build_object('uid', s.uid, 'n', coalesce(p.name, '?'), 'at', px_ms(s.at), 'exp', px_ms(s.expires), 'dev', s.dev, 'me', s.token_hash = current_setting('px.tok', true)) order by s.at desc) from px_staff_sessions s left join px_players p on p.uid = s.uid where s.expires > now()), '[]'::jsonb),
+    'log', coalesce((select jsonb_agg(jsonb_build_object('at', px_ms(at), 'act', act, 'uid', uid, 'n', name, 'note', note, 'net', iph) order by id desc) from (select * from px_sec_log order by id desc limit 80) q), '[]'::jsonb),
+    'emails', coalesce((select jsonb_agg(jsonb_build_object('email', email, 'role', role, 'by', added_by, 'at', px_ms(at)) order by at) from px_staff_emails), '[]'::jsonb),
+    'pins', coalesce((select jsonb_agg(jsonb_build_object('uid', s.uid, 'n', coalesce(p.name, s.name, '?'), 'rank', case s.role when 'owner' then 'admin' else s.role end, 'pin', s.pin_hash is not null, 'last', px_ms(s.last_login))) from px_staff s left join px_players p on p.uid = s.uid), '[]'::jsonb),
+    'req_pin', (select req_pin from px_mod_cfg where id = 1), 'has_pw', (select pwhash is not null from px_mod_cfg where id = 1),
+    'online_off', (select online_off from px_mod_cfg where id = 1), 'online_msg', (select online_msg from px_mod_cfg where id = 1),
+    'chat_off', (select chat_off from px_mod_cfg where id = 1), 'chat_slow', (select chat_slow from px_mod_cfg where id = 1), 'words', (select to_jsonb(words) from px_mod_cfg where id = 1));
+end $$;
+-- close the panel on every other device (or one person's)
+create or replace function public.px_mod_sec_revoke(p_pw text, p_uid text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw); n int;
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  delete from px_staff_sessions where (p_uid is null or uid = p_uid) and token_hash is distinct from nullif(current_setting('px.tok', true), '');
+  get diagnostics n = row_count;
+  insert into px_sec_log (act, uid, note, iph) values ('closed open panels', p_uid, n || ' session(s), by ' || coalesce(nullif(current_setting('px.hname', true), ''), 'an admin'), px_net_tag());
+  return jsonb_build_object('ok', true, 'n', n);
+end $$;
+create or replace function public.px_mod_req_pin(p_pw text, p_on boolean) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw);
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  if coalesce(p_on, false) and (select pin_hash from px_staff where uid = nullif(current_setting('px.suid', true), '')) is null and position('|' in coalesce(p_pw, '')) > 0 then return jsonb_build_object('err', 'Set your own PIN first.'); end if;
+  update px_mod_cfg set req_pin = coalesce(p_on, false) where id = 1;
+  insert into px_sec_log (act, note, iph) values (case when p_on then 'PIN required for all staff' else 'PIN no longer required' end, 'by ' || coalesce(nullif(current_setting('px.hname', true), ''), 'an admin'), px_net_tag());
+  return jsonb_build_object('ok', true);
+end $$;
+-- staff by Google account: whoever signs in with this email has this rank on any device
+create or replace function public.px_mod_staff_email(p_pw text, p_email text, p_role text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw); e text := lower(btrim(coalesce(p_email, '')));
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  if e !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' or length(e) > 120 then return jsonb_build_object('err', 'That isn''t an email address.'); end if;
+  if p_role is null or p_role in ('', 'none') then
+    if (select role from px_staff_emails where email = e) = 'owner' then return jsonb_build_object('err', 'An admin email can only be taken off in Supabase.'); end if;
+    delete from px_staff_emails where email = e;
+  elsif p_role in ('owner', 'admin', 'moderator', 'helper') then
+    insert into px_staff_emails (email, role, added_by) values (e, case when p_role = 'admin' then 'owner' else p_role end, coalesce(nullif(current_setting('px.hname', true), ''), 'admin'))
+      on conflict (email) do update set role = case when px_staff_emails.role = 'owner' then 'owner' else excluded.role end;
+  else return jsonb_build_object('err', 'bad rank'); end if;
+  insert into px_sec_log (act, note, iph) values ('staff email ' || coalesce(nullif(p_role, ''), 'removed'), e, px_net_tag());
+  return jsonb_build_object('ok', true);
+end $$;
+-- the creator password (the spare key that makes any device an admin): change it from the panel
+create or replace function public.px_mod_password(p_pw text, p_old text, p_new text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw); c px_mod_cfg; ns text;
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  select * into c from px_mod_cfg where id = 1 for update;
+  if c.pwhash is not null and encode(sha256(convert_to(c.salt || coalesce(p_old, ''), 'utf8')), 'hex') <> c.pwhash then
+    insert into px_sec_log (act, note, iph) values ('wrong creator password', 'while changing it', px_net_tag());
+    return jsonb_build_object('err', 'The old password is wrong.');
+  end if;
+  if p_new is null or length(p_new) < 10 or length(p_new) > 64 then return jsonb_build_object('err', 'The new password needs 10 to 64 characters.'); end if;
+  ns := md5(gen_random_uuid()::text);
+  update px_mod_cfg set salt = ns, pwhash = encode(sha256(convert_to(ns || p_new, 'utf8')), 'hex'), fails = 0, strikes = 0, locked_until = null where id = 1;
+  insert into px_sec_log (act, note, iph) values ('creator password changed', 'by ' || coalesce(nullif(current_setting('px.hname', true), ''), 'an admin'), px_net_tag());
+  return jsonb_build_object('ok', true);
+end $$;
+-- the big switches: online play off (with a message for everyone), the chat off, slow mode, blocked words
+create or replace function public.px_mod_online(p_pw text, p_off boolean, p_msg text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw);
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  update px_mod_cfg set online_off = coalesce(p_off, false), online_msg = left(nullif(btrim(coalesce(p_msg, '')), ''), 120) where id = 1;
+  if coalesce(p_off, false) then delete from px_queue; end if;
+  insert into px_mod_log (act, note) values (case when p_off then 'online play OFF' else 'online play ON' end, coalesce(p_msg, ''));
+  return jsonb_build_object('ok', true);
+end $$;
+create or replace function public.px_mod_chat_cfg(p_pw text, p_off boolean, p_slow int, p_words text[]) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw);
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  update px_mod_cfg set chat_off = coalesce(p_off, chat_off), chat_slow = least(greatest(coalesce(p_slow, chat_slow), 0), 120),
+    words = coalesce((select array(select distinct left(lower(btrim(w)), 30) from unnest(p_words) w where length(btrim(w)) >= 2 limit 200)), words) where id = 1;
+  insert into px_mod_log (act, note) values ('chat rules', 'off: ' || coalesce(p_off::text, '-') || ' · slow: ' || coalesce(p_slow::text, '-') || ' s · words: ' || coalesce(array_length(p_words, 1), 0));
+  return jsonb_build_object('ok', true);
+end $$;
+-- give a player cash (their game picks it up the next time it checks in)
+create or replace function public.px_mod_give(p_pw text, p_uid text, p_cash int) returns jsonb language plpgsql security definer set search_path = public as $$
+declare v text := px_mod_check(p_pw); nm text;
+begin
+  if v <> 'ok' then return jsonb_build_object('err', v); end if;
+  select name into nm from px_players where uid = p_uid; if nm is null then return jsonb_build_object('err', 'nobody'); end if;
+  if p_cash is null or p_cash = 0 or abs(p_cash) > 100000 then return jsonb_build_object('err', 'Between 1 and 100000.'); end if;
+  insert into px_edits (uid, edit) values (p_uid, jsonb_build_object('cash', p_cash));
+  insert into px_mod_log (act, target, note) values ('gave cash', p_uid || ' (' || nm || ')', p_cash::text);
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.px_staff_role(text), public.px_chat_rules(text, text), public.px_word_hit(text) from public, anon, authenticated;
+grant execute on function public.px_staff_set_pin(text, text, text, text), public.px_staff_unlock(text, text, text, text), public.px_mod_sec(text), public.px_mod_sec_revoke(text, text), public.px_mod_req_pin(text, boolean),
+  public.px_mod_staff_email(text, text, text), public.px_mod_password(text, text, text), public.px_mod_online(text, boolean, text), public.px_mod_chat_cfg(text, boolean, int, text[]), public.px_mod_give(text, text, int) to anon, authenticated;
+
+-- (these two come last: they use the tables and columns above)
+create or replace function public.px_staff_rank(p_uid text) returns text language sql stable security definer set search_path = public as $$
+  select case r when 'owner' then 'creator' else r end from (select px_staff_role(p_uid) r) q $$;
+create or replace function public.px_pub_cfg() returns jsonb language sql stable security definer set search_path = public as $$
+  select jsonb_build_object('reqg', coalesce((select req_game from px_mod_cfg where id = 1), false), 'upd', coalesce((select upd_until > now() from px_mod_cfg where id = 1), false), 'dm', coalesce((select dm_mode from px_mod_cfg where id = 1), 'all'), 'minv', (select nullif(min_ver, 0) from px_mod_cfg where id = 1), 'by', (select byline from px_mod_cfg where id = 1), 'fb', coalesce((select football_public from px_mod_cfg where id = 1), false)) || coalesce((select jsonb_build_object('off', online_off, 'offmsg', online_msg, 'chatoff', chat_off, 'slow', chat_slow) from px_mod_cfg where id = 1), '{}'::jsonb) $$;
