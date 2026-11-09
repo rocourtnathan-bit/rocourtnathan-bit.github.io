@@ -3809,3 +3809,613 @@ begin
   return case when p_on then 'On: the creator panel also needs your email signed in.' else 'Off: your device, its key and your PIN open the creator panel.' end;
 end $$;
 revoke all on function public.px_creator_link(text), public.px_creator_require_email(boolean), public.px_is_creator(text), public.px_creator_live(text) from public, anon, authenticated;
+
+
+-- ======================================================================================================================
+-- v29i · "THE SAME DEVICE" MEANS THE SAME COPY OF THE GAME, NOT THE SAME KIND OF COMPUTER
+-- The device id the game sent was built from what kind of computer it is (Mac, Chrome, graphics chip, screen, timezone...), so every
+-- school MacBook Air on Chrome had the SAME one: classmates looked like one person. That made the weekly coin and codes say
+-- "already taken" for a whole class, stopped Elo between classmates, filled the evader list and misled the investigation crew.
+-- Now each copy of the game makes a random install id once (kept in that browser): two kids on two identical MacBooks are two
+-- devices. The old id stays only as "same kind of computer", shown for information and never used as evidence.
+-- Games older than this update don't send the install id; for them every same-device check is simply skipped.
+create or replace function public.px_dev_iid(i jsonb) returns text language sql immutable as $$
+  select case when (i -> 'dev' ->> 'iid') ~ '^[a-z0-9]{16}$' then i -> 'dev' ->> 'iid' end $$;
+revoke all on function public.px_dev_iid(jsonb) from public, anon, authenticated;
+create or replace function public.px_coin_claim(p_uid text, p_key text, p_fid text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare c px_mod_cfg; pl px_players; dv text; v_fid text := left(coalesce(p_fid, ''), 20); rk int := px_coin_key();
+begin
+  pl := px_auth(p_uid, p_key);
+  if px_is_banned(p_uid) then return jsonb_build_object('err', 'banned'); end if;
+  select * into c from px_mod_cfg where id = 1;
+  if not coalesce(c.coin_on, true) then return jsonb_build_object('err', 'off'); end if;
+  dv := px_dev_iid(pl.info);   -- (v29i: this copy of the game, not the kind of computer)
+  if exists (select 1 from px_coin x where x.round = rk and x.uid = p_uid) then return jsonb_build_object('err', 'already'); end if;
+  if v_fid <> '' and exists (select 1 from px_coin x where x.round = rk and x.fid = v_fid) then return jsonb_build_object('err', 'already'); end if;
+  if dv is not null and exists (select 1 from px_coin x where x.round = rk and x.dev = dv) then return jsonb_build_object('err', 'already'); end if;
+  insert into px_coin (round, uid, fid, dev, lv) values (rk, p_uid, v_fid, dv, c.coin_lv) on conflict do nothing;
+  if not found then return jsonb_build_object('err', 'already'); end if;
+  update px_players set lv_grant = least(100000, lv_grant + c.coin_lv) where uid = p_uid;   -- (so the anti-cheat knows these levels are real)
+  return jsonb_build_object('ok', true, 'lv', c.coin_lv, 'round', rk);
+end $$;
+create or replace function public.px_code_redeem(p_uid text, p_key text, p_code text, p_fid text default null) returns jsonb language plpgsql security definer set search_path = public as $$
+declare pl px_players; k px_codes; cd text := upper(regexp_replace(coalesce(p_code, ''), '[^A-Za-z0-9]', '', 'g')); dv text;
+begin
+  pl := px_auth(p_uid, p_key);
+  if px_is_banned(p_uid) then return jsonb_build_object('err', 'banned'); end if;
+  if (select count(*) from px_code_fail where uid = p_uid and at > now() - interval '1 hour') >= 10 then return jsonb_build_object('err', 'slow'); end if;   -- (no guessing codes)
+  select * into k from px_codes where code = cd for update;
+  if k.code is null or not k.on_ or (k.until is not null and k.until < now()) then
+    insert into px_code_fail (uid) values (p_uid); if random() < 0.05 then delete from px_code_fail where at < now() - interval '1 day'; end if;
+    return jsonb_build_object('err', case when k.code is not null then 'expired' else 'bad' end);
+  end if;
+  if k.uses >= k.max_uses then return jsonb_build_object('err', 'used up'); end if;
+  dv := px_dev_iid(pl.info);   -- (v29i: this copy of the game, not the kind of computer)
+  if exists (select 1 from px_code_use u where u.code = cd and (u.uid = p_uid or (dv is not null and u.dev = dv) or (coalesce(p_fid, '') <> '' and u.fid = left(p_fid, 20)))) then return jsonb_build_object('err', 'already'); end if;
+  insert into px_code_use (code, uid, dev, fid) values (cd, p_uid, dv, nullif(left(coalesce(p_fid, ''), 20), ''));
+  update px_codes set uses = uses + 1 where code = cd;
+  if k.lv > 0 then update px_players set lv_grant = least(100000, lv_grant + k.lv) where uid = p_uid; end if;
+  return jsonb_build_object('ok', true, 'lv', k.lv, 'cash', k.cash, 'code', cd);
+end $$;
+create or replace function public.px_settle(m public.px_matches)
+returns void language plpgsql security definer set search_path = public as $$
+declare pa px_players; pb px_players; r_a int; r_b int; ga int; gb int; e_a real; k real; perf real; d int; aw boolean; same int;
+begin
+  if m.done then return; end if;
+  if m.ra is null or m.rb is null then update px_matches set done = true where id = m.id; return; end if;
+  if m.ra = m.rb then -- both said they won (or both lost): no rating change, but staff can see it (a few of these is a lost connection, a lot is somebody editing the game)
+    insert into px_mod_log (act, target, note) values ('ranked result mismatch', m.a || ' vs ' || m.b, 'both reported ' || m.ra || ' in a ' || (case when m.game = 'f' then 'fight' else 'Hoops game' end));
+    update px_matches set done = true, da = 0, db = 0 where id = m.id; return;
+  end if;
+  if extract(epoch from coalesce(m.ended_at, now()) - m.at) < 20 then update px_matches set done = true, da = 0, db = 0 where id = m.id; return; end if;
+  select count(*) into same from px_matches x where x.id <> m.id and x.done and coalesce(x.da, 0) <> 0 and x.at > now() - interval '24 hours' and x.game = m.game
+    and ((x.a = m.a and x.b = m.b) or (x.a = m.b and x.b = m.a));
+  if same >= 3 then update px_matches set done = true, da = 0, db = 0 where id = m.id; return; end if;
+  aw := m.ra = 'W';
+  select * into pa from px_players where uid = m.a for update;
+  select * into pb from px_players where uid = m.b for update;
+  if pa.uid is null or pb.uid is null then update px_matches set done = true where id = m.id; return; end if;
+  -- two accounts on the same device (or the same crew of one person) can't trade wins: the match is played but nobody's rating moves
+  if px_dev_iid(pa.info) is not null and px_dev_iid(pa.info) = px_dev_iid(pb.info) then   -- (v29i: the same copy of the game; two classmates on identical school MacBooks are NOT the same device)
+    update px_matches set done = true, da = 0, db = 0 where id = m.id; return;
+  end if;
+  if m.game = 'f' then r_a := pa.elo_f; r_b := pb.elo_f; ga := pa.gf; gb := pb.gf; else r_a := pa.elo_h; r_b := pb.elo_h; ga := pa.gh; gb := pb.gh; end if;
+  e_a := 1 / (1 + power(10, (r_b - r_a) / 400.0));
+  perf := 0.8 + 0.5 * least(1, greatest(0, coalesce((coalesce(m.ma, m.mb) + coalesce(m.mb, m.ma)) / 2, 0.5)));
+  k := case when least(ga, gb) < 10 then 40 else 32 end;
+  d := greatest(1, round(k * (case when aw then 1 - e_a else e_a end) * perf));
+  if not aw then d := -d; end if;   -- d: what a gains
+  if m.game = 'f' then
+    update px_players set elo_f = greatest(100, elo_f + d), gf = gf + 1, wf = wf + (case when aw then 1 else 0 end) where uid = m.a;
+    update px_players set elo_f = greatest(100, elo_f - d), gf = gf + 1, wf = wf + (case when aw then 0 else 1 end) where uid = m.b;
+  else
+    update px_players set elo_h = greatest(100, elo_h + d), gh = gh + 1, wh = wh + (case when aw then 1 else 0 end) where uid = m.a;
+    update px_players set elo_h = greatest(100, elo_h - d), gh = gh + 1, wh = wh + (case when aw then 0 else 1 end) where uid = m.b;
+  end if;
+  update px_matches set done = true, da = d, db = -d where id = m.id;
+end $$;
+revoke all on function public.px_settle(public.px_matches) from public, anon, authenticated;
+create or replace function public.px_inv_sweep(p_uid text, p_focus text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare
+  pl px_players; fo text[] := px_inv_areas(p_focus); deep_all boolean := coalesce(btrim(p_focus), '') = '' or cardinality(px_inv_areas(p_focus)) = 0;
+  vdev text; fs jsonb; eff int; given int := 0; play_h numeric; lph numeric; wins int; losses int; kos int; vwhy text; days int;
+  areas jsonb := '[]'::jsonb; finds jsonb; facts jsonb; deep boolean; total int := 0; cnt int; cnt2 int; rw record; t text; sev int; worst int := 0; asked jsonb := '[]'::jsonb;
+  k text; sset int; lastflag timestamptz; cnt3 int; n3 int := 0; fq jsonb := px_inv_focus(p_focus); vd text; top jsonb; clear jsonb; cant jsonb := '[]'::jsonb; head text; nxt text; wk text;
+begin
+  select * into pl from px_players where uid = p_uid; if not found then return null; end if;
+  vdev := px_dev_iid(pl.info); fs := pl.info -> 'fs';
+  -- (v29j) times staff SET their level or rebirth by hand, and when the anti-cheat last flagged them
+  select count(*) into sset from px_edits where uid = p_uid and (edit ? 'lv' or edit ? 'rb');
+  select max(at) into lastflag from px_mod_log where act = 'edited fighter?' and target like p_uid || ' (%';
+
+  -- ---------------- 1. the Progress Detective ----------------
+  deep := deep_all or 'progress' = any (fo); days := case when deep then 365 else 60 end; finds := '[]'; facts := '[]';
+  eff := coalesce(px_num(fs ->> 'r'), 0)::int * 30 + coalesce(px_num(fs ->> 'l'), 1)::int - 1;
+  given := coalesce((select sum(px_levels.n) from px_levels where uid = p_uid), 0) + coalesce((select sum(lv) from px_coin where uid = p_uid), 0)
+         + coalesce((select sum(c.lv) from px_code_use u join px_codes c on c.code = u.code where u.uid = p_uid), 0)
+         + coalesce((select sum(b.amount) from px_purchases b where b.uid = p_uid and b.kind = 'levels' and b.status = 'paid'), 0);   -- (v29j: Online Shop levels too)
+  play_h := round(coalesce(px_num(pl.info ->> 'play'), 0) / 3600.0, 1);
+  wins := coalesce(px_num(pl.info ->> 'w'), 0)::int; losses := coalesce(px_num(pl.info ->> 'l'), 0)::int; kos := coalesce(px_num(pl.info ->> 'k'), 0)::int;
+  facts := facts || jsonb_build_array(jsonb_build_array('Fighter', coalesce(fs ->> 'n', '?') || ' · rebirth ' || coalesce(fs ->> 'r', '0') || ', level ' || coalesce(fs ->> 'l', '1')),
+    jsonb_build_array('Time played', play_h || ' hours'), jsonb_build_array('Levels given (staff, coins, codes, shop)', given),
+    jsonb_build_array('Record (all fighters)', wins || ' W, ' || losses || ' L, ' || kos || ' KOs'), jsonb_build_array('Game', 'v' || coalesce(pl.info ->> 'ver', '?') || ' · ' || coalesce(pl.info ->> 'via', '?')),
+    jsonb_build_array('Account made', to_char(pl.created, 'Mon DD YYYY')));
+  if sset > 0 then facts := facts || jsonb_build_array(jsonb_build_array('Staff set their level or rebirth by hand', sset || ' time' || case when sset = 1 then '' else 's' end)); end if;
+  -- (v29j) a "levelled up too fast" flag that came within a day after staff set or gave them levels is from that, not cheating
+  if pl.cheat like 'levelled up too fast%' and exists (select 1 from px_edits e where e.uid = p_uid and (e.edit ?| array['lv', 'rb', 'st', 'addlv'])
+       and e.at <= coalesce(lastflag, now()) and e.at > coalesce(lastflag, now()) - interval '1 day') then
+    finds := finds || jsonb_build_object('s', 0, 't', 'The anti-cheat''s flag (' || pl.cheat || ') came right after staff set or gave them levels, so it''s from that, not cheating. You can clear it.');
+  elsif pl.cheat is not null and px_cheat_why3(pl.info, pl.free_ok, pl.stat_ok) is distinct from pl.cheat then finds := finds || jsonb_build_object('s', 2, 't', 'The anti-cheat flagged them: ' || pl.cheat || '.'); end if;   -- (v29m: not said twice when it's the same thing the next line says)
+  vwhy := px_cheat_why3(pl.info, pl.free_ok, pl.stat_ok);
+  if vwhy is not null then finds := finds || jsonb_build_object('s', 3, 't', 'Right now their fighter breaks the rules: ' || vwhy || '. A normal game can''t do that, so the save was edited.'); end if;
+  if pl.free_ok then finds := finds || jsonb_build_object('s', 0, 't', 'The creator gave this player "no limits" stats, so stats past the cap are allowed.'); end if;
+  if sset > 0 then   -- (v29j) a level set by hand isn't progress they earned, and how much it added can't be worked out from the totals
+    finds := finds || jsonb_build_object('s', 0, 't', 'Staff set their level or rebirth by hand, so their totals don''t show how fast they really levelled. That isn''t held against them. The anti-cheat still checks every check-in after the change.');
+  elsif eff - given > 40 and coalesce(px_num(pl.info ->> 'play'), 0) < 900 then
+    finds := finds || jsonb_build_object('s', 3, 't', (eff - given) || ' levels of progress with only ' || round(coalesce(px_num(pl.info ->> 'play'), 0) / 60.0) || ' minutes played. That isn''t possible by playing.');
+  elsif play_h >= 0.5 then
+    lph := round((eff - given) / play_h, 1);
+    facts := facts || jsonb_build_array(jsonb_build_array('Levels per hour played', lph));
+    if lph > 150 then finds := finds || jsonb_build_object('s', 3, 't', 'They gained ' || lph || ' levels per hour played. Even a very good player gets nowhere near that.');
+    elsif lph > 60 then finds := finds || jsonb_build_object('s', 2, 't', lph || ' levels per hour played is very fast. Worth a look at their fights.'); end if;
+  end if;
+  if kos > wins + 5 then finds := finds || jsonb_build_object('s', 2, 't', 'More knockouts (' || kos || ') than wins (' || wins || '). Every KO is a win, so the numbers were changed.'); end if;
+  -- (v29j: flags that came within a day after staff set or gave them levels don't count)
+  select count(*) into cnt from px_mod_log l where l.act = 'edited fighter?' and l.target like p_uid || ' (%' and l.at > now() - make_interval(days => days)
+    and not exists (select 1 from px_edits e where e.uid = p_uid and (e.edit ?| array['lv', 'rb', 'st', 'addlv']) and e.at <= l.at and e.at > l.at - interval '1 day');
+  if cnt > 1 then finds := finds || jsonb_build_object('s', 2, 't', 'Flagged ' || cnt || ' times for an edited-looking fighter.'); end if;
+  if deep then
+    for rw in select l.at, l.note, exists (select 1 from px_edits e where e.uid = p_uid and (e.edit ?| array['lv', 'rb', 'st', 'addlv']) and e.at <= l.at and e.at > l.at - interval '1 day') staff
+              from px_mod_log l where l.act = 'edited fighter?' and l.target like p_uid || ' (%' order by l.id desc limit 8 loop
+      facts := facts || jsonb_build_array(jsonb_build_array('Flag ' || to_char(rw.at, 'Mon DD HH24:MI'), rw.note || case when rw.staff then ' (right after staff gave levels: not cheating)' else '' end)); end loop;
+  end if;
+  -- the save history: the biggest jump between two saves in a row (v29j: not counting a jump when staff set or gave levels in between)
+  select max(j), (array_agg(note order by j desc))[1] into cnt, t from (
+    select e - lag(e) over (order by at) j, at, lag(at) over (order by at) pat, to_char(lag(at) over (order by at), 'Mon DD HH24:MI') || ' → ' || to_char(at, 'Mon DD HH24:MI') || ' (' || round(extract(epoch from at - lag(at) over (order by at)) / 60) || ' min)' note
+    from (select h.at, (select max(coalesce(px_num(f ->> 'rebirths'), 0) * 30 + coalesce(px_num(f ->> 'level'), 1)) from jsonb_array_elements(case when jsonb_typeof(h.data -> 'fighters') = 'array' then h.data -> 'fighters' else '[]'::jsonb end) f)::int e
+          from px_cloud_hist h where h.uid = p_uid and h.at > now() - make_interval(days => days)) s) q
+    where j is not null and not exists (select 1 from px_edits x where x.uid = p_uid and (x.edit ?| array['lv', 'rb', 'addlv']) and x.at <= q.at and x.at > q.pat - interval '1 day');
+  if cnt is not null then
+    facts := facts || jsonb_build_array(jsonb_build_array('Biggest jump between two saves', cnt || ' levels, ' || t));
+    if cnt > 60 then finds := finds || jsonb_build_object('s', 2, 't', 'Their saved game jumped ' || cnt || ' levels between two saves (' || t || ').'); end if;
+  end if;
+  select count(*) into cnt from px_edits where uid = p_uid; if cnt > 0 then facts := facts || jsonb_build_array(jsonb_build_array('Staff edits to the fighter', cnt)); end if;
+  if pl.info ->> 'via' = 'file' then facts := facts || jsonb_build_array(jsonb_build_array('Game copy', 'the downloaded file (most players at school use it, so this means nothing on its own)')); end if;   -- (v29l: a fact, not a finding)
+  areas := areas || jsonb_build_object('k', 'progress', 'crew', 'Progress Detective', 'title', 'Levels, rebirths and stats', 'deep', deep, 'finds', finds, 'facts', facts);
+
+  -- ---------------- 2. the Match Referee ----------------
+  deep := deep_all or 'matches' = any (fo); days := case when deep then 90 else 30 end; finds := '[]'; facts := '[]';
+  select count(*), count(*) filter (where (a = p_uid and ra = 'W') or (b = p_uid and rb = 'W')), count(*) filter (where ended_at is not null and extract(epoch from ended_at - at) < 20),
+         count(*) filter (where done and ra = 'W' and rb = 'W'), count(*) filter (where done and ra = 'L' and rb = 'L')
+    into cnt, cnt2, wins, losses, cnt3 from px_matches where (a = p_uid or b = p_uid) and at > now() - make_interval(days => days);
+  facts := facts || jsonb_build_array(jsonb_build_array('Ranked games (' || days || ' days)', cnt || ' (' || cnt2 || ' reported as wins)'), jsonb_build_array('Elo', 'fights ' || pl.elo_f || ' (' || pl.gf || ' games), Hoops ' || pl.elo_h || ' (' || pl.gh || ' games)'));
+  -- (v29l) about 1 ranked fight in 8 ends in under 20 seconds for everyone (quick KOs, someone quitting): only a lot more than that counts
+  if wins >= 5 and wins * 100 / greatest(cnt, 1) >= 40 then finds := finds || jsonb_build_object('s', 1, 't', wins || ' of their ' || cnt || ' ranked games ended in under 20 seconds. That''s a lot more than most players (about 1 in 8).');
+  elsif wins > 0 then facts := facts || jsonb_build_array(jsonb_build_array('Ranked games under 20 seconds', wins || ' of ' || cnt || ' (about 1 in 8 is normal: quick KOs and quits)')); end if;
+  if cnt3 > 0 then facts := facts || jsonb_build_array(jsonb_build_array('Games where both said they lost', cnt3 || ' (a draw or a time-out: this happens to everyone, about 1 game in 11)')); end if;
+  if losses >= 3 then finds := finds || jsonb_build_object('s', 2, 't', 'In ' || losses || ' ranked games BOTH players said they won (only about 1 game in 100 does that). One side''s game reported it wrong, or was edited.');
+  elsif losses > 0 then facts := facts || jsonb_build_array(jsonb_build_array('Games where both claimed the win', losses)); end if;
+  if cnt >= 5 then
+    select o, c into t, cnt2 from (select case when a = p_uid then b else a end o, count(*) c from px_matches where (a = p_uid or b = p_uid) and at > now() - make_interval(days => days) group by 1 order by 2 desc limit 1) q;
+    if cnt2 * 100 / cnt >= 40 then
+      -- (v29l) playing one friend a lot is normal at school. What matters is the same copy of the game, or results that only go one way
+      select count(*) filter (where (a = p_uid and ra = 'W') or (b = p_uid and rb = 'W')) into cnt3 from px_matches where ((a = p_uid and b = t) or (b = p_uid and a = t)) and at > now() - make_interval(days => days);
+      if exists (select 1 from px_players o where o.uid = t and vdev is not null and o.info -> 'dev' ->> 'iid' = vdev) then
+        finds := finds || jsonb_build_object('s', 3, 't', cnt2 || ' of their ' || cnt || ' ranked games were against ' || coalesce((select name from px_players where uid = t), t) || ', who plays on the SAME COPY OF THE GAME (same computer, same browser). That is win trading with a second account.');
+      elsif cnt2 >= 6 and cnt3 * 100 / cnt2 >= 85 then
+        finds := finds || jsonb_build_object('s', 2, 't', cnt2 || ' of their ' || cnt || ' ranked games were against ' || coalesce((select name from px_players where uid = t), t) || ', and they won ' || cnt3 || ' of them. That one-sided could be win trading (a friend losing on purpose). Check the games.');
+      else
+        facts := facts || jsonb_build_array(jsonb_build_array('Plays one person a lot', cnt2 || ' of ' || cnt || ' ranked games vs ' || coalesce((select name from px_players where uid = t), t) || ', won ' || cnt3 || ' (normal for two friends: the results go both ways)'));
+      end if;
+    end if;
+  end if;
+  select count(*) into cnt from px_matches m join px_players o on o.uid = case when m.a = p_uid then m.b else m.a end
+    where (m.a = p_uid or m.b = p_uid) and m.done and coalesce(case when m.a = p_uid then m.da else m.db end, 0) > 0 and vdev is not null and o.info -> 'dev' ->> 'iid' = vdev;
+  if cnt > 0 then finds := finds || jsonb_build_object('s', 3, 't', 'They won Elo ' || cnt || ' times from an account on their own copy of the game (same computer, same browser).'); end if;
+  select count(*), count(*) filter (where why = 'afk') into cnt, cnt2 from px_quits where uid = p_uid and at > now() - make_interval(days => days);
+  if cnt > 0 then facts := facts || jsonb_build_array(jsonb_build_array('Online games quit or left AFK', cnt || ' (' || cnt2 || ' AFK) · online bans so far: ' || coalesce(pl.qbans, 0))); end if;
+  if cnt >= 5 then finds := finds || jsonb_build_object('s', 1, 't', 'Quit or went AFK in ' || cnt || ' online games.'); end if;
+  begin
+    select count(*), round(avg(rtt)), count(*) filter (where loss >= 20) into cnt, cnt2, wins from px_netlog where uid = p_uid and at > now() - make_interval(days => days);
+    if cnt > 0 then facts := facts || jsonb_build_array(jsonb_build_array('Connection (' || cnt || ' games)', 'average ping ' || coalesce(cnt2, 0) || ' ms, ' || wins || ' games with big packet loss')); end if;
+    if wins >= 5 and wins * 100 / greatest(cnt, 1) >= 40 then finds := finds || jsonb_build_object('s', 1, 't', 'Big packet loss in ' || wins || ' of ' || cnt || ' games. Usually just bad Wi-Fi, but a lag switch looks the same: compare it with their wins.'); end if;
+  exception when others then null; end;
+  if deep then
+    for rw in select m.at, case when m.a = p_uid then m.b else m.a end o, case when m.a = p_uid then m.ra else m.rb end mine, case when m.a = p_uid then m.rb else m.ra end theirs,
+               round(extract(epoch from coalesce(m.ended_at, m.at) - m.at)) secs, case when m.a = p_uid then m.da else m.db end d
+             from px_matches m where (m.a = p_uid or m.b = p_uid) order by m.at desc limit 10 loop
+      facts := facts || jsonb_build_array(jsonb_build_array('Game ' || to_char(rw.at, 'Mon DD HH24:MI'), 'vs ' || coalesce((select name from px_players where uid = rw.o), rw.o) || ': said ' || coalesce(rw.mine, '?') || ', they said ' || coalesce(rw.theirs, '?') || ', ' || rw.secs || 's, Elo ' || coalesce(rw.d, 0)));
+    end loop;
+  end if;
+  areas := areas || jsonb_build_object('k', 'matches', 'crew', 'Match Referee', 'title', 'Ranked games and online play', 'deep', deep, 'finds', finds, 'facts', facts);
+
+  -- ---------------- 3. the Link Tracker ----------------
+  deep := deep_all or 'links' = any (fo); finds := '[]'; facts := '[]';
+  if vdev is not null then
+    select count(*), string_agg(name || case when px_is_banned(uid) then ' (BANNED)' else '' end, ', ') into cnt, t from (select uid, name from px_players where info -> 'dev' ->> 'iid' = vdev and uid <> p_uid order by seen desc limit case when deep then 25 else 8 end) q;
+    if cnt > 0 then facts := facts || jsonb_build_array(jsonb_build_array('Other accounts on this same copy of the game (same computer and browser)', t)); end if;
+    if exists (select 1 from px_players where info -> 'dev' ->> 'iid' = vdev and uid <> p_uid and px_is_banned(uid)) then
+      finds := finds || jsonb_build_object('s', 3, 't', 'Plays on the same copy of the game as a banned account (same computer, same browser). Very likely the same person getting round a ban, unless they share a computer at home.');
+    elsif cnt >= 1 then finds := finds || jsonb_build_object('s', 1, 't', case when cnt = 1 then 'Another account plays on this same copy of the game (' || t || ').' else cnt || ' other accounts play on this same copy of the game (' || t || ').' end || ' That means the same computer and browser, not just the same kind of laptop. Could be a brother or sister on a family computer, or an alt: check whether they ever play each other.'); end if;
+  end if;
+  select count(*) into cnt from px_players where info -> 'dev' ->> 'id' = pl.info -> 'dev' ->> 'id' and uid <> p_uid and coalesce(pl.info -> 'dev' ->> 'id', '') <> '';
+  if cnt > 0 then facts := facts || jsonb_build_array(jsonb_build_array('Same kind of computer and browser', cnt || ' other players (normal at school: everyone has the same MacBook and Chrome, so this proves nothing)')); end if;
+  if vdev is null then facts := facts || jsonb_build_array(jsonb_build_array('This copy of the game', 'not known yet (their game is older than v28.1, so same-copy checks are skipped)')); end if;
+  if pl.iph is not null then
+    select count(*) into cnt from px_players where iph = pl.iph and uid <> p_uid;
+    facts := facts || jsonb_build_array(jsonb_build_array('Accounts on the same network', cnt || ' (a school network is shared by lots of players)'));
+    select count(*) into cnt2 from px_players where iph = pl.iph and uid <> p_uid;
+    select count(*) into cnt from px_players where iph = pl.iph and uid <> p_uid and px_is_banned(uid);
+    -- (v29l) a network with lots of players on it is the school's: a banned kid somewhere in the school says nothing about this one
+    if cnt > 0 and cnt2 >= 8 then facts := facts || jsonb_build_array(jsonb_build_array('Banned accounts on the same network', cnt || ' (it''s a shared network with ' || cnt2 || ' players, like the school''s, so this means nothing)'));
+    elsif cnt > 0 then finds := finds || jsonb_build_object('s', 1, 't', cnt || ' banned account(s) use the same small network (only ' || cnt2 || ' players on it: could be a home network).'); end if;
+  end if;
+  select string_agg(distinct g2.uid, ', ') into t from px_google g join px_google g2 on g2.sub = g.sub and g2.uid <> g.uid where g.uid = p_uid;
+  if t is not null then facts := facts || jsonb_build_array(jsonb_build_array('Other player ids on the same email', t)); end if;
+  if vdev is not null then
+    select count(distinct uid) into cnt from px_coin where px_coin.dev = vdev and uid <> p_uid;
+    if cnt > 0 then finds := finds || jsonb_build_object('s', 2, 't', 'The weekly coin was taken on ' || cnt || ' other account(s) from this same copy of the game.'); end if;
+    select count(distinct u2.uid) into cnt from px_code_use u join px_code_use u2 on u2.code = u.code and u2.dev = u.dev and u2.uid <> u.uid where u.uid = p_uid and u.dev is not null;
+    if cnt > 0 then finds := finds || jsonb_build_object('s', 2, 't', 'A code they used was also used on ' || cnt || ' other account(s) from this same copy of the game.'); end if;
+  end if;
+  if coalesce(array_to_string(pl.prev, ', '), '') <> '' then facts := facts || jsonb_build_array(jsonb_build_array('Old names', array_to_string(pl.prev, ', '))); end if;
+  areas := areas || jsonb_build_object('k', 'links', 'crew', 'Link Tracker', 'title', 'Other accounts and ban evasion', 'deep', deep, 'finds', finds, 'facts', facts);
+
+  -- ---------------- 4. the Rewards Auditor ----------------
+  deep := deep_all or 'rewards' = any (fo); days := case when deep then 90 else 30 end; finds := '[]'; facts := '[]';
+  select count(*) into cnt from px_code_fail where uid = p_uid and at > now() - interval '7 days';
+  if cnt >= 10 then finds := finds || jsonb_build_object('s', 2, 't', 'Typed ' || cnt || ' wrong codes this week. That''s guessing codes.'); elsif cnt > 0 then facts := facts || jsonb_build_array(jsonb_build_array('Wrong codes this week', cnt)); end if;
+  select count(*) into cnt from px_coin where uid = p_uid; select count(*) into cnt2 from px_code_use where uid = p_uid;
+  facts := facts || jsonb_build_array(jsonb_build_array('Coins / codes used', cnt || ' / ' || cnt2));
+  select count(*), coalesce(sum(price), 0) into cnt, cnt2 from px_purchases where uid = p_uid; if cnt > 0 then facts := facts || jsonb_build_array(jsonb_build_array('Things bought', cnt || ' ($' || cnt2 || ')')); end if;
+  select count(*), count(*) filter (where status in ('no', 'cancelled')) into cnt, cnt2 from px_meets where uid = p_uid and at > now() - make_interval(days => days);
+  if cnt > 0 then facts := facts || jsonb_build_array(jsonb_build_array('Shop orders', cnt || ' (' || cnt2 || ' cancelled or turned down)')); end if;
+  if cnt2 >= 4 then finds := finds || jsonb_build_object('s', 1, 't', cnt2 || ' shop orders cancelled or turned down. Prank orders?'); end if;
+  begin
+    select count(*), min(secs) into cnt, cnt2 from px_turf_log where uid = p_uid and won and at > now() - make_interval(days => days);
+    if cnt > 0 then
+      facts := facts || jsonb_build_array(jsonb_build_array('Turf Wars wins', cnt || ' (fastest ' || cnt2 || 's)'));
+      select count(*) into cnt from px_turf_log where uid = p_uid and won and at > now() - make_interval(days => days)
+        and secs < 0.3 * coalesce((select percentile_cont(0.5) within group (order by secs) from px_turf_log where won and secs > 0), 0);
+      if cnt >= 2 then finds := finds || jsonb_build_object('s', 2, 't', cnt || ' Turf Wars wins came in less than a third of the usual time. Watch the replays (Turf tab).'); end if;
+      select count(*) into cnt from px_replays where uid = p_uid; if cnt > 0 then facts := facts || jsonb_build_array(jsonb_build_array('Turf replays saved', cnt)); end if;
+    end if;
+  exception when others then null; end;
+  areas := areas || jsonb_build_object('k', 'rewards', 'crew', 'Rewards Auditor', 'title', 'Codes, coins, the shop and turf', 'deep', deep, 'finds', finds, 'facts', facts);
+
+  -- ---------------- 5. the Conduct Officer ----------------
+  deep := deep_all or 'conduct' = any (fo); days := case when deep then 90 else 30 end; finds := '[]'; facts := '[]';
+  select count(*), count(*) filter (where px_slur(x) or px_word_hit(x)) into cnt, cnt2 from px_msgs where uid = p_uid and kind = 'm' and at > now() - make_interval(days => days);
+  facts := facts || jsonb_build_array(jsonb_build_array('Chat messages (' || days || ' days)', cnt));
+  if cnt2 >= 3 then finds := finds || jsonb_build_object('s', 2, 't', cnt2 || ' chat messages had slurs or banned words.'); elsif cnt2 > 0 then finds := finds || jsonb_build_object('s', 1, 't', cnt2 || ' chat message(s) had a slur or a banned word.'); end if;
+  begin
+    select count(*) into cnt from px_tmsgs where uid = p_uid and (px_slur(x) or px_word_hit(x)) and at > now() - make_interval(days => days);
+    if cnt > 0 then finds := finds || jsonb_build_object('s', 2, 't', cnt || ' private message(s) had slurs or banned words.'); end if;
+  exception when others then null; end;
+  select max(c) into cnt from (select count(*) c from px_msgs where uid = p_uid and at > now() - make_interval(days => days) group by date_trunc('minute', at)) q;
+  if coalesce(cnt, 0) >= 15 then finds := finds || jsonb_build_object('s', 1, 't', 'Sent ' || cnt || ' messages in one minute (spamming).'); end if;
+  select count(*), count(distinct reporter) into cnt, cnt2 from px_dm_reports where target = p_uid and at > now() - make_interval(days => days);
+  if cnt > 0 then finds := finds || jsonb_build_object('s', case when cnt2 >= 3 then 2 else 1 end, 't', 'Reported ' || cnt || ' time(s) by ' || cnt2 || ' different player(s).'); end if;
+  select count(*) into cnt from px_bans where uid = p_uid; if cnt > 0 then facts := facts || jsonb_build_array(jsonb_build_array('Bans and mutes on record', cnt)); end if;
+  select count(*) into cnt from px_sec_log where uid = p_uid and act in ('someone who isn''t staff tried the panel', 'creator panel refused: email not signed in', 'wrong panel PIN') and at > now() - make_interval(days => days)
+    and not exists (select 1 from px_staff s where s.uid = p_uid);
+  if cnt > 0 then finds := finds || jsonb_build_object('s', 3, 't', 'Tried to get into the staff panel ' || cnt || ' time(s) without being staff.'); end if;
+  for rw in select at, by_name, x from px_notes where uid = p_uid order by id desc limit case when deep then 10 else 3 end loop
+    facts := facts || jsonb_build_array(jsonb_build_array('Staff note ' || to_char(rw.at, 'Mon DD'), coalesce(rw.by_name, 'staff') || ': ' || left(rw.x, 160))); end loop;
+  if deep then
+    for rw in select at, x from px_msgs where uid = p_uid and kind = 'm' and (px_slur(x) or px_word_hit(x)) order by id desc limit 6 loop
+      facts := facts || jsonb_build_array(jsonb_build_array('Message ' || to_char(rw.at, 'Mon DD HH24:MI'), left(rw.x, 140))); end loop;
+  end if;
+  areas := areas || jsonb_build_object('k', 'conduct', 'crew', 'Conduct Officer', 'title', 'Chat, reports and behaviour', 'deep', deep, 'finds', finds, 'facts', facts);
+
+  -- ---------------- the verdict ----------------
+  for rw in select (f.v ->> 's')::int s from jsonb_array_elements(areas) a(v), jsonb_array_elements(a.v -> 'finds') f(v) loop
+    total := total + case rw.s when 3 then 5 when 2 then 2 when 1 then 1 else 0 end; worst := greatest(worst, rw.s); if rw.s = 3 then n3 := n3 + 1; end if; end loop;
+  -- what was asked: say which crew member took it and what they found
+  -- (v29m) and the words in what was typed that sent them there; only real findings count (not the neutral notes)
+  if not deep_all then
+    foreach k in array fo loop
+      asked := asked || jsonb_build_object('k', k, 'w', (select a.v -> 'w' from jsonb_array_elements(fq -> 'areas') a(v) where a.v ->> 'k' = k),
+        'n', (select count(*) from jsonb_array_elements(areas) a(v), jsonb_array_elements(a.v -> 'finds') x(v) where a.v ->> 'k' = k and (x.v ->> 's')::int >= 1));
+    end loop;
+  end if;
+  vd := case when n3 >= 2 or (worst >= 3 and total >= 10) then 'likely' when worst >= 3 or total >= 6 then 'suspicious' when total >= 2 then 'watch' else 'clean' end;   -- (v29l: stricter)
+  -- ---------------- (v29m) the summary at the top of the report: what it adds up to, in plain words ----------------
+  select coalesce(jsonb_agg(q.o), '[]'::jsonb) into top from (
+    select jsonb_build_object('k', a.v ->> 'k', 'crew', a.v ->> 'crew', 's', (x.v ->> 's')::int, 't', x.v ->> 't') o
+    from jsonb_array_elements(areas) a(v), jsonb_array_elements(a.v -> 'finds') x(v) where (x.v ->> 's')::int >= 1 order by (x.v ->> 's')::int desc limit 3) q;
+  select coalesce(jsonb_agg(a.v ->> 'crew'), '[]'::jsonb) into clear from jsonb_array_elements(areas) a(v)
+    where not exists (select 1 from jsonb_array_elements(a.v -> 'finds') x(v) where (x.v ->> 's')::int >= 1);
+  if (fq ->> 'fight')::boolean then cant := cant || to_jsonb('How they fight move by move (' || (fq ->> 'fightw') || '): the crew only sees totals and records, not single fights. Watch their Turf replays (Turf tab), or fight them yourself.'::text); end if;
+  if vdev is null then cant := cant || to_jsonb('Same-computer checks: their game is older than v28.1, so it doesn''t say which copy of the game it is.'::text); end if;
+  if not exists (select 1 from px_matches where (a = p_uid or b = p_uid) and at > now() - interval '30 days') then cant := cant || to_jsonb('Ranked play: no ranked games in the last 30 days.'::text); end if;
+  if coalesce(px_num(pl.info ->> 'play'), 0) < 600 then cant := cant || to_jsonb('Levelling speed: their game has recorded less than 10 minutes of play, so there''s little to compare.'::text); end if;
+  if not (fq ->> 'fight')::boolean then cant := cant || to_jsonb('How they fight move by move: the crew sees totals, not single fights (Turf replays show those).'::text); end if;
+  wk := top -> 0 ->> 'k';
+  head := case vd
+    when 'likely' then 'Very likely breaking the rules: ' || case when n3 >= 2 then n3 || ' serious things' else 'one serious thing and several smaller ones' end || ' point the same way.'
+    when 'suspicious' then case when worst >= 3 then 'One serious thing needs a look. On its own it isn''t proof.' else 'Several smaller things add up. Worth a look, but nothing serious on its own.' end
+    when 'watch' then 'Nothing serious. A few small things to keep an eye on.'
+    else 'Nothing points to cheating or breaking the rules.' end;
+  nxt := case when vd = 'clean' then 'Nothing to do: close the case as "Cleared".'
+    when wk = 'progress' then 'Open their fighter on this page and compare their level and stats with their play time. If the save was edited, set the fighter back with the editor, then decide on a warning or a ban.'
+    when wk = 'matches' then 'Read their recent ranked games (a deep sweep lists them) and look at the other account. Win trading: reset the Elo of both. A real second account: ban the extra one.'
+    when wk = 'links' then 'Compare the linked accounts (names, emails, when they were made, whether they play each other). Only the account dodging a ban should be banned. A brother or sister on a family computer is fine.'
+    when wk = 'rewards' then 'Check their codes, coins and Turf wins (Events and Turf tabs). Watch the Turf replays for wins that were too quick.'
+    when wk = 'conduct' then 'Read the messages in the Chat tab first. A first time: a warning or a mute. Slurs or threats: a ban.'
+    else 'Have a look yourself before deciding: the crew only reports.' end;
+  return jsonb_build_object('score', total, 'worst', worst, 'verdict', vd,
+    'summary', jsonb_build_object('head', head, 'top', top, 'clear', clear, 'cant', cant, 'next', nxt),
+    'ask', nullif(btrim(coalesce(p_focus, '')), ''), 'asked', asked, 'all', deep_all, 'areas', areas, 'name', pl.name, 'seen', px_ms(pl.seen));
+end $$;
+-- the evader list: a new account on the same network AND the same copy of the game as a banned player
+create or replace function public.px_evaders() returns jsonb language sql stable security definer set search_path = public as $$
+  select coalesce(jsonb_agg(q order by (q ->> 'created')::bigint desc), '[]'::jsonb) from (
+    select jsonb_build_object('uid', o.uid, 'n', o.name, 'created', px_ms(o.created), 'seen', px_ms(o.seen), 'buid', b.uid, 'bn', bp.name, 'samename', lower(o.name) = lower(bp.name)) q
+    from px_bans b join px_players bp on bp.uid = b.uid
+    join px_players o on o.iph = bp.iph and o.iph is not null and o.uid <> b.uid and o.created > b.at - interval '1 hour' and o.created > now() - interval '30 days'
+      and px_dev_iid(o.info) is not null and px_dev_iid(o.info) = px_dev_iid(bp.info)
+    where b.kind = 'ban' and (b.until is null or b.until > now()) and b.src is null
+      and not px_is_banned(o.uid) and not px_is_staff(o.uid)
+    limit 30) z $$;
+revoke all on function public.px_evaders() from public, anon, authenticated;
+
+-- =====================================================================
+-- v29j · LEVELS STAFF SET OR GIVE NEVER LOOK LIKE CHEATING
+-- Setting a player's level or rebirth in the panel used to get them flagged "levelled up too fast". The panel told the
+-- anti-cheat to start counting again at the next check-in, but that check-in usually came from the game BEFORE it had
+-- picked up the change, so when the new level showed up a minute later it looked like a giant jump. Now, while a staff
+-- change to a player's level, rebirth or stats is still on its way to their game, their check-ins aren't judged for speed;
+-- the count starts again from the first check-in after their game says it applied the change. ("Give levels", coins, codes
+-- and Online Shop levels were already counted as allowed, and still are.) Safe to run again.
+-- =====================================================================
+create or replace function public.px_staff_lv_pending(p_uid text) returns boolean language sql stable set search_path = public as $$
+  select exists (select 1 from px_edits e where e.uid = p_uid and not e.applied and e.at > now() - interval '14 days'
+    and (e.edit ? 'lv' or e.edit ? 'rb' or e.edit ? 'st')) $$;
+create or replace function public.px_cheat_trg() returns trigger language plpgsql set search_path = public as $$
+declare fs jsonb := new.info -> 'fs'; fid text; r int; l int; pv jsonb; secs real; jump int; nat int; why text; born bigint; nowms bigint := (extract(epoch from now()) * 1000)::bigint;
+begin
+  if new.info is distinct from old.info then
+    if fs is not null and coalesce(fs ->> 'id', '') ~ '^f[0-9a-z]{6,16}$' and not new.free_ok then
+      if px_staff_lv_pending(new.uid) then
+        new.prog := '{"*": 1}'::jsonb;   -- (a level staff set is on its way to their game: start counting again once it has arrived)
+      else
+        fid := fs ->> 'id'; r := coalesce(px_num(fs ->> 'r'), 0)::int; l := coalesce(px_num(fs ->> 'l'), 1)::int;
+        pv := coalesce(old.prog, '{}'::jsonb) -> fid;
+        if pv is null and coalesce(old.prog, '{}'::jsonb) ? '*' then null; -- (just after a staff edit: whatever it shows now is the new starting point)
+        elsif pv is null then -- a fighter we haven't seen: it can't be further along than its age allows (the id carries when it was made)
+          born := px_b36(substr(fid, 2, 8));
+          if born is not null and born between 1577836800000 and nowms + 60000 and nowms - born < 7200000 then
+            secs := greatest(0, (nowms - born) / 1000.0); jump := l - 1 + r * 30;
+          end if;
+        else
+          secs := extract(epoch from now()) - (case when (pv ->> 'at') ~ '^[0-9]{1,15}$' then (pv ->> 'at')::bigint else 0 end) / 1000.0;
+          if r = coalesce(px_num(pv ->> 'r'), 0) then jump := l - coalesce(px_num(pv ->> 'l'), 1)::int;
+          elsif r = coalesce(px_num(pv ->> 'r'), 0) + 1 then jump := l - 1;
+          elsif r > coalesce(px_num(pv ->> 'r'), 0) + 1 then jump := (r - coalesce(px_num(pv ->> 'r'), 0)::int - 1) * 30 + l;
+          end if; -- (fewer rebirths than before: a staff edit or a restored backup; start again from here)
+        end if;
+        if jump is not null and jump > 0 then
+          nat := 2 * ceil(greatest(secs, 0) / 10.0)::int + 16;   -- (two levels a fight at the very most, plus room for claiming a few rewards at once)
+          if jump > nat + new.lv_grant then why := 'levelled up too fast: +' || jump || ' levels in ' || round(greatest(secs, 0)) || 's'; end if;
+          new.lv_grant := greatest(0, new.lv_grant - greatest(0, jump - nat));
+        end if;
+        new.prog := (case when jsonb_typeof(old.prog) = 'object' and (select count(*) from jsonb_object_keys(old.prog)) < 20 then old.prog - '*' else '{}'::jsonb end)
+          || jsonb_build_object(fid, jsonb_build_object('r', r, 'l', l, 'at', nowms));
+      end if;
+    end if;
+    new.cheat := coalesce(px_cheat_why3(new.info, new.free_ok, new.stat_ok), why, case when old.cheat like 'levelled up too fast%' then old.cheat end);
+    if new.cheat is not null and old.cheat is null then insert into px_mod_log (act, target, note) values ('edited fighter?', new.uid || ' (' || coalesce(new.name, '?') || ')', new.cheat); end if;
+  end if;
+  return new;
+end $$;
+revoke all on function public.px_staff_lv_pending(text), public.px_cheat_trg() from public, anon, authenticated;
+-- once: take off the wrong "levelled up too fast" flags this caused (a flag that came within a day after staff set or gave
+-- that player levels). It says so in the log. Flags with no staff change before them stay.
+alter table public.px_mod_cfg add column if not exists lvflag_fixed boolean not null default false;
+do $$
+declare r record; lf timestamptz;
+begin
+  if coalesce((select lvflag_fixed from px_mod_cfg where id = 1), true) then return; end if;
+  for r in select uid, name from px_players where cheat like 'levelled up too fast%' loop
+    select max(at) into lf from px_mod_log where act = 'edited fighter?' and target like r.uid || ' (%';
+    if exists (select 1 from px_edits e where e.uid = r.uid and (e.edit ?| array['lv', 'rb', 'st', 'addlv']) and e.at <= coalesce(lf, now()) and e.at > coalesce(lf, now()) - interval '1 day') then
+      update px_players set cheat = null, prog = '{"*": 1}'::jsonb where uid = r.uid;
+      insert into px_mod_log (act, target, note) values ('cleared flag', r.uid || ' (' || coalesce(r.name, '?') || ')', 'the "levelled up too fast" flag came right after staff set or gave them levels, so it wasn''t cheating');
+    end if;
+  end loop;
+  update px_mod_cfg set lvflag_fixed = true where id = 1;
+end $$;
+
+-- v29j · the creator's "no limits" fighters can take Turf blocks. A won Turf fight checks the fighter's stats against what its
+-- rebirth allows, and refused every fighter the creator had given "no limits" (stats past the cap, set in the panel). Those
+-- are allowed now; anyone else with stats past the cap still can't take a block.
+create or replace function public.px_turf_win(p_uid text, p_key text, p_ticket bigint, p_name text, p_fighter jsonb, p_dna jsonb, p_event text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare k px_turf_tickets; t record; live_owner text; hist jsonb; secs real;
+begin
+  perform px_auth(p_uid, p_key);
+  if px_is_banned(p_uid) then raise exception 'You are banned from online play'; end if;
+  select * into k from px_turf_tickets where id = p_ticket and uid = p_uid for update;
+  if not found or k.used then raise exception 'That fight was already counted'; end if;
+  secs := extract(epoch from now() - k.started);
+  if secs < (case when k.owner_was is null then 15 else 6 end) then raise exception 'That was too quick to be a real fight'; end if;
+  if secs > 1800 then raise exception 'That fight took too long to count'; end if;
+  update px_turf_tickets set used = true where id = k.id;
+  if length(coalesce(p_fighter::text, '')) > 30000 or length(coalesce(p_dna::text, '')) > 30000 then raise exception 'too big'; end if;
+  if not coalesce((select free_ok from px_players where uid = p_uid), false) then perform px_turf_check_fighter(p_fighter); end if;   -- (v29j: the creator's "no limits" stats are allowed)
+  select * into t from turf where id = k.block for update;
+  if t.owner_id is not null and t.claimed_at >= px_turf_week() then live_owner := t.owner_id; end if;
+  if live_owner is distinct from k.owner_was then raise exception 'Someone else took that block first'; end if;
+  -- who held it before (and when), newest first, eight deep: the weekly crown is worked out from this
+  hist := jsonb_build_array(jsonb_build_object('o', t.owner_id, 'n', t.owner_name, 'at', coalesce((extract(epoch from t.claimed_at) * 1000)::bigint, 0)))
+    || coalesce((select jsonb_agg(h) from (select h from jsonb_array_elements(coalesce(t.fighter -> 'hist', '[]'::jsonb)) h limit 7) q), '[]'::jsonb);
+  insert into px_turf_log (uid, name, block, secs, owner_was, owner_name, won, tk) values (p_uid, left(coalesce(p_name, 'Player'), 24), k.block, secs, k.owner_was, t.owner_name, true, k.id);  -- (how long each win took: the mods look for ones that were too quick)
+  if random() < 0.05 then delete from px_turf_log where at < now() - interval '30 days'; end if;
+  update turf set owner_id = k.fid, owner_uid = p_uid, owner_name = left(coalesce(p_name, 'Player'), 24),
+    fighter = coalesce(p_fighter, '{}'::jsonb) - 'hist' || jsonb_build_object('hist', hist), dna = p_dna,
+    claimed_at = now(), defenses = 0, last_event = left(p_event, 120) where id = k.block;
+  return (select to_jsonb(x) from turf x where id = k.block);
+end $$;
+
+-- =====================================================================
+-- v29k · A LIGHTER DATABASE (the panel PIN "timed out", and everything else slowed down, when the whole school was on)
+-- The logs showed the database stalling for half a minute at a time in the school day. Two calls made most of the work:
+-- every game's check-in (every 8 seconds) rewrote its player row each time, and the messages app rebuilt every chat list
+-- every 6 seconds. Now a check-in only writes when something changed (or every 20 seconds), and the messages app asks
+-- "anything new?" with a short fingerprint first: when nothing changed, the answer is one line. Safe to run again.
+-- =====================================================================
+create or replace function public.px_hello(p_uid text, p_key text, p_name text, p_lv int, p_rb int, p_st text, p_since bigint, p_people boolean, p_info jsonb default null)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare ninfo jsonb; nname text; ntag text; r px_players; msgs jsonb; ppl jsonb := null; mx bigint; onl int; bn px_bans; mu px_bans; ann jsonb; eds jsonb; ds bigint; dels jsonb := null; dcur bigint; mv int; vv int; oldv boolean := false;
+begin
+  r := px_auth(p_uid, p_key, p_name);
+  perform px_google_touch(p_uid);   -- (signed in with Google? remember whose account this device is)
+  -- (v29k) the row is only written when something real changed, or every 20 seconds to keep "online" and play time fresh.
+  -- Every check-in used to rewrite it (the play-time counter changes every time), and with a whole school checking in every
+  -- few seconds those writes were what slowed the database down for everyone.
+  ninfo := case when p_info is null or jsonb_typeof(p_info) <> 'object' then r.info when length(p_info::text) < 1800 then p_info when length(coalesce(p_info -> 'fs', 'null'::jsonb)::text) < 600 then jsonb_build_object('ver', p_info -> 'ver', 'fs', p_info -> 'fs', 'big', true) else coalesce(r.info, '{}'::jsonb) || jsonb_build_object('big', true) end;
+  nname := case when r.name_lock then r.name else coalesce(px_name_clean(p_name), r.name) end; ntag := coalesce(px_net_tag(), r.iph);
+  if r.seen is null or r.seen < now() - interval '20 seconds' or nname is distinct from r.name or ntag is distinct from r.iph or coalesce(p_lv, r.lv) is distinct from r.lv
+     or coalesce(p_rb, r.rb) is distinct from r.rb or coalesce(left(p_st, 40), r.st) is distinct from r.st
+     or (coalesce(ninfo, '{}'::jsonb) - 'play' - 'ds') is distinct from (coalesce(r.info, '{}'::jsonb) - 'play' - 'ds') then
+    update px_players set name = nname, iph = ntag, lv = coalesce(p_lv, lv), rb = coalesce(p_rb, rb), st = coalesce(left(p_st, 40), st), seen = now(), info = ninfo /* (v27: padding the report can't hide the fighter from the checks) */
+      where uid = p_uid returning * into r;
+  end if;
+  select count(*) into onl from px_players where seen > now() - interval '40 seconds';
+  perform px_ban_follow(p_uid, p_info);   -- (a ban or mute on another id this device used, or this Google account, follows the player here)
+  select * into bn from px_bans where uid = p_uid and kind = 'ban' and (until is null or until > now());
+  select * into mu from px_bans where uid = p_uid and kind = 'mute' and (until is null or until > now());
+  ann := px_ann_json(p_uid);
+  -- an old copy of the game (below the minimum version the creator set) that can't show its own update screen (older than v15): shut like a ban until it's
+  -- updated. Copies from v13 up close the whole game; older ones (or ones that don't say) lose the online doors. Staff are never locked out.
+  select min_ver into mv from px_mod_cfg where id = 1;
+  vv := case when p_info is not null and jsonb_typeof(p_info) = 'object' and (p_info ->> 'ver') ~ '^[0-9]{1,4}$' then (p_info ->> 'ver')::int end;
+  -- (a copy from v15 up has its own full-screen "download the update" screen, which a lock screen would cover: the game itself is told the minimum in the config, below, and shows that screen)
+  if coalesce(mv, 0) > 0 and bn.uid is null and (vv is null or (vv < mv and vv < 15)) and px_staff_rank(p_uid) is null then oldv := true; end if;
+  if bn.uid is not null or oldv then -- banned: no chat, no people, just the news that they are
+    return jsonb_build_object('last', 0, 'msgs', '[]'::jsonb, 'people', null, 'online', onl, 'ann', ann, 'cfg', px_pub_cfg(),
+      'ban', case when oldv then jsonb_build_object('until', null, 'why', left('Out of date. Get Pixel Games v' || mv || ' or newer: re-download it, or open rocourtnathan-bit.github.io/pixel-games.html', 120), 'full', (vv is not null and vv >= 13))
+        else jsonb_build_object('until', case when bn.until is null then null else (extract(epoch from bn.until) * 1000)::bigint end, 'why', bn.reason, 'full', bn."full") end,
+      'me', jsonb_build_object('ef', r.elo_f, 'gf', r.gf, 'wf', r.wf, 'eh', r.elo_h, 'gh', r.gh, 'wh', r.wh, 'grade', r.grade, 'staff', px_staff_rank(p_uid)));
+  end if;
+  select coalesce(max(id), 0) into mx from px_msgs;
+  if coalesce(p_since, -1) < 0 then -- first call: the last few lines as history
+    select coalesce(jsonb_agg(jsonb_build_object('id', id, 'uid', uid, 'n', coalesce((select name from px_players o where o.uid = q.uid), q.n), 'fl', (select info -> 'fl' from px_players o where o.uid = q.uid), 'k', kind, 'x', x, 'ts', (extract(epoch from at) * 1000)::bigint) order by id), '[]') into msgs
+      from (select * from px_msgs where kind = 'm' and grade is not distinct from r.grade and at > now() - interval '15 minutes' order by id desc limit 15) q;
+  else
+    select coalesce(jsonb_agg(jsonb_build_object('id', id, 'uid', uid, 'n', coalesce((select name from px_players o where o.uid = q.uid), q.n), 'fl', (select info -> 'fl' from px_players o where o.uid = q.uid), 'k', kind, 'x', x, 'd', data, 'ts', (extract(epoch from at) * 1000)::bigint) order by id), '[]') into msgs
+      from (select * from px_msgs where id > p_since and ((kind = 'm' and grade is not distinct from r.grade) or to_uid = p_uid) and uid <> p_uid order by id limit 60) q;
+  end if;
+  if p_people then
+    select coalesce(jsonb_agg(jsonb_build_object('uid', uid, 'n', name, 'lv', lv, 'rb', rb, 'st', st, 'ef', elo_f, 'eh', elo_h, 'fl', info -> 'fl')), '[]') into ppl
+      from (select * from px_players where seen > now() - interval '40 seconds' and uid <> p_uid and not px_is_banned(uid) order by seen desc limit 80) q;
+  end if;
+  if random() < 0.2 then perform px_sweep(p_uid); end if;
+  select jsonb_agg(jsonb_build_object('id', id, 'e', edit) order by id) into eds from (select * from px_edits where uid = p_uid and not applied order by id limit 5) q;
+  -- chat lines a mod deleted since this game last asked (its cursor rides in p_info as 'ds'; -1 = just tell me where we are)
+  ds := case when p_info is not null and jsonb_typeof(p_info) = 'object' and (p_info ->> 'ds') ~ '^-?[0-9]+$' then (p_info ->> 'ds')::bigint else null end;
+  if ds is not null then
+    if ds < 0 then select coalesce(max(id), 0) into dcur from px_dels;
+    else
+      select coalesce(jsonb_agg(jsonb_build_object('m', mid, 'u', uid) order by id), '[]'), coalesce(max(id), ds) into dels, dcur from (select * from px_dels where id > ds order by id limit 200) q;
+    end if;
+  end if;
+  return jsonb_build_object('last', mx, 'msgs', msgs, 'people', ppl, 'online', onl, 'ann', ann, 'cfg', px_pub_cfg(), 'edits', eds, 'dels', dels, 'dmax', dcur,
+    'mute', case when mu.uid is null then null else jsonb_build_object('until', case when mu.until is null then null else (extract(epoch from mu.until) * 1000)::bigint end, 'why', mu.reason) end,
+    'me', jsonb_build_object('ef', r.elo_f, 'gf', r.gf, 'wf', r.wf, 'eh', r.elo_h, 'gh', r.gh, 'wh', r.wh, 'grade', r.grade, 'staff', px_staff_rank(p_uid)));
+end $$;
+-- the messages app: a fingerprint of my chats (which ones, their last message time, what I've read, who's in them, who I blocked).
+-- If the game's copy matches and nothing came after p_since, there's nothing to send.
+create or replace function public.px_dm_sig(p_uid text) returns text language sql stable set search_path = public as $$
+  select md5(coalesce((select string_agg(t.id || ':' || px_ms(t.last_at) || ':' || m.last_read || ':' || coalesce(t.name, '') || ':' || (select count(*) from px_thread_members m3 where m3.thread = t.id), ',' order by t.id)
+    from px_thread_members m join px_threads t on t.id = m.thread where m.uid = p_uid), '') || '|' || coalesce((select string_agg(target, ',' order by target) from px_dm_blocks where uid = p_uid), '')
+    || '|' || coalesce((select dm_mode from px_mod_cfg where id = 1), 'all')) $$;
+create or replace function public.px_dm_poll2(p_uid text, p_key text, p_since bigint, p_sig text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare sg text;
+begin
+  perform px_auth(p_uid, p_key);
+  sg := px_dm_sig(p_uid);
+  if p_sig is not null and p_sig = sg and p_since is not null and p_since >= 0 then return jsonb_build_object('same', true, 'sig', sg); end if;
+  return px_dm_poll(p_uid, p_key, p_since) || jsonb_build_object('sig', sg);
+end $$;
+revoke all on function public.px_dm_sig(text) from public, anon, authenticated;
+grant execute on function public.px_dm_poll2(text, text, bigint, text) to anon, authenticated;
+
+-- =====================================================================
+-- v29l · THE INVESTIGATION CREW STOPS CALLING EVERYONE A CHEATER
+-- Live reports all said "very likely breaking the rules". Most of what added up was normal at school, or a bug:
+--   · every school MacBook looked like the same device (fixed in v29i: the same copy of the game counts, not the same model)
+--   · "both players said they won" also counted games where both said they LOST (a draw or a time-out: about 1 in 11 games)
+--   · playing one friend a lot on the school network scored as win trading; quick games (1 in 8 for everyone) and playing the
+--     downloaded file counted against them
+--   · stats set by staff in the panel above what the level gives were blamed on the player
+-- Now those are facts in the report, not findings, and "very likely" needs two serious findings (or one and plenty more).
+-- Safe to run again.
+-- =====================================================================
+alter table public.px_players add column if not exists stat_ok boolean not null default false;   -- staff set this player's stats by hand
+create or replace function public.px_cheat_why3(i jsonb, free boolean, statok boolean) returns text language sql immutable set search_path = public as $$
+  select case
+    when i is null or jsonb_typeof(i -> 'fs') is distinct from 'object' then null
+    when coalesce(px_num(i -> 'fs' ->> 'r'), 0) > 10 or coalesce(px_num(i -> 'fs' ->> 'r'), 0) < 0 then 'rebirth ' || (i -> 'fs' ->> 'r') || ' (the most is 10)'
+    when coalesce(px_num(i -> 'fs' ->> 'l'), 1) > 300 then 'level ' || (i -> 'fs' ->> 'l') || ' (the most is 300)'
+    when free then null
+    when jsonb_typeof(i -> 'fs' -> 's') = 'array' and exists (select 1 from jsonb_array_elements_text(i -> 'fs' -> 's') v where coalesce(px_num(v), 0) > 20 + 2 * coalesce(px_num(i -> 'fs' ->> 'r'), 0))
+      then 'a stat above the cap for rebirth ' || coalesce(i -> 'fs' ->> 'r', '0')
+    when coalesce(px_num(i -> 'fs' ->> 'p'), 0) > 2000 then 'more unspent stat points (' || (i -> 'fs' ->> 'p') || ') than any level gives'   -- (staff-set stats or not: a million points is an edited save)
+    when statok then null   -- (staff set the stats by hand: how many points the level "should" give doesn't apply)
+    when jsonb_typeof(i -> 'fs' -> 's') = 'array' and (select coalesce(sum(greatest(0, coalesce(px_num(v), 0) - (2 + coalesce(px_num(i -> 'fs' ->> 'r'), 0)))), 0) from jsonb_array_elements_text(i -> 'fs' -> 's') v)
+      + greatest(0, coalesce(px_num(i -> 'fs' ->> 'p'), 0)) > (coalesce(px_num(i -> 'fs' ->> 'l'), 1) - 1) * 3 + 6 then 'more stat points than level ' || coalesce(i -> 'fs' ->> 'l', '1') || ' gives'
+    else null end $$;
+-- staff setting stats in the panel marks the player
+create or replace function public.px_statok_trg() returns trigger language plpgsql set search_path = public as $$
+begin
+  if new.edit ? 'st' or new.edit ? 'max' then update px_players set stat_ok = true where uid = new.uid; end if;
+  return new;
+end $$;
+drop trigger if exists px_statok_edits on public.px_edits;
+create trigger px_statok_edits after insert on public.px_edits for each row execute function public.px_statok_trg();
+revoke all on function public.px_cheat_why3(jsonb, boolean, boolean), public.px_statok_trg() from public, anon, authenticated;
+-- once: players whose stats staff set get the mark, and a "more stat points" flag that came from that is taken off (it says so in the log)
+alter table public.px_mod_cfg add column if not exists statflag_fixed boolean not null default false;
+do $$
+declare r record;
+begin
+  if coalesce((select statflag_fixed from px_mod_cfg where id = 1), true) then return; end if;
+  update px_players p set stat_ok = true where exists (select 1 from px_edits e where e.uid = p.uid and (e.edit ? 'st' or e.edit ? 'max'));
+  for r in select uid, name from px_players where stat_ok and cheat like 'more stat points than level%' and px_cheat_why3(info, free_ok, true) is null loop
+    update px_players set cheat = null where uid = r.uid;
+    insert into px_mod_log (act, target, note) values ('cleared flag', r.uid || ' (' || coalesce(r.name, '?') || ')', 'the "more stat points" flag came from stats staff set in the panel, so it wasn''t cheating');
+  end loop;
+  update px_mod_cfg set statflag_fixed = true where id = 1;
+end $$;
+
+-- v29l · a clone's stats are checked when its owner's game updates it, not only when the block is taken. (Before, someone could
+-- take a block with honest stats and then send 999s to make an unbeatable clone.) The creator's "no limits" fighters are allowed.
+create or replace function public.px_turf_sync(p_uid text, p_key text, p_fid text, p_name text, p_fighter jsonb, p_dna jsonb)
+returns int language plpgsql security definer set search_path = public as $$
+declare n int;
+begin
+  perform px_auth(p_uid, p_key);
+  if length(coalesce(p_fighter::text, '')) > 30000 or length(coalesce(p_dna::text, '')) > 30000 then raise exception 'too big'; end if;
+  if not coalesce((select free_ok from px_players where uid = p_uid), false) then perform px_turf_check_fighter(p_fighter); end if;
+  update turf set owner_name = left(coalesce(p_name, owner_name), 24), dna = p_dna,
+    fighter = coalesce(p_fighter, '{}'::jsonb) - 'hist' || jsonb_build_object('hist', coalesce(fighter -> 'hist', '[]'::jsonb))
+    where owner_id = p_fid and owner_uid = p_uid;
+  get diagnostics n = row_count;
+  return n;
+end $$;
+
+-- =====================================================================
+-- v29m · THE CREW UNDERSTANDS WHAT YOU TYPE, AND SAYS WHAT IT FOUND IN PLAIN WORDS
+-- "What looks suspicious?" used to be matched on loose bits of words ("fight" sent the Match Referee for nearly anything,
+-- "block" meant a Turf block even in "he keeps blocking", "spamming jab" went to the chat officer). Now whole words and
+-- phrases, the report says which words sent which crew member, and things nobody can check from the database (how someone
+-- fights move by move: spamming one attack, macros) are said plainly instead of coming back as "nothing found".
+-- Every report also starts with a summary: what it adds up to, the main reasons, what was clear, what couldn't be checked,
+-- and a suggested next step. Safe to run again.
+-- =====================================================================
+create or replace function public.px_inv_focus(p_focus text) returns jsonb language plpgsql immutable as $$
+declare f text := lower(coalesce(p_focus, '')); fight text; ws text[]; o jsonb := '[]'::jsonb; k text; re text;
+  R jsonb := jsonb_build_object(
+    'progress', '\y(level(l?ed|s|ing)?|lvl|xp|rebirths?|stats?|stat points?|points|maxed|overpowered|op|too strong|hack(s|ed|ing|er)?|mod ?menu|edit(ed|ing|s)?|inspect|dev ?tools?|console|cheat(s|ed|ing|er)?|cheat engine|exploit(s|ed|ing)?|glitch(ed|ing)?|god ?mode|insta ?kill|one ?shot(s|ting)?)\y',
+    'matches', '\y(rank(ed)?|elo|win ?trad(e|ing)|trad(e|ing) wins|boost(ed|ing)?|threw|throw(s|ing)?( games| fights)?|afk|rage ?quit(s|ting)?|quit(s|ting)?|lag ?switch|lag(s|ging)?|ping|disconnect(s|ed|ing)?|leaderboard|lets? (him|her|them) win|los(e|es|ing) on purpose)\y',
+    'links', '\y(alts?|alt accounts?|second account|other accounts?|new account|smurf(s|ing)?|same (person|guy|kid|computer|device|laptop)|ban ?evad(e|ing|er)|evad(e|ing)|evasion|siblings?|brother|sister|twin)\y',
+    'rewards', '\y(buy|bought|money|cash|cash ?app|venmo|paypal|paid|pay(ment)?|purchases?|orders?|coins?|codes?|gift ?codes?|turf|blocks? on the map|territor(y|ies)|rewards?|shop|items?)\y',
+    'conduct', '\y(chat|swear(s|ing)?|curs(e|es|ing)|slurs?|n ?word|bull(y|ies|ying)|rude|threat(s|en|ening)?|dms?|messages?|text(s|ed|ing)?|harass(ing|ment)?|toxic|racis(t|m)|reported|reports?|panel|staff|(bad|rude|offensive|inappropriate|racist) ?(user ?)?names?)\y');
+begin
+  -- how they fight, move by move: nobody can check that from the database (it goes in its own note, not to a crew member)
+  fight := (select string_agg(distinct m[1], ', ') from regexp_matches(f, '\y(spam(s|med|ming)? (the )?(jab|light|attack|punch|kick|button|move)s?|mash(es|ed|ing)?|button ?mash(ing)?|auto ?click(er|ing)?|macros?|only (uses|spams|throws) [a-z]+|same move|cheese|cheesing|infinite combo|infinit(e|ely) (chain|combo)(s|ing)?|stun ?lock(s|ed|ing)?)\y', 'g') m);
+  if fight is not null then f := regexp_replace(f, '\yspam(s|med|ming)? ', ' ', 'g'); end if;   -- ("spamming the jab" isn't chat spam)
+  if f ~ '\yspam(s|med|ming)?\y' then f := f || ' chat '; end if;   -- (plain "spamming" is chat)
+  for k in select unnest(array['progress', 'matches', 'links', 'rewards', 'conduct']) loop
+    re := R ->> k;
+    ws := array(select distinct m[1] from regexp_matches(f, re, 'g') m);
+    -- ("blocking" punches isn't a Turf block; "fighter" isn't a match)
+    if k = 'rewards' then ws := array(select w from unnest(ws) w where not (w ~ '^blocks?' and f ~ '\yblock(s|ed|ing)? (punches|attacks|everything|a lot)')); end if;
+    if array_length(ws, 1) > 0 then o := o || jsonb_build_object('k', k, 'w', to_jsonb(ws)); end if;
+  end loop;
+  return jsonb_build_object('areas', o, 'fight', fight is not null, 'fightw', fight);
+end $$;
+create or replace function public.px_inv_areas(p_focus text) returns text[] language sql immutable as $$
+  select coalesce(array(select a ->> 'k' from jsonb_array_elements(px_inv_focus(p_focus) -> 'areas') a), '{}') $$;
