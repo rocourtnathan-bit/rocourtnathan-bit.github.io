@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BREACH — CQB Training</title>
+<meta name="description" content="Tactical close-quarters training sim: firing range, kill houses and a night hostage rescue. Runs in your browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three/three.module.min.js" } }
+</script>
+<style>
+:root {
+  --bg: #0b0d0c; --panel: rgba(14,17,15,0.82); --line: rgba(190,210,180,0.16); --ink: #e3eadc; --dim: #93a08c; --faint: #5e6a59;
+  --accent: #c6ff6a; --amber: #ffb341; --red: #ff4b3e; --cyan: #7fd8ff;
+  --hud: 'Rajdhani', 'Arial Narrow', sans-serif; --mono: 'Share Tech Mono', ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); overflow: hidden; font-family: var(--hud); user-select: none; -webkit-user-select: none; }
+#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+.hidden { display: none !important; }
+button { font-family: var(--hud); }
+
+/* Screen overlays */
+#vignette { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,0.55) 100%); }
+#dmg { position: fixed; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(ellipse at center, rgba(120,0,0,0) 40%, rgba(150,10,0,0.75) 100%); transition: opacity 0.1s; }
+#whiteout { position: fixed; inset: 0; pointer-events: none; background: #fff; opacity: 0; }
+#lowhp { position: fixed; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(ellipse at center, rgba(0,0,0,0) 30%, rgba(60,0,0,0.6) 100%); }
+
+/* HUD */
+#hud { position: fixed; inset: 0; pointer-events: none; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+#compass { position: absolute; top: 14px; left: 50%; width: 420px; max-width: 60vw; height: 26px; transform: translateX(-50%); overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 20%, #000 80%, transparent); -webkit-mask-image: linear-gradient(90deg, transparent, #000 20%, #000 80%, transparent); }
+#compass-strip { position: absolute; top: 0; left: 0; height: 100%; white-space: nowrap; font: 600 13px var(--mono); color: var(--dim); }
+#compass-strip span { display: inline-block; width: 30px; text-align: center; }
+#compass-strip span.c { color: var(--ink); font-weight: 700; }
+#compass-mark { position: absolute; left: 50%; bottom: 0; width: 2px; height: 7px; background: var(--accent); transform: translateX(-50%); }
+#obj { position: absolute; top: 14px; left: 18px; font-size: 15px; line-height: 1.25; max-width: 340px; }
+#obj-title { font-weight: 700; letter-spacing: 0.14em; color: var(--accent); font-size: 13px; }
+#obj-text { font-weight: 600; }
+#timer { position: absolute; top: 44px; left: 50%; transform: translateX(-50%); font: 18px var(--mono); color: var(--ink); }
+#cross { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transition: opacity 0.12s; }
+#cross i { position: absolute; background: rgba(240,250,235,0.9); box-shadow: 0 0 2px #000; }
+#cross i:nth-child(1), #cross i:nth-child(2) { width: 2px; height: 8px; left: -1px; }
+#cross i:nth-child(3), #cross i:nth-child(4) { width: 8px; height: 2px; top: -1px; }
+#cross b { position: absolute; width: 2px; height: 2px; left: -1px; top: -1px; background: rgba(240,250,235,0.9); }
+#hitmark { position: absolute; left: 50%; top: 50%; width: 26px; height: 26px; transform: translate(-50%,-50%) rotate(45deg); opacity: 0; }
+#hitmark::before, #hitmark::after { content: ''; position: absolute; background: currentColor; }
+#hitmark::before { left: 12px; top: 0; width: 2px; height: 26px; clip-path: polygon(0 0,100% 0,100% 35%,0 35%,0 65%,100% 65%,100% 100%,0 100%); }
+#hitmark::after { top: 12px; left: 0; height: 2px; width: 26px; clip-path: polygon(0 0,35% 0,35% 100%,0 100%,0 0,65% 0,100% 0,100% 100%,65% 100%); }
+#prompt { position: absolute; left: 50%; top: 62%; transform: translateX(-50%); font-weight: 700; font-size: 17px; letter-spacing: 0.06em; background: rgba(0,0,0,0.45); padding: 4px 12px; border-left: 2px solid var(--accent); }
+#prompt:empty { display: none; }
+#prompt kbd, .kbd { font-family: var(--mono); color: var(--accent); }
+#callout { position: absolute; left: 50%; top: 22%; transform: translateX(-50%); font-size: 30px; font-weight: 700; letter-spacing: 0.22em; color: var(--accent); opacity: 0; transition: opacity 0.25s; white-space: nowrap; }
+#toast { position: absolute; left: 50%; top: 30%; transform: translateX(-50%); font-size: 18px; font-weight: 700; letter-spacing: 0.1em; opacity: 0; transition: opacity 0.2s; white-space: nowrap; }
+#tip { position: absolute; left: 18px; top: 100px; max-width: 320px; font-size: 15px; font-weight: 600; color: var(--ink); background: rgba(0,0,0,0.4); border-left: 2px solid var(--amber); padding: 6px 10px; opacity: 0; transition: opacity 0.4s; }
+#vitals { position: absolute; left: 18px; bottom: 18px; width: 250px; }
+.bar { height: 6px; background: rgba(255,255,255,0.12); margin: 4px 0 8px; position: relative; }
+.bar > i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ink); transition: width 0.2s; }
+#hp-bar > i { background: var(--ink); }
+.vrow { display: flex; justify-content: space-between; font-size: 14px; font-weight: 700; letter-spacing: 0.1em; color: var(--dim); }
+.vrow b { color: var(--ink); }
+#gear { display: flex; gap: 14px; font-size: 14px; font-weight: 700; letter-spacing: 0.08em; color: var(--dim); }
+#gear b { color: var(--ink); }
+#gear .on { color: var(--accent); }
+#ammo { position: absolute; right: 22px; bottom: 18px; text-align: right; }
+#wname { font-size: 15px; font-weight: 700; letter-spacing: 0.14em; color: var(--dim); }
+#wmode { font: 13px var(--mono); color: var(--accent); margin-left: 8px; }
+#wcount { font: 54px/1 var(--mono); color: var(--ink); margin: 2px 0; }
+#wcount small { font-size: 22px; color: var(--dim); }
+#mags { display: flex; gap: 4px; justify-content: flex-end; }
+#mags i { display: block; width: 7px; height: 18px; border: 1px solid var(--dim); position: relative; }
+#mags i > s { position: absolute; left: 0; right: 0; bottom: 0; background: var(--ink); }
+#reloadhint { font-size: 14px; font-weight: 700; color: var(--amber); letter-spacing: 0.1em; height: 18px; }
+#dmgdir { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
+#dmgdir div { position: absolute; left: -60px; top: -130px; width: 120px; height: 30px; border-top: 4px solid var(--red); border-radius: 50%; opacity: 0; transform-origin: 60px 130px; filter: drop-shadow(0 0 6px rgba(255,40,30,0.8)); }
+#breath { position: absolute; left: 50%; top: 58%; transform: translateX(-50%); width: 120px; height: 3px; background: rgba(255,255,255,0.15); opacity: 0; transition: opacity 0.2s; }
+#breath i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--cyan); }
+
+/* Menus */
+.screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: linear-gradient(90deg, rgba(5,7,6,0.92) 0%, rgba(5,7,6,0.6) 55%, rgba(5,7,6,0.25) 100%); }
+.wrap { width: min(1100px, 100% - 32px); max-height: calc(100% - 32px); overflow: auto; }
+#loading { background: var(--bg); flex-direction: column; gap: 12px; font-weight: 700; letter-spacing: 0.3em; }
+#loading .bar { width: 260px; }
+.title { font-size: clamp(54px, 9vw, 104px); font-weight: 700; letter-spacing: 0.18em; line-height: 0.9; margin: 0; }
+.title span { color: var(--accent); }
+.subtitle { font: 14px var(--mono); color: var(--dim); letter-spacing: 0.3em; margin: 10px 0 26px; }
+.tabs { display: flex; gap: 2px; margin-bottom: 14px; flex-wrap: wrap; }
+.tab { background: transparent; color: var(--dim); border: 0; border-bottom: 2px solid transparent; font-size: 18px; font-weight: 700; letter-spacing: 0.16em; padding: 8px 16px 6px; cursor: pointer; }
+.tab.on { color: var(--ink); border-color: var(--accent); }
+.tab:hover { color: var(--ink); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.card { background: var(--panel); border: 1px solid var(--line); padding: 14px 16px; cursor: pointer; text-align: left; color: var(--ink); transition: border-color 0.15s, transform 0.15s; position: relative; }
+.card:hover { border-color: rgba(198,255,106,0.5); transform: translateY(-1px); }
+.card.on { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.card h3 { margin: 0; font-size: 20px; letter-spacing: 0.12em; }
+.card p { margin: 4px 0 0; color: var(--dim); font-size: 14px; font-weight: 600; }
+.card .best { font: 12px var(--mono); color: var(--accent); margin-top: 8px; }
+.card .tag { position: absolute; top: 12px; right: 12px; font: 11px var(--mono); color: var(--amber); letter-spacing: 0.1em; }
+.row { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
+.col { flex: 1 1 300px; min-width: 0; }
+.label { font-size: 13px; font-weight: 700; letter-spacing: 0.2em; color: var(--dim); margin: 14px 0 6px; }
+.stats { display: grid; grid-template-columns: 90px 1fr; gap: 4px 10px; align-items: center; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; color: var(--dim); margin-top: 10px; }
+.stats .bar { margin: 0; }
+.stats .bar i { background: var(--accent); }
+.seg { display: flex; gap: 6px; flex-wrap: wrap; }
+.seg button { background: var(--panel); color: var(--dim); border: 1px solid var(--line); padding: 8px 14px; font-size: 15px; font-weight: 700; letter-spacing: 0.1em; cursor: pointer; }
+.seg button.on { color: var(--bg); background: var(--accent); border-color: var(--accent); }
+.set { display: grid; grid-template-columns: 170px 1fr 60px; gap: 10px; align-items: center; margin: 8px 0; font-weight: 700; letter-spacing: 0.08em; }
+.set output { font: 14px var(--mono); color: var(--accent); }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.btn { background: var(--accent); color: #0b0d0c; border: 0; font-size: 22px; font-weight: 700; letter-spacing: 0.24em; padding: 14px 34px; cursor: pointer; transition: filter 0.15s; }
+.btn:hover { filter: brightness(1.1); }
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.btn.small { font-size: 16px; padding: 10px 20px; }
+.actions { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; align-items: center; }
+.hint { color: var(--faint); font: 12px var(--mono); letter-spacing: 0.1em; }
+.controls { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; font-size: 15px; font-weight: 600; color: var(--dim); }
+.controls .kbd { text-align: right; }
+#brief .wrap, #pause .wrap, #results .wrap { max-width: 760px; background: var(--panel); border: 1px solid var(--line); padding: 28px 30px; backdrop-filter: blur(4px); }
+#brief h2, #pause h2, #results h2 { margin: 0; font-size: 40px; letter-spacing: 0.16em; }
+#brief .sub, #results .sub { font: 13px var(--mono); color: var(--accent); letter-spacing: 0.2em; margin-bottom: 14px; }
+#brief ul { padding-left: 18px; margin: 0; }
+#brief li { margin: 8px 0; font-size: 17px; font-weight: 600; line-height: 1.35; }
+#brief li b { color: var(--amber); letter-spacing: 0.06em; }
+.grade { font-size: 110px; font-weight: 700; line-height: 1; color: var(--accent); }
+.grade.f { color: var(--red); }
+.rtable { display: grid; grid-template-columns: 1fr auto; gap: 6px 20px; font-size: 18px; font-weight: 600; margin: 8px 0; }
+.rtable span:nth-child(even) { font-family: var(--mono); text-align: right; }
+.coach { margin-top: 14px; border-left: 2px solid var(--amber); padding: 6px 12px; color: var(--ink); font-size: 16px; font-weight: 600; }
+.coach div { margin: 4px 0; }
+#clickstart { margin-top: 20px; font-size: 20px; font-weight: 700; letter-spacing: 0.2em; color: var(--accent); animation: pulse 1.4s infinite; }
+@keyframes pulse { 50% { opacity: 0.4; } }
+#nodesk { display: none; }
+@media (max-width: 700px), (pointer: coarse) {
+  #nodesk { display: block; margin-top: 10px; color: var(--amber); font-weight: 700; }
+  .set { grid-template-columns: 1fr 1fr 50px; }
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="vignette"></div>
+<div id="lowhp"></div>
+<div id="dmg"></div>
+<div id="whiteout"></div>
+
+<div id="hud" class="hidden">
+  <div id="compass"><div id="compass-strip"></div><div id="compass-mark"></div></div>
+  <div id="obj"><div id="obj-title">OBJECTIVE</div><div id="obj-text"></div></div>
+  <div id="timer">00:00.0</div>
+  <div id="tip"></div>
+  <div id="cross"><i></i><i></i><i></i><i></i><b></b></div>
+  <div id="hitmark"></div>
+  <div id="breath"><i></i></div>
+  <div id="dmgdir"></div>
+  <div id="prompt"></div>
+  <div id="callout"></div>
+  <div id="toast"></div>
+  <div id="vitals">
+    <div class="vrow"><span>HEALTH</span><b id="hp-num">100</b></div>
+    <div class="bar" id="hp-bar"><i style="width:100%"></i></div>
+    <div id="gear"><span>ARMOR <b id="armor-name">III</b></span><span>FLASH <b id="flash-num">2</b></span><span id="light-ind">LIGHT</span></div>
+  </div>
+  <div id="ammo">
+    <div><span id="wname">M4A1</span><span id="wmode">AUTO</span></div>
+    <div id="wcount">30<small>+1</small></div>
+    <div id="mags"></div>
+    <div id="reloadhint"></div>
+  </div>
+</div>
+
+<div id="loading" class="screen">
+  <div>BREACH</div>
+  <div class="bar"><i id="load-bar" style="width:5%"></i></div>
+  <div class="hint" id="load-text">GENERATING TEXTURES</div>
+</div>
+
+<div id="menu" class="screen hidden">
+  <div class="wrap">
+    <h1 class="title">BRE<span>A</span>CH</h1>
+    <div class="subtitle">CLOSE-QUARTERS BATTLE TRAINING FACILITY</div>
+    <div class="tabs">
+      <button class="tab on" data-tab="missions">MISSIONS</button>
+      <button class="tab" data-tab="loadout">LOADOUT</button>
+      <button class="tab" data-tab="settings">SETTINGS</button>
+      <button class="tab" data-tab="controls">CONTROLS</button>
+    </div>
+    <section data-panel="missions">
+      <div class="cards" id="mission-cards"></div>
+      <div class="label">DIFFICULTY</div>
+      <div class="seg" id="diff-seg"></div>
+    </section>
+    <section data-panel="loadout" class="hidden">
+      <div class="row">
+        <div class="col">
+          <div class="label">PRIMARY</div>
+          <div class="cards" id="primary-cards"></div>
+          <div class="stats" id="wstats"></div>
+        </div>
+        <div class="col">
+          <div class="label">OPTIC</div>
+          <div class="seg" id="optic-seg"></div>
+          <div class="label">BODY ARMOR</div>
+          <div class="seg" id="armor-seg"></div>
+          <div class="hint" id="armor-desc" style="margin-top:6px"></div>
+          <div class="label">FLASHBANGS</div>
+          <div class="seg" id="flash-seg"></div>
+          <div class="label">SIDEARM</div>
+          <div class="hint">G17 PISTOL · 17+1 · 3 SPARE MAGS</div>
+        </div>
+      </div>
+    </section>
+    <section data-panel="settings" class="hidden">
+      <div class="set"><span>MOUSE SENSITIVITY</span><input type="range" id="s-sens" min="0.2" max="3" step="0.05"><output id="o-sens"></output></div>
+      <div class="set"><span>FIELD OF VIEW</span><input type="range" id="s-fov" min="60" max="95" step="1"><output id="o-fov"></output></div>
+      <div class="set"><span>VOLUME</span><input type="range" id="s-vol" min="0" max="1" step="0.05"><output id="o-vol"></output></div>
+      <div class="label">GRAPHICS QUALITY</div>
+      <div class="seg" id="q-seg"></div>
+      <div class="hint" style="margin-top:6px">LOW for school laptops / integrated graphics. HIGH adds ambient occlusion and sharper shadows.</div>
+      <div class="label">OPTIONS</div>
+      <div class="seg" id="opt-seg"></div>
+    </section>
+    <section data-panel="controls" class="hidden">
+      <div class="controls">
+        <span class="kbd">W A S D</span><span>Move</span>
+        <span class="kbd">MOUSE</span><span>Aim · LEFT fire · RIGHT aim down sights (hold)</span>
+        <span class="kbd">SHIFT</span><span>Sprint · while aiming: hold breath</span>
+        <span class="kbd">C / CTRL</span><span>Crouch (toggle / hold)</span>
+        <span class="kbd">Q / E</span><span>Lean left / right (slice the pie)</span>
+        <span class="kbd">R</span><span>Reload (partial mags are kept)</span>
+        <span class="kbd">1 / 2</span><span>Primary / sidearm · mouse wheel also swaps</span>
+        <span class="kbd">B</span><span>Fire mode (auto / semi)</span>
+        <span class="kbd">G</span><span>Throw flashbang</span>
+        <span class="kbd">F</span><span>Open / close door · interact</span>
+        <span class="kbd">V</span><span>Kick door</span>
+        <span class="kbd">T</span><span>Weapon light</span>
+        <span class="kbd">ESC</span><span>Pause</span>
+      </div>
+    </section>
+    <div class="actions">
+      <button class="btn" id="deploy">DEPLOY</button>
+      <span class="hint">DESKTOP · KEYBOARD + MOUSE</span>
+    </div>
+    <div id="nodesk">Heads up: this one needs a keyboard and mouse.</div>
+  </div>
+</div>
+
+<div id="brief" class="screen hidden">
+  <div class="wrap">
+    <h2 id="brief-title"></h2>
+    <div class="sub" id="brief-sub"></div>
+    <ul id="brief-list"></ul>
+    <div id="clickstart">CLICK TO BEGIN</div>
+  </div>
+</div>
+
+<div id="pause" class="screen hidden">
+  <div class="wrap">
+    <h2>PAUSED</h2>
+    <div class="set"><span>SENSITIVITY</span><input type="range" id="p-sens" min="0.2" max="3" step="0.05"><output id="op-sens"></output></div>
+    <div class="actions">
+      <button class="btn small" id="resume">RESUME</button>
+      <button class="btn small ghost" id="restart">RESTART</button>
+      <button class="btn small ghost" id="quit">QUIT TO MENU</button>
+    </div>
+  </div>
+</div>
+
+<div id="results" class="screen hidden">
+  <div class="wrap">
+    <div class="row" style="align-items:center">
+      <div style="flex:1 1 300px">
+        <h2 id="res-title">MISSION COMPLETE</h2>
+        <div class="sub" id="res-sub"></div>
+      </div>
+      <div class="grade" id="res-grade">A</div>
+    </div>
+    <div class="rtable" id="res-table"></div>
+    <div class="coach" id="res-coach"></div>
+    <div class="actions">
+      <button class="btn small" id="retry">RETRY</button>
+      <button class="btn small ghost" id="next">NEXT MISSION</button>
+      <button class="btn small ghost" id="tomenu">MENU</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="./js/main.js"></script>
+</body>
+</html>
