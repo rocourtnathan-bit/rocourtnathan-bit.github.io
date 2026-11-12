@@ -4419,3 +4419,23 @@ begin
 end $$;
 create or replace function public.px_inv_areas(p_focus text) returns text[] language sql immutable as $$
   select coalesce(array(select a ->> 'k' from jsonb_array_elements(px_inv_focus(p_focus) -> 'areas') a), '{}') $$;
+
+-- ---------- v30a: the creator can set how many shots a clone lets land ----------
+-- one more clone number ("gh" = hitPct, 0 to 1): the share of shots the clone takes; the rest it blocks, dodges or counters.
+-- Only this list changes: saving, the Turf defenders and the panel all read it. (Taking the creator's changes off removes it.)
+create or replace function public.px_clone_keys() returns jsonb language sql immutable as $$
+  select '{"rb":["react","block",0.04,1.2],"rd":["react","dodge",0.04,1.2],"rc":["react","counter",0.04,1.2],"ag":["aggr",null,0,2],"ch":["chain",null,0,1],"rg":["range",null,0.6,3],"pr":["pressure",null,0,1],"bl":["def","block",0,1],"dg":["def","dodge",0,1],"ct":["def","counter",0,1],"pu":["punish",null,0,1],"wh":["whiff",null,0,1],"gh":["hitPct",null,0,1]}'::jsonb $$;
+
+-- ---------- v30b: fewer requests from every open game ----------
+-- The database is a small shared computer that can only run flat out for a while. With a whole school playing, three requests
+-- from every game every ten seconds used it up, and for two hours every check-in took 3 to 11 seconds ("can't connect").
+-- The check-in now also carries the messages app's fingerprint, so a game with the phone closed doesn't have to ask separately.
+create or replace function public.px_hello2(p_uid text, p_key text, p_name text, p_lv int, p_rb int, p_st text, p_since bigint, p_people boolean, p_info jsonb default null)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare r jsonb;
+begin
+  r := px_hello(p_uid, p_key, p_name, p_lv, p_rb, p_st, p_since, p_people, p_info);
+  if r ? 'ban' then return r; end if;
+  return r || jsonb_build_object('dms', px_dm_sig(p_uid));
+end $$;
+grant execute on function public.px_hello2(text, text, text, int, int, text, bigint, boolean, jsonb) to anon, authenticated;
