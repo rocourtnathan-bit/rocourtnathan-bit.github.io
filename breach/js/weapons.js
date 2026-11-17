@@ -1,6 +1,7 @@
 // Weapon definitions, procedural first-person models, and the viewmodel/firing state machine.
 import * as THREE from 'three';
 import { muzzleFlashTexture, reticleTexture } from './textures.js';
+import { RoundedBoxGeometry } from '../vendor/three/addons/geometries/RoundedBoxGeometry.js';
 
 export const WEAPONS = {
   m4: {
@@ -53,7 +54,10 @@ function makeMats(T) {
 }
 
 function box(p, w, h, d, x, y, z, mat, rx = 0, ry = 0, rz = 0) {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  // Soft edges catch highlights; hard-edged boxes read as "blocky".
+  const mn = Math.min(w, h, d);
+  const geo = mn > 0.008 ? new RoundedBoxGeometry(w, h, d, 2, mn * 0.22) : new THREE.BoxGeometry(w, h, d);
+  const m = new THREE.Mesh(geo, mat);
   m.position.set(x, y, z); m.rotation.set(rx, ry, rz); p.add(m); return m;
 }
 function cyl(p, r, len, x, y, z, mat, seg = 16, r2, open = false) {
@@ -153,7 +157,19 @@ export function buildModel(id, optic, T) {
     box(root, 0.044, 0.012, 0.03, 0, 0.056, 0.115, M.metal);
     box(root, 0.004, 0.02, 0.05, 0.026, 0.032, -0.01, M.barrel);
     eject.position.set(0.03, 0.03, -0.01);
+    box(root, 0.006, 0.03, 0.075, 0.027, 0.016, -0.01, M.metal, 0, 0, 0.25);      // dust cover, flipped open
+    cyl(root, 0.007, 0.022, 0.027, 0.04, 0.07, M.metal, 10);                      // forward assist
+    box(root, 0.005, 0.024, 0.014, -0.026, 0.012, -0.045, M.barrel);              // bolt catch
+    box(root, 0.02, 0.014, 0.04, 0, 0.076, 0.09, M.metal);                        // rear back-up sight (folded)
+    box(root, 0.02, 0.014, 0.04, 0, 0.076, -0.4, M.metal);                        // front back-up sight (folded)
+    box(root, 0.045, 0.03, 0.085, 0, 0.088, -0.3, M.fde);                         // laser/illuminator
+    cyl(root, 0.007, 0.004, -0.012, 0.09, -0.3435, M.lens, 10);
+    box(root, 0.008, 0.03, 0.02, -0.028, -0.005, 0.105, M.barrel);                // sling plate
+    cyl(root, 0.012, 0.05, 0, 0.03, -0.445, M.barrel, 12);                        // gas block
+    for (let i = 0; i < 5; i++) box(root, 0.004, 0.012, 0.03, 0.031, 0.03, -0.17 - i * 0.05, M.barrel); // M-LOK slots
+    for (let i = 0; i < 5; i++) box(root, 0.004, 0.012, 0.03, -0.031, 0.03, -0.17 - i * 0.05, M.barrel);
     const mag = new THREE.Group(); mag.position.set(0, -0.065, -0.06); root.add(mag);
+    for (let i = 0; i < 3; i++) box(mag, 0.027, 0.006, 0.05, 0, -0.03 - i * 0.045, -0.002 - i * 0.008, M.barrel, 0.1 + i * 0.09);
     box(mag, 0.025, 0.1, 0.068, 0, -0.04, 0, M.polymer, 0.1);
     box(mag, 0.025, 0.08, 0.066, 0, -0.12, -0.014, M.polymer, 0.28);
     box(mag, 0.03, 0.012, 0.072, 0, -0.16, -0.026, M.polymer, 0.28);
@@ -264,7 +280,12 @@ export function buildModel(id, optic, T) {
 // Spring helper: critically-damped-ish return to zero.
 class Spring {
   constructor(k = 220, d = 18) { this.k = k; this.d = d; this.x = 0; this.v = 0; }
-  update(dt) { const a = -this.k * this.x - this.d * this.v; this.v += a * dt; this.x += this.v * dt; return this.x; }
+  update(dt) {
+    // Sub-step so a long frame can never blow the spring up.
+    let n = Math.max(1, Math.ceil(dt / 0.008)); const h = dt / n;
+    while (n--) { this.v += (-this.k * this.x - this.d * this.v) * h; this.x += this.v * h; }
+    return this.x;
+  }
 }
 
 export class Arsenal {
@@ -347,6 +368,7 @@ export class Arsenal {
     if (this.reloading) { this.reloading = false; }
     this.pumping = false;
     this.switchTarget = i; this.switching = 1;
+    this.g.mouse.ads = false;
     this.g.audio.switchWeapon();
   }
 

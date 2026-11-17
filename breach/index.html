@@ -124,6 +124,8 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 #brief .sub, #results .sub { font: 13px var(--mono); color: var(--accent); letter-spacing: 0.2em; margin-bottom: 14px; }
 #brief ul { padding-left: 18px; margin: 0; }
 #brief li { margin: 8px 0; font-size: 17px; font-weight: 600; line-height: 1.35; }
+#brief-map { border: 1px solid var(--line); max-width: 300px; height: auto; align-self: center; }
+#brief .wrap { max-width: 980px; }
 #brief li b { color: var(--amber); letter-spacing: 0.06em; }
 .grade { font-size: 110px; font-weight: 700; line-height: 1; color: var(--accent); }
 .grade.f { color: var(--red); }
@@ -226,8 +228,8 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
     <section data-panel="controls" class="hidden">
       <div class="controls">
         <span class="kbd">W A S D</span><span>Move</span>
-        <span class="kbd">MOUSE</span><span>Aim · LEFT fire · RIGHT aim down sights (hold)</span>
-        <span class="kbd">SHIFT</span><span>Sprint · while aiming: hold breath</span>
+        <span class="kbd">MOUSE</span><span>Look · LEFT fire · RIGHT aim down sights (click to toggle)</span>
+        <span class="kbd">SHIFT</span><span>Sprint · while aiming and standing still: hold breath</span>
         <span class="kbd">C / CTRL</span><span>Crouch (toggle / hold)</span>
         <span class="kbd">Q / E</span><span>Lean left / right (slice the pie)</span>
         <span class="kbd">R</span><span>Reload (partial mags are kept)</span>
@@ -252,7 +254,10 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
   <div class="wrap">
     <h2 id="brief-title"></h2>
     <div class="sub" id="brief-sub"></div>
-    <ul id="brief-list"></ul>
+    <div class="row">
+      <ul id="brief-list" class="col"></ul>
+      <canvas id="brief-map"></canvas>
+    </div>
     <div id="clickstart">CLICK TO BEGIN</div>
   </div>
 </div>

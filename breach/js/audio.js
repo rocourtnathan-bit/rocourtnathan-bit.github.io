@@ -25,6 +25,7 @@ export class AudioSys {
     const d = this.noiseBuf.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     this.setReverb(1.0, 0.3);
+    if (this.pendingAmb) { this.ambience(this.pendingAmb); this.pendingAmb = null; }
   }
 
   setVolume(v) { this.volume = v; if (this.master) this.master.gain.value = v; }
@@ -138,7 +139,8 @@ export class AudioSys {
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
     const o = this.out(pan, Math.min(0.6, 4 / (dist + 2)), 0.6);
-    if (surf === 'wood' || surf === 'target') this.noise(o, t, { type: 'bandpass', freq: 700, q: 1.5, gain: 0.8, decay: 0.06 });
+    if (surf === 'body') { this.noise(o, t, { type: 'lowpass', freq: 380, gain: 1.1, decay: 0.07 }); this.noise(o, t, { type: 'bandpass', freq: 1500, q: 2, gain: 0.3, decay: 0.03 }); }
+    else if (surf === 'wood' || surf === 'target') this.noise(o, t, { type: 'bandpass', freq: 700, q: 1.5, gain: 0.8, decay: 0.06 });
     else if (surf === 'dirt') this.noise(o, t, { type: 'lowpass', freq: 600, gain: 0.5, decay: 0.08 });
     else this.noise(o, t, { type: 'bandpass', freq: 2200, q: 1, gain: 0.6, decay: 0.04 });
   }
@@ -214,6 +216,38 @@ export class AudioSys {
     const t = this.ctx.currentTime, o = this.out(pan, Math.min(0.8, 8 / (dist + 3)), 1.3);
     this.noise(o, t, { type: 'bandpass', freq: 1000, q: 0.7, gain: 1.0, decay: 0.15 });
     this.tone(o, t, { freq: 120, to: 40, gain: 0.7, decay: 0.15 });
+  }
+
+  // Supersonic crack + whizz of a round passing close by.
+  whiz(pan = 0) {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime, o = this.out(pan, 0.5, 0.3);
+    this.noise(o, t, { type: 'highpass', freq: 3500, gain: 0.9, decay: 0.025 });
+    this.noise(o, t + 0.01, { type: 'bandpass', freq: 2400, q: 6, gain: 0.5, decay: 0.16, sweepTo: 500 });
+  }
+
+  // Low bed of wind (day) or wind + crickets (night) so silence never feels dead.
+  ambience(env) {
+    if (!this.ctx) { this.pendingAmb = env; return; }
+    if (this.amb) { try { this.amb.forEach(n => n.stop ? n.stop() : n.disconnect()); } catch (e) { } }
+    const ctx = this.ctx, nodes = [];
+    const src = ctx.createBufferSource(); src.buffer = this.noiseBuf; src.loop = true;
+    const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = env === 'range' ? 500 : 320;
+    const g = ctx.createGain(); g.gain.value = env === 'night' ? 0.035 : 0.06;
+    const lfo = ctx.createOscillator(); lfo.frequency.value = 0.13; const lg = ctx.createGain(); lg.gain.value = 0.03;
+    lfo.connect(lg); lg.connect(g.gain);
+    src.connect(f); f.connect(g); g.connect(this.master); src.start(); lfo.start();
+    nodes.push(src, lfo, g);
+    if (env === 'night' || env === 'dusk') {
+      const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = 4300;
+      const cg = ctx.createGain(); cg.gain.value = 0;
+      const chirp = ctx.createOscillator(); chirp.type = 'square'; chirp.frequency.value = 17; const chg = ctx.createGain(); chg.gain.value = 0.006;
+      const slow = ctx.createOscillator(); slow.type = 'square'; slow.frequency.value = 0.8; const sg = ctx.createGain(); sg.gain.value = 0.006;
+      chirp.connect(chg); chg.connect(cg.gain); slow.connect(sg); sg.connect(cg.gain);
+      o.connect(cg); cg.connect(this.master); o.start(); chirp.start(); slow.start();
+      nodes.push(o, chirp, slow, cg);
+    }
+    this.amb = nodes;
   }
 
   hitConfirm(kill) {

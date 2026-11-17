@@ -1,7 +1,8 @@
 // Builds missions from grid maps (or the open range), plus targets, doors, steel and the drill.
 import * as THREE from 'three';
 import { mergeGeometries } from '../vendor/three/addons/utils/BufferGeometryUtils.js';
-import { worldBox } from './textures.js';
+import { worldBox, hazardTexture, stencilTexture, coneTexture } from './textures.js';
+import { Figure } from './humanoid.js';
 
 export const WALL_H = 2.7;
 const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _ray = new THREE.Raycaster();
@@ -515,6 +516,10 @@ export class Level {
       handle: new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 1, roughness: 0.3 }),
       lockRed: new THREE.MeshStandardMaterial({ color: 0xaa1010, emissive: 0x550000, metalness: 0.5, roughness: 0.4 }),
       chain: new THREE.MeshStandardMaterial({ color: 0x777777, metalness: 1, roughness: 0.5 }),
+      gunmetal: new THREE.MeshStandardMaterial({ color: 0x34373a, metalness: 0.75, roughness: 0.32 }),
+      steelDark: std(T.steel, { metalness: 0.75, color: 0x4a4f52 }),
+      cardboard: std(T.plywood, { color: 0xb59468, normalScale: new THREE.Vector2(0.2, 0.2) }),
+      barrels: [0x2d4f7a, 0x7a3524, 0x4a5a34, 0x8a8a86].map(c => std(T.steel, { metalness: 0.55, color: c })),
     };
   }
 
@@ -571,7 +576,7 @@ export class Level {
       }
     }
     // Windows, doors, crates, entities
-    const crateGeos = [], trimGeos = [];
+    const crateGeos = [], trimGeos = [], rackGeos = [], boxGeos = [];
     const ents = [];
     let spawn = null;
     for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
@@ -594,8 +599,36 @@ export class Level {
         trimGeos.push(worldBox(s + 0.02, 0.06, s + 0.02, x, hgt - 0.03, z, 1));
         trimGeos.push(worldBox(s + 0.02, 0.06, s + 0.02, x, 0.03, z, 1));
         this.addCollider(x - s / 2, x + s / 2, z - s / 2, z + s / 2);
+      } else if (ch === 'T') {
+        trimGeos.push(worldBox(1.0, 0.05, 1.0, x, 0.765, z, 1));
+        for (const [ox, oz] of [[-0.43, -0.43], [0.43, -0.43], [-0.43, 0.43], [0.43, 0.43]]) trimGeos.push(worldBox(0.06, 0.74, 0.06, x + ox, 0.37, z + oz, 1));
+        this.addCollider(c + 0.04, c + 0.96, r + 0.04, r + 0.96);
+        if (Math.random() < 0.6) crateGeos.push(worldBox(0.3, 0.22, 0.4, x + (Math.random() - 0.5) * 0.4, 0.9, z + (Math.random() - 0.5) * 0.3, 1));
+      } else if (ch === 'B') {
+        const bx = x + (Math.random() - 0.5) * 0.2, bz = z + (Math.random() - 0.5) * 0.2;
+        const geo = new THREE.CylinderGeometry(0.29, 0.29, 0.9, 20);
+        const b = new THREE.Mesh(geo, this.mats.barrels[Math.floor(Math.random() * this.mats.barrels.length)]);
+        b.position.set(bx, 0.45, bz); b.rotation.y = Math.random() * 6; b.castShadow = true; b.receiveShadow = true; b.userData = { surf: 'metal' };
+        for (const ry of [0.15, 0.45, 0.75]) { const rib = new THREE.Mesh(new THREE.TorusGeometry(0.292, 0.012, 6, 20).rotateX(Math.PI / 2), b.material); rib.position.y = ry - 0.45; b.add(rib); }
+        this.group.add(b); this.shootables.push(b); this.occluders.push(b);
+        this.addCollider(bx - 0.27, bx + 0.27, bz - 0.27, bz + 0.27);
+      } else if (ch === 'R') {
+        const alongZ = (at(c, r - 1) === 'R' || at(c, r + 1) === 'R') && !(at(c - 1, r) === 'R' || at(c + 1, r) === 'R');
+        const lx = alongZ ? 0.5 : 1, lz = alongZ ? 1 : 0.5;
+        for (const [ox, oz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) rackGeos.push(worldBox(0.05, 2.1, 0.05, x + ox * (lx / 2 - 0.025), 1.05, z + oz * (lz / 2 - 0.025), 1));
+        for (const sy of [0.12, 0.78, 1.42, 2.06]) {
+          rackGeos.push(worldBox(lx, 0.04, lz, x, sy, z, 1));
+          if (sy > 2) continue;
+          let used = -0.45;
+          while (used < 0.3) {
+            const bw = 0.22 + Math.random() * 0.3, bh = 0.2 + Math.random() * 0.34, bd = 0.3 + Math.random() * 0.12;
+            if (Math.random() < 0.8) boxGeos.push(alongZ ? worldBox(bd, bh, bw, x, sy + 0.02 + bh / 2, z + used + bw / 2, 1) : worldBox(bw, bh, bd, x + used + bw / 2, sy + 0.02 + bh / 2, z, 1));
+            used += bw + 0.03;
+          }
+        }
+        this.addCollider(x - lx / 2, x + lx / 2, z - lz / 2, z + lz / 2);
       } else if (ch === 'P') spawn = new THREE.Vector3(x, 0, z);
-      else if ('hHcCS'.includes(ch)) ents.push({ ch, x, z, c, r });
+      else if ('hHcCSp'.includes(ch)) ents.push({ ch, x, z, c, r });
       else if (ch === 'L') this.lamps.push({ x, z });
       else if (ch === 'E') this.extractPos = new THREE.Vector3(x, 0, z);
     }
@@ -606,6 +639,9 @@ export class Level {
     this.addMerged(wallGeos.plywood, M.plywood, 'wood');
     this.addMerged(crateGeos, M.crate, 'wood');
     this.addMerged(trimGeos, M.wood2, 'wood');
+    this.addMerged(rackGeos, M.steelDark, 'metal');
+    this.addMerged(boxGeos, M.cardboard, 'wood');
+    this.mapAt = at;
 
     // Floor slab and surrounding gravel
     const slab = new THREE.Mesh(worldBox(W, 0.1, H, W / 2, -0.05, H / 2, 4), M.concrete);
@@ -653,8 +689,14 @@ export class Level {
       }
       let yaw = look ? Math.atan2(look.x - e.x, look.z - e.z) : 0;
       yaw += (Math.random() - 0.5) * 0.3;
-      const kind = 'hH'.includes(e.ch) ? 'hostile' : e.ch === 'S' ? 'hostage' : 'civilian';
-      const t = new Target(this, kind, e.x, e.z, yaw, 'HC'.includes(e.ch), room, seed++ * 17 + Math.floor(Math.random() * 1000));
+      const kind = 'hHp'.includes(e.ch) ? 'hostile' : e.ch === 'S' ? 'hostage' : 'civilian';
+      if (e.ch === 'p') {
+        // Patrol along whichever axis has the longest clear run
+        const run = (dc, dr) => { let n = 0; while (n < 30 && !'#DKWXTBR'.includes(at(e.c + dc * (n + 1), e.r + dr * (n + 1)))) n++; return n; };
+        // ...and start by walking away from the entry point, so nobody is staring at you at spawn.
+        yaw = run(1, 0) + run(-1, 0) >= run(0, 1) + run(0, -1) ? (e.x >= this.spawn.x ? Math.PI / 2 : -Math.PI / 2) : (e.z >= this.spawn.z ? 0 : Math.PI);
+      }
+      const t = new Figure(this, kind, e.x, e.z, yaw, { ambush: e.ch === 'H', patrol: e.ch === 'p', room, seed: seed++ * 17 + Math.floor(Math.random() * 1000) });
       this.targets.push(t);
       if (kind === 'hostage') this.hostage = t;
     }
@@ -675,6 +717,68 @@ export class Level {
 
     // Lamps
     for (const l of this.lamps) this.addLamp(l.x, l.z);
+    this.dressHouse(W, H, at);
+  }
+
+  cellBlocked(x, z) {
+    if (!this.mapAt) return false;
+    return '#DKWXTBR'.includes(this.mapAt(Math.floor(x), Math.floor(z)));
+  }
+
+  // Signage, floor markings, overhead steel and the instructors' catwalk.
+  dressHouse(W, H, at) {
+    const M = this.mats;
+    const hazMat = new THREE.MeshStandardMaterial({ map: hazardTexture(), transparent: true, roughness: 0.9, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
+    const hazGeo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+    const signGeo = new THREE.PlaneGeometry(0.62, 0.62);
+    const signMats = new Map();
+    const signMat = n => { if (!signMats.has(n)) signMats.set(n, new THREE.MeshStandardMaterial({ map: stencilTexture(['ROOM', String(n)]), transparent: true, roughness: 1, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 })); return signMats.get(n); };
+    for (const d of this.doors) {
+      const c = Math.floor(d.cx), r = Math.floor(d.cz);
+      const hz = new THREE.Mesh(hazGeo, hazMat); hz.position.set(d.cx, 0.006, d.cz); if (!d.alongX) hz.rotation.y = Math.PI / 2; hz.receiveShadow = true; this.group.add(hz);
+      const sides = d.alongX ? [[0, -1], [0, 1]] : [[-1, 0], [1, 0]];
+      for (let i = 0; i < 2; i++) {
+        const [dc, dr] = sides[i], [oc, or] = sides[1 - i];
+        const name = this.roomNames.get(this.roomAt(c + oc + 0.5, r + or + 0.5));
+        if (!name) continue;
+        const s = new THREE.Mesh(signGeo, signMat(name));
+        if (d.alongX) {
+          const wc = at(c + 1, r) === '#' ? c + 1 : c - 1;
+          s.position.set(wc + 0.5, 1.62, r + 0.5 + dr * 0.506); s.rotation.y = dr > 0 ? 0 : Math.PI;
+        } else {
+          const wr = at(c, r + 1) === '#' ? r + 1 : r - 1;
+          s.position.set(c + 0.5 + dc * 0.506, 1.62, wr + 0.5); s.rotation.y = dc > 0 ? Math.PI / 2 : -Math.PI / 2;
+        }
+        s.receiveShadow = true; this.group.add(s);
+      }
+    }
+    // Overhead beams (they throw shadow bars across the rooms)
+    const steel = [];
+    for (let r = 3; r < H - 1; r += 5) steel.push(worldBox(W + 0.4, 0.22, 0.12, W / 2, WALL_H + 0.11, r + 0.5, 1));
+    for (let c = 4; c < W - 1; c += 8) steel.push(worldBox(0.12, 0.16, H + 0.4, c + 0.5, WALL_H + 0.3, H / 2, 1));
+    // Catwalk along the north wall
+    const cy = WALL_H + 0.04;
+    steel.push(worldBox(W + 2, 0.07, 1.7, W / 2, cy, -0.75, 1));
+    for (const z of [-1.55, 0.05]) {
+      steel.push(worldBox(W + 2, 0.04, 0.04, W / 2, cy + 1.05, z, 1), worldBox(W + 2, 0.03, 0.03, W / 2, cy + 0.55, z, 1));
+      for (let x = -1; x <= W + 1; x += 2) steel.push(worldBox(0.04, 1.05, 0.04, x, cy + 0.52, z, 1));
+    }
+    for (let x = 0; x <= W; x += 4) steel.push(worldBox(0.1, WALL_H, 0.1, x, WALL_H / 2, -1.5, 1));
+    // Access ladder
+    for (const x of [-1.25, -0.75]) steel.push(worldBox(0.04, WALL_H + 1, 0.04, x, (WALL_H + 1) / 2, -1.62, 1));
+    for (let y = 0.3; y < WALL_H + 0.8; y += 0.3) steel.push(worldBox(0.5, 0.03, 0.03, -1, y, -1.62, 1));
+    // Flood-light poles in the yard corners
+    const night = this.mission.env === 'night' || this.mission.env === 'dusk';
+    const panelMat = new THREE.MeshBasicMaterial({ color: night ? new THREE.Color(5, 4.6, 3.8) : new THREE.Color(0.75, 0.75, 0.72), toneMapped: !night });
+    for (const [px, pz] of [[-5, -5], [W + 5, -5], [-5, H + 5], [W + 5, H + 5]]) {
+      steel.push(worldBox(0.16, 7, 0.16, px, 3.5, pz, 1), worldBox(1.2, 0.5, 0.2, px, 7.1, pz, 1));
+      const panel = new THREE.Mesh(new THREE.PlaneGeometry(1.05, 0.38), panelMat);
+      panel.position.set(px, 7.1, pz); panel.lookAt(W / 2, 0, H / 2); panel.translateZ(0.12); this.group.add(panel);
+    }
+    this.addMerged(steel, M.steelDark, 'metal', { occlude: false, shoot: false });
+    // Spray-painted start box
+    const start = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.75).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: stencilTexture(['START']), transparent: true, roughness: 1, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
+    start.position.set(this.spawn.x, 0.007, this.spawn.z); start.rotation.y = THREE.MathUtils.degToRad(this.mission.yaw || 0); this.group.add(start);
   }
 
   buildSurroundings(W, H, fence = true) {
@@ -718,7 +822,9 @@ export class Level {
     const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(6, 4.2, 2.2), toneMapped: false }));
     bulb.position.set(x, 2.46, z);
     const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.6), this.mats.chain); cord.position.set(x, 2.95, z);
-    this.group.add(shade, bulb, cord);
+    if (!Level.coneMat) Level.coneMat = new THREE.MeshBasicMaterial({ map: coneTexture(), transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, toneMapped: false, fog: false, opacity: 0.32 });
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(2.3, 2.45, 28, 1, true), Level.coneMat); cone.position.set(x, 1.24, z); cone.renderOrder = 4;
+    this.group.add(shade, bulb, cord, cone);
     const sl = new THREE.SpotLight(0xffc98a, 14, 14, 1.05, 0.6, 1.6);
     sl.position.set(x, 2.45, z);
     sl.target.position.set(x, 0, z);
@@ -727,7 +833,7 @@ export class Level {
     if (allowShadow) { sl.shadow.mapSize.set(512, 512); sl.shadow.bias = -0.0008; sl.shadow.camera.near = 0.1; sl.shadow.camera.far = 14; }
     this.group.add(sl, sl.target);
     this.lampLights.push(sl);
-    sl.userData.bulb = bulb; sl.userData.base = 14; sl.userData.flicker = Math.random() < 0.25;
+    sl.userData.bulb = bulb; sl.userData.cone = cone; sl.userData.base = 14; sl.userData.flicker = Math.random() < 0.25;
   }
 
   // ---------------- Range ----------------
@@ -880,6 +986,7 @@ export class Level {
     for (const d of this.doors) d.update(dt);
     for (const p of this.plates) p.update(dt);
     const pRoom = this.roomAt(g.player.pos.x, g.player.pos.z);
+    g.player.room = pRoom;
     for (const tg of this.targets) {
       // Pop-ups rise when the player is close in the same room
       if (active && !this.drill && tg.state === 'down' && tg.popup && !tg.neutralized) {
@@ -895,6 +1002,7 @@ export class Level {
       const f = Math.random() < 0.04 ? 0.15 : 1;
       l.intensity = l.userData.base * f;
       l.userData.bulb.material.color.setScalar(f > 0.5 ? 1 : 0.1).multiply(new THREE.Color(6, 4.2, 2.2));
+      l.userData.cone.visible = f > 0.5;
     }
     if (this.extract) {
       const ready = g.objectivesDone();
@@ -908,42 +1016,13 @@ export class Level {
     const eye = g.camera.position;
     const night = this.mission.env === 'night';
     if (g.missionTime < 2.5) return;
-    let detect = night ? (g.flashlightOn || g.recentShot > 0 ? 26 : 9) : 28;
+    let detect = night ? (g.flashlightOn || g.recentShot > 0 ? 26 : 9) : this.mission.env === 'dusk' ? 22 : 28;
     detect *= diff.detect;
+    const ctx = { eye, detect, diff, P, g, level: this };
     for (const tg of this.targets) {
-      if (!tg.hostile || tg.state !== 'up' || tg.neutralized) continue;
+      if (!tg.isFigure) continue;
       tg.react = diff.react * (0.85 + (tg.group.id % 7) * 0.05);
-      if (t < tg.stunUntil) { tg.exposure = 0; continue; }
-      const head = tg.headPos(_v);
-      const toP = _v2.subVectors(eye, head);
-      const dist = toP.length();
-      let visible = false;
-      if (dist < detect) {
-        toP.normalize();
-        const fwd = tg.forward(new THREE.Vector3());
-        if (fwd.dot(toP) > -0.1) {
-          _ray.set(head, toP); _ray.far = dist - 0.25;
-          const hits = _ray.intersectObjects(this.occluders, false);
-          visible = hits.length === 0;
-        }
-      }
-      if (visible) {
-        let mult = 1;
-        if (P.sprinting) mult *= 1.35;
-        if (P.crouch > 0.5) mult *= 0.85;
-        if (Math.abs(P.lean) > 0.5) mult *= 0.8; // only a sliver of you is exposed
-        tg.exposure += dt * mult;
-        if (tg.exposure >= tg.react) {
-          tg.exposure = tg.react * 0.45;
-          tg.fireFlash = 0.06;
-          let chance = diff.hit;
-          if (P.speed > 2.5) chance *= 0.75;
-          if (P.crouch > 0.5) chance *= 0.85;
-          if (Math.abs(P.lean) > 0.5) chance *= 0.7;
-          if (dist > 15) chance *= 0.7;
-          g.hostileFires(head, Math.random() < chance, dist);
-        }
-      } else tg.exposure = Math.max(0, tg.exposure - dt * 0.5);
+      if (tg.hostile) tg.ai(dt, t, ctx); else tg.civ(dt, t, ctx);
     }
     // Room clear callouts
     const byRoom = new Map();

@@ -75,7 +75,7 @@ class Particles {
 
 const SURF_COLOR = {
   concrete: [0.55, 0.53, 0.5], block: [0.6, 0.58, 0.55], wood: [0.62, 0.5, 0.34], target: [0.62, 0.5, 0.34],
-  dirt: [0.4, 0.32, 0.22], gravel: [0.45, 0.4, 0.33], metal: [0.4, 0.4, 0.42], steel: [0.4, 0.4, 0.42], door: [0.5, 0.45, 0.35],
+  body: [0.5, 0.72, 1.0], dirt: [0.4, 0.32, 0.22], gravel: [0.45, 0.4, 0.33], metal: [0.4, 0.4, 0.42], steel: [0.4, 0.4, 0.42], door: [0.5, 0.45, 0.35],
 };
 
 export class FX {
@@ -109,8 +109,32 @@ export class FX {
       this.casings.push({ m, vel: new THREE.Vector3(), spin: new THREE.Vector3(), life: 0, bounces: 0, kind: 'rifle' });
     }
     this.casingCursor = 0;
+    // Tracer streaks (player bullets in flight + hostile shots)
+    const sg = new THREE.BoxGeometry(1, 1, 1);
+    this.streakMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(3.2, 2.3, 1.1), transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false, fog: false });
+    this.streakMatRed = this.streakMat.clone(); this.streakMatRed.color.setRGB(4, 1.2, 0.5);
+    this.streaks = [];
+    for (let i = 0; i < 40; i++) { const m = new THREE.Mesh(sg, this.streakMat); m.visible = false; m.frustumCulled = false; scene.add(m); this.streaks.push({ m, life: 0 }); }
+    this.streakN = 0;
     this._v = new THREE.Vector3(); this._q = new THREE.Quaternion();
     this.onCasingBounce = null;
+  }
+
+  // Per-frame streak for a bullet in flight.
+  beginStreaks() { for (let i = 0; i < 24; i++) this.streaks[i].m.visible = false; this.streakN = 0; }
+  streak(a, b, w = 0.012) {
+    if (this.streakN >= 24) return;
+    this.place(this.streaks[this.streakN++].m, a, b, w, this.streakMat);
+  }
+  // Timed tracer for hostile fire.
+  tracer(a, b, life = 0.07) {
+    let best = this.streaks[24];
+    for (let i = 24; i < 40; i++) if (this.streaks[i].life <= 0) { best = this.streaks[i]; break; }
+    best.life = life; this.place(best.m, a, b, 0.02, this.streakMatRed);
+  }
+  place(m, a, b, w, mat) {
+    const len = a.distanceTo(b); if (len < 0.01) { m.visible = false; return; }
+    m.material = mat; m.position.copy(a).add(b).multiplyScalar(0.5); m.lookAt(b); m.scale.set(w, w, len); m.visible = true;
   }
 
   setScale(px) { this.sparks.mat.uniforms.uScale.value = px; this.dust.mat.uniforms.uScale.value = px; }
@@ -141,7 +165,7 @@ export class FX {
         c[0], c[1], c[2], 0.3, 2.8);
     }
     // Debris chips
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < (surf === 'body' ? 0 : 5); i++) {
       const sp = 2 + Math.random() * 3;
       this.dust.spawn(point.x, point.y, point.z,
         normal.x * sp + (Math.random() - 0.5) * 3, normal.y * sp + Math.random() * 2, normal.z * sp + (Math.random() - 0.5) * 3,
@@ -191,6 +215,7 @@ export class FX {
 
   update(dt, floorAt) {
     this.sparks.update(dt); this.dust.update(dt);
+    for (let i = 24; i < 40; i++) { const s = this.streaks[i]; if (s.life > 0) { s.life -= dt; if (s.life <= 0) s.m.visible = false; } }
     for (const c of this.casings) {
       if (c.life <= 0) continue;
       c.life -= dt;

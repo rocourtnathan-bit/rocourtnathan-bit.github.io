@@ -287,3 +287,62 @@ export function worldBox(sx, sy, sz, cx, cy, cz, tile = 2) {
   }
   return g;
 }
+
+// ---- Extra art for v2: clouds, floor markings, wall stencils, light cones ----
+export function cloudTexture() {
+  const n = makeNoise(91), size = 512;
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const x = c.getContext('2d'), img = x.createImageData(size, size);
+  for (let yy = 0; yy < size; yy++) for (let xx = 0; xx < size; xx++) {
+    const u = xx / size, v = yy / size;
+    const f = fbm(n, u, v, 4, 5), d = fbm(n, u + 0.37, v + 0.11, 8, 3);
+    const a = Math.max(0, Math.min(1, (f * 0.75 + d * 0.25 - 0.5) * 4.2));
+    const j = (yy * size + xx) * 4;
+    const sh = 215 + f * 40;
+    img.data[j] = sh; img.data[j + 1] = sh; img.data[j + 2] = sh + 4; img.data[j + 3] = a * 235;
+  }
+  x.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+export function hazardTexture() {
+  const s = 128, c = document.createElement('canvas'); c.width = c.height = s;
+  const x = c.getContext('2d');
+  x.clearRect(0, 0, s, s);
+  x.save(); x.beginPath(); x.rect(0, 44, s, 40); x.clip();
+  x.fillStyle = '#d9b21c'; x.fillRect(0, 0, s, s);
+  x.fillStyle = '#17150f';
+  for (let i = -s; i < s * 2; i += 32) { x.beginPath(); x.moveTo(i, 84); x.lineTo(i + 16, 84); x.lineTo(i + 56, 44); x.lineTo(i + 40, 44); x.fill(); }
+  x.restore();
+  // Wear
+  x.globalCompositeOperation = 'destination-out';
+  for (let i = 0; i < 260; i++) { x.fillStyle = `rgba(0,0,0,${Math.random() * 0.7})`; x.fillRect(Math.random() * s, 44 + Math.random() * 40, 1 + Math.random() * 5, 1 + Math.random() * 2); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+  return t;
+}
+
+export function stencilTexture(lines, color = '#e8e2c8') {
+  const w = 256, h = 256, c = document.createElement('canvas'); c.width = w; c.height = h;
+  const x = c.getContext('2d');
+  x.fillStyle = color; x.textAlign = 'center'; x.textBaseline = 'middle';
+  if (lines.length === 2) {
+    x.font = 'bold 44px "Arial Narrow", Impact, sans-serif'; x.fillText(lines[0], w / 2, 52);
+    x.font = 'bold 170px Impact, "Arial Narrow", sans-serif'; x.fillText(lines[1], w / 2, 160);
+  } else { x.font = 'bold 64px Impact, "Arial Narrow", sans-serif'; x.fillText(lines[0], w / 2, h / 2); }
+  // Spray-paint breakup
+  x.globalCompositeOperation = 'destination-out';
+  for (let i = 0; i < 900; i++) { x.fillStyle = `rgba(0,0,0,${Math.random() * 0.55})`; x.fillRect(Math.random() * w, Math.random() * h, 1 + Math.random() * 3, 1 + Math.random() * 3); }
+  for (const yy of [118, 190]) x.clearRect(0, yy, w, 5);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+  return t;
+}
+
+export function coneTexture() {
+  const c = document.createElement('canvas'); c.width = 4; c.height = 128;
+  const x = c.getContext('2d'), g = x.createLinearGradient(0, 0, 0, 128);
+  g.addColorStop(0, 'rgba(255,225,170,0.55)'); g.addColorStop(0.35, 'rgba(255,220,160,0.16)'); g.addColorStop(1, 'rgba(255,220,160,0)');
+  x.fillStyle = g; x.fillRect(0, 0, 4, 128);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}

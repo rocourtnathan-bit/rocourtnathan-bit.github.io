@@ -9,7 +9,7 @@ import { GTAOPass } from '../vendor/three/addons/postprocessing/GTAOPass.js';
 import { FXAAShader } from '../vendor/three/addons/shaders/FXAAShader.js';
 import { Sky } from '../vendor/three/addons/objects/Sky.js';
 import { RoomEnvironment } from '../vendor/three/addons/environments/RoomEnvironment.js';
-import { buildTextures, muzzleFlashTexture } from './textures.js';
+import { buildTextures, muzzleFlashTexture, cloudTexture } from './textures.js';
 import { AudioSys } from './audio.js';
 import { FX } from './fx.js';
 import { Arsenal, WEAPONS, OPTICS } from './weapons.js';
@@ -17,6 +17,7 @@ import { Level, WALL_H } from './level.js';
 import { MISSIONS, DIFFICULTY } from './maps.js';
 
 const $ = id => document.getElementById(id);
+const _sa = new THREE.Vector3();
 const TEST = new URLSearchParams(location.search).has('test');
 
 const QUALITY = {
@@ -48,7 +49,8 @@ class ViewmodelPass extends Pass {
 
 class Game {
   constructor() {
-    this.settings = Object.assign({ sens: 1, fov: 74, volume: 0.8, quality: 'medium', voice: true, autoReload: true, toggleAds: false, diff: 'operator' }, store.get('settings', {}));
+    this.settings = Object.assign({ sens: 1, fov: 74, volume: 0.8, quality: 'medium', voice: true, autoReload: true, toggleAds: true, diff: 'operator' }, store.get('settings', {}));
+    if (this.settings.v !== 2) { this.settings.toggleAds = true; this.settings.v = 2; store.set('settings', this.settings); }
     this.loadout = Object.assign({ primary: 'm4', optic: 'holo', armor: 'light', flashbangs: 3 }, store.get('loadout', {}));
     this.best = store.get('best', {});
     this.missionIdx = 0;
@@ -104,6 +106,7 @@ class Game {
     this.sky = makeSky(); this.sky.scale.setScalar(1000); this.sky.frustumCulled = false;
     this.scene.add(this.sky);
     this.stars = this.makeStars(); this.scene.add(this.stars);
+    this.clouds = this.makeClouds(); this.scene.add(this.clouds);
 
     // Viewmodel lighting
     this.vmHemi = new THREE.HemisphereLight(0xdfe8ff, 0x403830, 1.2);
@@ -152,6 +155,23 @@ class Game {
     p.visible = false; return p;
   }
 
+  makeClouds() {
+    // Shallow dome with a tiling cloud layer that fades out toward the horizon.
+    const g = new THREE.SphereGeometry(1300, 40, 14, 0, Math.PI * 2, 0, Math.PI * 0.5);
+    const p = g.attributes.position, uv = g.attributes.uv, col = new Float32Array(p.count * 4);
+    for (let i = 0; i < p.count; i++) {
+      const h = p.getY(i) / 1300;
+      uv.setXY(i, p.getX(i) / 1100, p.getZ(i) / 1100);
+      col[i * 4] = col[i * 4 + 1] = col[i * 4 + 2] = 1; col[i * 4 + 3] = Math.max(0, Math.min(1, (h - 0.1) / 0.3));
+    }
+    g.setAttribute('color', new THREE.BufferAttribute(col, 4));
+    g.scale(1, 0.3, 1);
+    this.cloudTex = cloudTexture(); this.cloudTex.repeat.set(2.2, 2.2);
+    const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: this.cloudTex, transparent: true, vertexColors: true, depthWrite: false, fog: false, side: THREE.BackSide }));
+    m.frustumCulled = false; m.renderOrder = -1;
+    return m;
+  }
+
   buildComposer() {
     const q = this.quality = QUALITY[this.settings.quality];
     const r = this.renderer;
@@ -173,6 +193,8 @@ class Game {
     c.addPass(new OutputPass());
     this.fxaa = null;
     if (q.aa) { this.fxaa = new ShaderPass(FXAAShader); c.addPass(this.fxaa); }
+    this.finalPass = null;
+    if (q.bloom) { this.finalPass = new ShaderPass(FinalShader); c.addPass(this.finalPass); }
     this.sun.shadow.mapSize.set(q.shadow, q.shadow);
     if (this.sun.shadow.map) { this.sun.shadow.map.dispose(); this.sun.shadow.map = null; }
     this.flashlight.castShadow = q.flashShadow;
@@ -215,6 +237,7 @@ class Game {
     const setSun = (elev, az) => { sunDir.setFromSphericalCoords(1, THREE.MathUtils.degToRad(90 - elev), THREE.MathUtils.degToRad(az)); u.sunPosition.value.copy(sunDir); };
     this.sunDir = sunDir;
     this.stars.visible = false; sky.visible = true;
+    const cl = this.clouds; cl.visible = env !== 'night';
     if (env === 'night') {
       sky.visible = false; this.stars.visible = true;
       s.background = new THREE.Color(0x03050a);
@@ -228,13 +251,22 @@ class Game {
       this.flashlightOn = false;
       this.audio.setReverb(1.6, 0.4);
     } else {
-      if (env === 'overcast') {
+      if (env === 'dusk') {
+        u.turbidity.value = 7; u.rayleigh.value = 3.2; u.mieCoefficient.value = 0.012; u.mieDirectionalG.value = 0.86; setSun(9, 255);
+        s.fog = new THREE.Fog(0xb98a78, 35, 260);
+        this.sun.color.set(0xffa868); this.sun.intensity = 2.6;
+        this.hemi.color.set(0x8f88b8); this.hemi.groundColor.set(0x4a3a34); this.hemi.intensity = 0.55;
+        this.renderer.toneMappingExposure = 0.9;
+        cl.material.color.setRGB(1.25, 0.72, 0.55); cl.material.opacity = 0.9;
+      } else if (env === 'overcast') {
+        cl.material.color.setRGB(0.62, 0.64, 0.67); cl.material.opacity = 1; this.cloudTex.repeat.set(1.3, 1.3);
         u.turbidity.value = 14; u.rayleigh.value = 3.2; u.mieCoefficient.value = 0.02; u.mieDirectionalG.value = 0.7; setSun(28, 200);
         s.fog = new THREE.Fog(0x9aa3a8, 25, 180);
         this.sun.color.set(0xe8eef5); this.sun.intensity = 1.3;
         this.hemi.color.set(0xc8d2dc); this.hemi.groundColor.set(0x4a463e); this.hemi.intensity = 1.5;
         this.renderer.toneMappingExposure = 0.85;
       } else {
+        cl.material.color.setRGB(1.15, 1.15, 1.18); cl.material.opacity = 0.8; this.cloudTex.repeat.set(2.2, 2.2);
         u.turbidity.value = 4; u.rayleigh.value = 1.2; u.mieCoefficient.value = 0.005; u.mieDirectionalG.value = 0.8; setSun(env === 'range' ? 34 : 42, env === 'range' ? 210 : 140);
         s.fog = new THREE.Fog(0xb8c8d8, env === 'range' ? 80 : 50, env === 'range' ? 420 : 240);
         this.sun.color.set(0xfff0d8); this.sun.intensity = 2.7;
@@ -249,12 +281,14 @@ class Game {
       envScene.add(sk2);
       if (this.skyEnv) this.skyEnv.dispose();
       this.skyEnv = this.pmrem.fromScene(envScene).texture;
-      s.environment = this.skyEnv; s.environmentIntensity = env === 'overcast' ? 0.5 : 0.35;
-      this.vmHemi.intensity = env === 'overcast' ? 1.4 : 1.1; this.vmKey.intensity = env === 'overcast' ? 0.9 : 1.6; this.vmScene.environmentIntensity = 0.5;
+      s.environment = this.skyEnv; s.environmentIntensity = env === 'overcast' ? 0.5 : env === 'dusk' ? 0.45 : 0.35;
+      this.vmHemi.intensity = env === 'overcast' ? 1.4 : env === 'dusk' ? 0.75 : 1.1; this.vmKey.intensity = env === 'overcast' ? 0.9 : env === 'dusk' ? 1.3 : 1.6; this.vmScene.environmentIntensity = 0.5;
+      this.vmKey.color.set(env === 'dusk' ? 0xffb078 : 0xfff0e0);
       this.flashlightOn = false;
       this.audio.setReverb(env === 'range' ? 2.2 : 1.0, env === 'range' ? 0.22 : 0.32);
     }
     this.env = env;
+    this.audio.ambience(env);
   }
 
   fitShadow() {
@@ -308,6 +342,8 @@ class Game {
       if (this.state === 'playing' && ['Space', 'ControlLeft', 'KeyW', 'KeyS'].includes(e.code)) e.preventDefault();
       if (e.repeat) return;
       this.keys[e.code] = true;
+      // With toggle aim, Shift while moving forward drops the sights and sprints.
+      if (e.code === 'ShiftLeft' && this.settings.toggleAds && this.mouse.ads && this.keys.KeyW && this.state === 'playing') this.mouse.ads = false;
       if (this.state === 'brief' && (e.code === 'Space' || e.code === 'Enter')) { this.begin(); return; }
       if (this.state !== 'playing') { if (e.code === 'Escape' && this.state === 'paused') this.resume(); return; }
       const A = this.arsenal;
@@ -415,7 +451,7 @@ class Game {
       const c = document.createElement('button'); c.className = 'card' + (i === this.missionIdx ? ' on' : '');
       const b = this.best[m.id];
       const bestTxt = b ? (m.env === 'range' ? `BEST ${b.badge} ${b.score}/${b.total}` : `BEST ${b.grade} · ${fmtTime(b.time)}`) : '';
-      c.innerHTML = `<span class="tag">${m.env === 'night' ? 'NIGHT' : m.env === 'range' ? 'PRACTICE' : m.env === 'overcast' ? 'OVERCAST' : 'DAY'}</span><h3>${m.name}</h3><p>${m.sub}</p>${m.par ? `<p>PAR ${fmtTime(m.par)}</p>` : '<p>Free fire + qualification</p>'}<div class="best">${bestTxt}</div>`;
+      c.innerHTML = `<span class="tag">${m.env === 'night' ? 'NIGHT' : m.env === 'range' ? 'PRACTICE' : m.env === 'overcast' ? 'OVERCAST' : m.env === 'dusk' ? 'DUSK' : 'DAY'}</span><h3>${m.name}</h3><p>${m.sub}</p>${m.par ? `<p>PAR ${fmtTime(m.par)}</p>` : '<p>Free fire + qualification</p>'}<div class="best">${bestTxt}</div>`;
       c.onclick = () => { this.audio.init(); this.audio.click(1800, 0.2); this.loadLevel(i); this.renderMissionCards(); };
       mc.appendChild(c);
     });
@@ -445,14 +481,35 @@ class Game {
     this.flashbangs = this.loadout.flashbangs;
     this.armor = ARMOR[this.loadout.armor];
     this.stats = { shots: 0, hits: 0, civHits: 0, damage: 0, flashes: 0, hitsTaken: 0, start: 0 };
-    this.missionTime = 0; this.complete = false; this.whiteout = 0; this.dmgFlash = 0;
+    this.missionTime = 0; this.complete = false; this.whiteout = 0; this.dmgFlash = 0; this.mouse.ads = false; this.civWarned = false;
     this.camera.fov = this.settings.fov; this.camera.updateProjectionMatrix();
     const m = this.mission;
     $('brief-title').textContent = m.name;
     $('brief-sub').textContent = `${m.sub.toUpperCase()} · ${DIFFICULTY[this.settings.diff].name}${m.par ? ' · PAR ' + fmtTime(m.par) : ''}`;
     $('brief-list').innerHTML = m.brief.map(b => `<li>${b.replace(/^(TECHNIQUE:)/, '<b>$1</b>')}</li>`).join('');
+    this.drawFloorPlan();
     $('brief').classList.remove('hidden');
     this.state = 'brief';
+  }
+
+  // Teams study the layout before entry. Intel shows the building, not who is inside.
+  drawFloorPlan() {
+    const cv = $('brief-map'), m = this.mission;
+    if (!m.map) { cv.classList.add('hidden'); return; }
+    cv.classList.remove('hidden');
+    const W = m.map[0].length, H = m.map.length, s = Math.max(6, Math.floor(Math.min(300 / W, 250 / H)));
+    cv.width = W * s; cv.height = H * s;
+    const x = cv.getContext('2d');
+    x.fillStyle = '#0d120f'; x.fillRect(0, 0, cv.width, cv.height);
+    for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
+      const ch = m.map[r][c]; let col = null;
+      if (ch === '#') col = '#8fa086'; else if (ch === 'D') col = '#ffb341'; else if (ch === 'K') col = '#ff4b3e'; else if (ch === 'W') col = '#7fd8ff';
+      else if ('XTBR'.includes(ch)) col = '#3a4438';
+      if (col) { x.fillStyle = col; const inset = 'DKW'.includes(ch) ? s * 0.25 : 0; x.fillRect(c * s + inset, r * s + inset, s - inset * 2, s - inset * 2); }
+      if (ch === 'P') { x.fillStyle = '#c6ff6a'; x.beginPath(); x.arc(c * s + s / 2, r * s + s / 2, s * 0.6, 0, 6.3); x.fill(); }
+      if (ch === 'E') { x.strokeStyle = '#c6ff6a'; x.lineWidth = 2; x.strokeRect(c * s - s * 0.3, r * s - s * 0.3, s * 1.6, s * 1.6); }
+      if (ch === 'S') { x.fillStyle = '#7fd8ff'; x.font = `bold ${s * 1.6}px sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('H', c * s + s / 2, r * s + s / 2); }
+    }
   }
 
   begin() {
@@ -571,7 +628,7 @@ class Game {
     const d = slot.def, P = this.player, cam = this.camera;
     this.audio.gunshot(d.kind);
     this.stats.shots++;
-    this.recentShot = 1.2;
+    this.recentShot = 1.2; this.shotPulse = true;
     const fwd = new THREE.Vector3(); cam.getWorldDirection(fwd);
     const right = new THREE.Vector3().crossVectors(fwd, cam.up).normalize();
     const up = new THREE.Vector3().crossVectors(right, fwd).normalize();
@@ -615,11 +672,26 @@ class Game {
   }
 
   hostileFires(from, hit, dist) {
-    const toSrc = new THREE.Vector3().subVectors(from, this.camera.position);
+    const eye = this.camera.position;
+    const toSrc = new THREE.Vector3().subVectors(from, eye);
     const fwd = new THREE.Vector3(); this.camera.getWorldDirection(fwd);
     const ang = Math.atan2(toSrc.x, toSrc.z) - Math.atan2(fwd.x, fwd.z);
     this.audio.hostileShot(dist, -Math.sin(ang));
-    if (!hit) { this.audio.impact('concrete', 1.5, -Math.sin(ang) * 0.5); return; }
+    // Tracer: through you on a hit, past your head on a miss
+    const end = eye.clone(); end.y -= 0.2;
+    if (!hit) { const a = Math.random() * 6.28, r = 0.35 + Math.random() * 0.6; end.x += Math.cos(a) * r; end.y += Math.abs(Math.sin(a)) * r * 0.6 + 0.15; end.z += Math.sin(a) * r; }
+    const d = end.clone().sub(from).normalize();
+    if (!hit) end.addScaledVector(d, 8);
+    this.fx.tracer(from, end);
+    this.muzzleLight.position.copy(from); this.muzzleLight.intensity = Math.max(this.muzzleLight.intensity, 25);
+    if (!hit) {
+      this.audio.whiz(-Math.sin(ang) * 0.6);
+      // The miss lands somewhere behind you
+      const ray = new THREE.Raycaster(from, d, 0, dist + 30);
+      const h = ray.intersectObjects(this.level.occluders, false)[0];
+      if (h && h.face) { const n = h.face.normal.clone().transformDirection(h.object.matrixWorld); this.fx.decal(h.point, n, null, h.object.userData.surf); this.fx.impact(h.point, n, h.object.userData.surf || 'concrete', d); }
+      return;
+    }
     const dmg = this.armor.dmg * (0.9 + Math.random() * 0.2);
     this.player.health -= dmg; this.stats.damage += dmg; this.stats.hitsTaken++;
     this.audio.playerHit();
@@ -818,6 +890,11 @@ class Game {
         }
         if (!done) b.p.addScaledVector(dir, step);
       }
+      if (!done) {
+        // Visible streak once the round is clear of the muzzle
+        const trav = b.p.distanceTo(b.origin);
+        if (trav > 3 && this.lastSub) { const len = Math.min(trav - 3, b.v.length() * this.frameDt * 0.5, 9); this.fx.streak(_sa.copy(b.p).addScaledVector(dir, -len), b.p, 0.01 + Math.min(0.03, trav * 0.0006)); }
+      }
       if (done || b.p.y < -1) this.bullets.splice(i, 1);
     }
   }
@@ -833,13 +910,13 @@ class Game {
       const info = tg.hitTest(hit);
       if (!info) return false; // passed through cut-out gap
       const drill = L.drill && L.drill.active ? L.drill : null;
-      const res = tg.onHit(info, !!drill);
-      this.fx.impact(hit.point, nrm, 'wood', dir);
-      this.audio.impact('target', dist);
+      const res = tg.onHit(info, !!drill, dir);
+      this.fx.impact(hit.point, nrm, tg.isFigure ? 'body' : 'wood', dir);
+      this.audio.impact(tg.isFigure ? 'body' : 'target', dist);
       if (res.already) return true;
       if (res.civ) {
         this.stats.civHits++; this.hitmark('#ffb341');
-        this.toast('NO-SHOOT HIT', 'var(--red)');
+        this.toast(tg.isFigure ? (tg.kind === 'hostage' ? 'HOSTAGE HIT' : 'CIVILIAN HIT') : 'NO-SHOOT HIT', 'var(--red)');
         if (drill && drill.cur === tg) drill.civHits++;
         if (!this.civWarned) { this.civWarned = true; this.audio.say('Cease fire. Civilian.'); }
         return true;
@@ -848,7 +925,7 @@ class Game {
       if (res.kill) {
         this.hitmark('#ff4b3e'); this.audio.hitConfirm(true);
         if (drill && drill.cur === tg) drill.hits++;
-        if (res.zone === 'head') this.toast('HEADSHOT', 'var(--red)');
+        if (res.zone === 'head') this.toast('HEADSHOT', 'var(--red)'); else if (tg.isFigure) this.toast('HOSTILE DOWN', 'var(--ink)');
       } else { this.hitmark('#ffffff'); this.audio.hitConfirm(false); }
       return true;
     }
@@ -860,6 +937,12 @@ class Game {
         door.kick(this.player.pos.x, this.player.pos.z, 2.2);
         this.toast('DOOR BREACHED', 'var(--accent)');
       } else door.angVel += 0.15 * door.awaySign(b.origin.x, b.origin.z);
+      // Rounds punch straight through a plywood door (it is concealment, not cover).
+      if (ud.surf === 'door' && !b.pen) {
+        b.pen = 1; b.v.multiplyScalar(0.8);
+        this.fx.decal(hit.point, nrm, door.pivot, 'wood'); this.fx.impact(hit.point, nrm, 'wood', dir);
+        return false;
+      }
       this.fx.decal(hit.point, nrm, door.pivot, ud.surf);
       this.fx.impact(hit.point, nrm, ud.surf === 'steel' ? 'steel' : 'wood', dir);
       this.audio.impact(ud.surf === 'steel' ? 'steel' : 'wood', dist);
@@ -924,7 +1007,7 @@ class Game {
     const fl = this.flashlight;
     const on = this.flashlightOn && this.state !== 'menu';
     fl.intensity = on ? 70 : 0;
-    this.vmLightGlow.intensity = on ? 0.25 : 0;
+    this.vmLightGlow.intensity = on ? 0.05 : 0;
     if (on && this.arsenal.s) {
       const lp = this.vmToWorld(this.arsenal.s.model.light);
       const fwd = new THREE.Vector3(); cam.getWorldDirection(fwd);
@@ -1009,25 +1092,36 @@ class Game {
     const now = performance.now();
     let dt = Math.min(0.1, (now - this.last) / 1000); this.last = now;
     this.time += dt;
+    this.fx.beginStreaks();
+    this.cloudTex.offset.x += dt * 0.0016; this.cloudTex.offset.y += dt * 0.0007;
+    if (this.finalPass) { this.finalPass.uniforms.uTime.value = this.time; this.finalPass.uniforms.uDesat.value = this.state === 'playing' ? Math.max(0, 0.6 - this.player.health / 100) : 0; }
     const A = this.arsenal, P = this.player;
     if (this.state === 'playing') {
-      this.missionTime += dt;
-      this.recentShot = Math.max(0, this.recentShot - dt);
-      this.kickCooldown = Math.max(0, this.kickCooldown - dt);
-      if (this.kickAnim) { this.kickAnim -= dt * 3; if (this.kickAnim < 0) this.kickAnim = 0; }
-      this.throwT = Math.max(0, this.throwT - dt);
-      this.updatePlayer(dt);
-      this.updateCamera(dt);
-      A.update(dt, { ads: this.mouse.ads, sprinting: P.sprinting && P.speed > 3, lowered: this.throwT > 0 || (this.kickAnim > 0), lookDX: this.mouse.dx, lookDY: this.mouse.dy, bob: P.bob, moveAmt: Math.min(1, P.speed / 3.3), time: this.time, lean: this.effLean || 0 });
+      // Fixed-size physics steps: springs, doors and AI behave the same at 20 fps as at 144.
+      const n = Math.min(6, Math.max(1, Math.ceil(dt / 0.0167))), h = dt / n;
+      this.frameDt = dt;
+      for (let i = 0; i < n && this.state === 'playing'; i++) {
+        this.lastSub = i === n - 1;
+        this.missionTime += h;
+        this.recentShot = Math.max(0, this.recentShot - h);
+        this.kickCooldown = Math.max(0, this.kickCooldown - h);
+        if (this.kickAnim) { this.kickAnim -= h * 3; if (this.kickAnim < 0) this.kickAnim = 0; }
+        this.throwT = Math.max(0, this.throwT - h);
+        this.updatePlayer(h);
+        this.updateCamera(h);
+        A.update(h, { ads: this.mouse.ads, sprinting: P.sprinting && P.speed > 3, lowered: this.throwT > 0 || (this.kickAnim > 0), lookDX: this.mouse.dx, lookDY: this.mouse.dy, bob: P.bob, moveAmt: Math.min(1, P.speed / 3.3), time: this.time, lean: this.effLean || 0 });
+        this.mouse.dx = 0; this.mouse.dy = 0;
+        this.level.update(h);
+        this.shotPulse = false;
+        this.updateBullets(h);
+        this.updateGrenades(h);
+      }
       const fov = this.settings.fov / (1 + (A.s.def.zoom - 1) * A.ads);
       if (Math.abs(this.camera.fov - fov) > 0.01) { this.camera.fov = fov; this.camera.updateProjectionMatrix(); }
-      this.level.update(dt);
-      this.updateBullets(dt);
-      this.updateGrenades(dt);
-      this.updateHUD(dt);
+      if (this.state === 'playing') this.updateHUD(dt);
       // Completion checks
       const m = this.mission;
-      if (m.env !== 'range' && !this.complete && this.objectivesDone()) {
+      if (this.state === 'playing' && m.env !== 'range' && !this.complete && this.objectivesDone()) {
         if (!this.level.extractPos) this.finish(true);
         else if (P.pos.distanceTo(this.level.extractPos) < 1.1) this.finish(true);
       }
@@ -1041,9 +1135,9 @@ class Game {
         this.camera.lookAt(cx, 0.8, cz - (L.mission.env === 'range' ? 25 : 0));
         if (this.state === 'brief') { this.player.yaw = THREE.MathUtils.degToRad(this.mission.yaw || 0); }
         this.camera.fov = 60; this.camera.updateProjectionMatrix();
-        L.update(dt, false);
+        for (let i = 0; i < 4; i++) L.update(dt / 4, false);
       }
-      A.update(dt, { ads: false, sprinting: false, lowered: true, lookDX: 0, lookDY: 0, bob: 0, moveAmt: 0, time: this.time, lean: 0 });
+      A.update(Math.min(dt, 0.02), { ads: false, sprinting: false, lowered: true, lookDX: 0, lookDY: 0, bob: 0, moveAmt: 0, time: this.time, lean: 0 });
     }
     this.mouse.dx = 0; this.mouse.dy = 0;
     A.holder.visible = this.state === 'playing' || this.state === 'paused';
@@ -1053,6 +1147,24 @@ class Game {
     this.composer.render(dt);
   }
 }
+
+// Last pass: lens fringing toward the edges, film grain, and colour drain when you are hurt.
+const FinalShader = {
+  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uGrain: { value: 0.028 }, uCA: { value: 0.006 }, uDesat: { value: 0 } },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: `
+    uniform sampler2D tDiffuse; uniform float uTime, uGrain, uCA, uDesat; varying vec2 vUv;
+    void main(){
+      vec2 c = vUv - 0.5; float r2 = dot(c, c);
+      vec2 off = c * r2 * uCA;
+      vec3 col = vec3(texture2D(tDiffuse, vUv + off).r, texture2D(tDiffuse, vUv).g, texture2D(tDiffuse, vUv - off).b);
+      float n = fract(sin(dot(gl_FragCoord.xy + fract(uTime) * 61.7, vec2(12.9898, 78.233))) * 43758.5453);
+      col += (n - 0.5) * uGrain * (1.0 - dot(col, vec3(0.333)) * 0.6);
+      float g = dot(col, vec3(0.299, 0.587, 0.114));
+      col = mix(col, vec3(g) * vec3(1.05, 0.95, 0.95), uDesat);
+      gl_FragColor = vec4(col, 1.0);
+    }`,
+};
 
 // Preetham sky, toned down so the horizon isn't blown out under ACES.
 function makeSky() {
